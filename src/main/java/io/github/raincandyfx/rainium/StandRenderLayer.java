@@ -19,12 +19,26 @@ final class StandRenderLayer<S extends LivingEntityRenderState, M extends Entity
 
     StandRenderLayer(RenderLayerParent<S, M> parent) { super(parent); }
 
+    /** The name tag of the armor stand being drawn: render states don't carry the entity, so find it by type and position. */
+    private static String standName(LivingEntityRenderState state) {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.level == null) return null;
+        for (net.minecraft.world.entity.Entity e : mc.level.entitiesForRendering()) {
+            if (e.getType() != state.entityType) continue;
+            double dx = e.getX() - state.x, dy = e.getY() - state.y, dz = e.getZ() - state.z;
+            if (dx * dx + dy * dy + dz * dz > 0.01) continue;   // render position is interpolated; stands rarely move
+            net.minecraft.network.chat.Component n = e.getCustomName();
+            return n == null ? null : n.getString();
+        }
+        return null;
+    }
+
     @Override
     public void submit(PoseStack ps, SubmitNodeCollector collector, int light, S state, float yRot, float xRot) {
         Assets.State st = RainiumClient.ASSETS.current();
         if (st == null || !st.config().enabled || !st.config().armorStands || state.isInvisible) return;
         String want = st.config().armorStandName == null ? "" : st.config().armorStandName.trim();
-        String name = MeshRenderLayer.entityName(state.id, true);
+        String name = standName(state);
         if (name == null || !name.trim().equalsIgnoreCase(want)) return;
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0f);
         MeshRenderLayer.Bones bones = (p, anchor) -> {

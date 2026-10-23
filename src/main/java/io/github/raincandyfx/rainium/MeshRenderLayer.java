@@ -135,15 +135,12 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         };
     }
 
-    /** The name (or, for custom=true, the name tag) of the entity with this id, or null. */
-    static String entityName(int id, boolean custom) {
+    /** The name of the entity with this id, or null. */
+    static String entityName(int id, boolean unused) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return mc.player != null && mc.player.getId() == id ? mc.player.getName().getString() : null;
         net.minecraft.world.entity.Entity e = mc.level.getEntity(id);
-        if (e == null) return null;
-        if (!custom) return e.getName().getString();
-        net.minecraft.network.chat.Component n = e.getCustomName();
-        return n == null ? null : n.getString();
+        return e == null ? null : e.getName().getString();
     }
 
     private static int defaultOrder(LayerConfig.Render r) {

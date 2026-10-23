@@ -30,7 +30,7 @@ public final class RainiumClient implements ClientModInitializer {
             if (renderer instanceof AvatarRenderer<?> avatar) {
                 helper.register(new MeshRenderLayer(avatar));
             }
-            if (type == net.minecraft.world.entity.EntityType.ARMOR_STAND) registerStandLayer(renderer, helper);
+            if (renderer.getClass().getSimpleName().equals("ArmorStandRenderer")) registerStandLayer(renderer, helper);
         });
 
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("rainium", "main"));
