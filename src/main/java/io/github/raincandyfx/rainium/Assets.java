@@ -444,7 +444,16 @@ final class Assets {
         int deg = Math.round(Hue.normalize(l.hue));
         String key = deg == 0 ? t : t + "#" + deg;
         if (done.containsKey(key)) return done.get(key);
-        Path file = dir.resolve(t).normalize();
+        // "namespace:path" is a game texture. Check this before treating it as a file name: on
+        // Windows a ':' in a path is an error, not just a file that doesn't exist.
+        if (LayerConfig.isResourceId(t)) {
+            Identifier rid = Identifier.parse(t);   // game textures can't be recoloured; hue then only affects the colour
+            done.put(key, rid);
+            return rid;
+        }
+        Path file;
+        try { file = dir.resolve(t).normalize(); }
+        catch (java.nio.file.InvalidPathException e) { throw new IllegalArgumentException(l.label + ": not a valid texture name: " + t); }
         Identifier id;
         if (Files.isRegularFile(file)) {
             newStamps.put(file, stamp(file));
@@ -465,8 +474,6 @@ final class Assets {
                     LOG.error(Privacy.redactForLog("[rainium] texture " + t + " is not a readable PNG: " + e.getMessage()));
                 }
             });
-        } else if (t.indexOf(':') > 0) {
-            id = Identifier.parse(t);   // game textures can't be recoloured; hue then only affects the colour
         } else {
             throw new IllegalArgumentException(l.label + ": texture file not found: " + t);
         }

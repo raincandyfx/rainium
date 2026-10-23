@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.3.6 (dev build)
+
+- Fixed particle layers failing on Windows with "Illegal char <:>" when using a Minecraft particle picture.
+- Error messages can be copied: **Copy** on the error banner, and **Copy error** in Settings and in the import view.
+
 ## 0.3.5 (dev build)
 
 - **Particle emitters**: a new kind of layer that gives off particles, with Minecraft's particle pictures or your own PNGs. Start from Sparkles, Embers, Hearts, Trail, Aura or an empty emitter on the Add tab, then adjust when they appear, how many, where (point, ball, box or ring), size over time, fading, direction, speed, spread, gravity, drag, spin, and whether they move with you or leave a trail. Emitters use the same look and placement options as models.

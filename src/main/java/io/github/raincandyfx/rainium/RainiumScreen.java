@@ -122,6 +122,16 @@ public final class RainiumScreen extends Screen {
     }
 
     private static boolean updateAnnounced;
+
+    /** Puts text on the system clipboard (error messages, so they can be pasted into a bug report). */
+    private void copyText(String text) {
+        try {
+            Minecraft.getInstance().keyboardHandler.setClipboard(text);
+            say(Lang.t("msg.copied"), MUTED);
+        } catch (Throwable t) {
+            say(Lang.t("msg.copy_failed"), DANGER);
+        }
+    }
     private static boolean showMotionDetails;
 
     private void close() {
@@ -187,6 +197,13 @@ public final class RainiumScreen extends Screen {
         g.fill(rx, y + 3, rx + rw, y + 14, hov ? FIELD_HOVER : FIELD);
         g.text(font, rl, rx + 4, y + 4, TEXT, false);
         hits.add(new Hit(rx, y + 3, rw, 11, () -> { assets.reload(); refreshFiles(true); currentSnapshot = assets.snapshot(); }, null));
+        String cl = Lang.t("button.copy");
+        int cw = font.width(Component.literal(cl)) + 8, cx = rx - cw - 3;
+        boolean ch = in(mx, my, cx, y + 3, cw, 11);
+        g.fill(cx, y + 3, cx + cw, y + 14, ch ? FIELD_HOVER : FIELD);
+        g.text(font, cl, cx + 4, y + 4, TEXT, false);
+        hits.add(new Hit(cx, y + 3, cw, 11, () -> copyText(err), null));
+        tip(mx, my, cx, y + 3, cw, 11, "copy_error");
     }
 
     // =================================================================== tooltips
@@ -923,7 +940,9 @@ public final class RainiumScreen extends Screen {
         g.text(font, fit(impFile, w), x, y, TEXT, false);
         y += 12;
         if (impError != null) {
+            String ie = impError;
             y = wrapped(g, x, y, w, impError, DANGER);
+            y = secondaryButton(g, mx, my, x, y + 2, w, Lang.t("button.copy_error"), () -> copyText(ie));
         } else if (impResult != null) {
             double sx = impResult.max()[0] - impResult.min()[0], sy = impResult.max()[1] - impResult.min()[1], sz = impResult.max()[2] - impResult.min()[2];
             g.text(font, fit(Lang.t("import.stats", String.format(Locale.ROOT, "%,d", impResult.quads()), fmt(sx), fmt(sy), fmt(sz)), w), x, y, MUTED, false);
@@ -1111,7 +1130,11 @@ public final class RainiumScreen extends Screen {
         y = wrapped(g, x, y, w, Lang.t("update." + us.name().toLowerCase(Locale.ROOT), Updater.detail()), uc);
         if (us != Updater.State.CHECKING && us != Updater.State.READY && us != Updater.State.UNAVAILABLE)
             y = secondaryButton(g, mx, my, x, y + 2, w, Lang.t("button.check_updates"), () -> Updater.checkAsync(true, c.devUpdates));
-        if (assets.lastError() != null) y = wrapped(g, x, y + 2, w, Lang.t("settings.problem", assets.lastError()), DANGER);
+        if (assets.lastError() != null) {
+            String err = assets.lastError();
+            y = wrapped(g, x, y + 2, w, Lang.t("settings.problem", err), DANGER);
+            y = secondaryButton(g, mx, my, x, y + 2, w, Lang.t("button.copy_error"), () -> copyText(err));
+        }
         return y;
     }
 

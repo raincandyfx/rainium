@@ -97,6 +97,11 @@ final class LayerConfig {
         float motion = 1f;            // multiplier on movement sway for this folder's parts (0 = still)
     }
 
+    /** True for a game resource id like "minecraft:textures/particle/flame.png" (not a file in the config folder). */
+    static boolean isResourceId(String t) {
+        return t != null && t.matches("[a-z0-9_.-]+:[a-z0-9_./-]+");
+    }
+
     /** Whether a player name is on the "Listed players" list (not case-sensitive). */
     boolean listsPlayer(String name) {
         if (name == null) return false;
