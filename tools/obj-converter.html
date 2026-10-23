@@ -1,0 +1,699 @@
+<title>OBJ to Rainium</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: workbench — narrow settings column beside a large live preview, output docked under the preview */
+:root {
+  --bg: #eef1ef;
+  --panel: #f9fbfa;
+  --ink: #18201d;
+  --muted: #5c6863;
+  --line: #d3dad6;
+  --accent: #1d7a5c;
+  --accent-ink: #ffffff;
+  --accent-soft: #d9ece4;
+  --warn: #9a5b00;
+  --warn-soft: #fbedd3;
+  --err: #b3261e;
+  --stage: #dfe5e2;
+  --stage-grid: #c3ccc8;
+  --figure: #a8b3ae;
+  --mesh: #2f9a75;
+  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121715; --panel: #1a211e; --ink: #e5ece8; --muted: #95a39c; --line: #2c3632;
+    --accent: #53c79d; --accent-ink: #0d1a14; --accent-soft: #1f3a2f;
+    --warn: #f0b252; --warn-soft: #3a2c14; --err: #ff8a80;
+    --stage: #0f1412; --stage-grid: #26302c; --figure: #55625c; --mesh: #4cc49a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121715; --panel: #1a211e; --ink: #e5ece8; --muted: #95a39c; --line: #2c3632;
+  --accent: #53c79d; --accent-ink: #0d1a14; --accent-soft: #1f3a2f;
+  --warn: #f0b252; --warn-soft: #3a2c14; --err: #ff8a80;
+  --stage: #0f1412; --stage-grid: #26302c; --figure: #55625c; --mesh: #4cc49a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; justify-content: space-between; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(24px, 3.2vw, 32px); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 62ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.drop {
+  border: 1.5px dashed var(--line); border-radius: 8px; padding: 16px; text-align: center; display: grid; gap: 6px;
+  cursor: pointer; transition: border-color .15s, background .15s;
+}
+.drop:hover, .drop:focus-visible, .drop.over { border-color: var(--accent); background: var(--accent-soft); outline: none; }
+.drop strong { font-family: var(--display); font-size: 16px; }
+.drop span { color: var(--muted); font-size: 13px; }
+.file-name { font-family: var(--mono); font-size: 12.5px; word-break: break-all; }
+.field { display: grid; gap: 5px; }
+.field > label, .field > .lbl { font-weight: 700; font-size: 13.5px; }
+.hint { color: var(--muted); font-size: 12.5px; }
+select, input[type="number"], input[type="text"] {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0;
+}
+select:focus-visible, input:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.trio label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+.check input { margin-top: 4px; accent-color: var(--accent); }
+.stage-wrap { position: relative; border-radius: 8px; overflow: hidden; background: var(--stage); aspect-ratio: 4 / 3; max-width: 100%; touch-action: none; }
+canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+canvas:active { cursor: grabbing; }
+.views { position: absolute; top: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 4px; }
+.views button, .chip {
+  font: 500 12px var(--mono); padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--ink); cursor: pointer;
+}
+.views button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.axes-key { position: absolute; right: 10px; bottom: 8px; font: 11px var(--mono); color: var(--muted); text-align: right; pointer-events: none; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; }
+.stats b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.groups { display: flex; flex-wrap: wrap; gap: 6px; }
+.groups .chip { cursor: default; }
+.notes { display: grid; gap: 6px; }
+.note { font-size: 13.5px; padding: 8px 10px; border-radius: 6px; background: var(--warn-soft); color: var(--ink); border-left: 3px solid var(--warn); }
+.note.err { border-left-color: var(--err); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn {
+  font: 600 14px var(--display); padding: 9px 16px; border-radius: 7px; border: 1px solid var(--accent);
+  background: var(--accent); color: var(--accent-ink); cursor: pointer;
+}
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.status { font-size: 13px; color: var(--muted); }
+.out-name { flex: 1 1 200px; min-width: 0; }
+pre, textarea.code {
+  font: 12px/1.55 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px; margin: 0; overflow: auto; max-height: 220px; white-space: pre-wrap; word-break: break-all; color: var(--ink);
+}
+textarea.code { width: 100%; min-height: 150px; resize: vertical; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs button { font: 600 13px var(--display); padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--ink); border-color: var(--line); }
+details summary { cursor: pointer; font-weight: 700; font-size: 13.5px; }
+details .hint { margin-top: 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>OBJ to Rainium</h1>
+    <p>Turns a Wavefront .obj into the JSON mesh format the Rainium mod reads. Everything runs in your browser; nothing is uploaded.</p>
+  </header>
+
+  <div class="grid">
+    <!-- settings -->
+    <section class="panel" aria-label="Input and settings">
+      <h2>Model</h2>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an OBJ file">
+        <strong>Drop an .obj here</strong>
+        <span>or click to choose a file</span>
+        <span class="file-name" id="srcName">Sample loaded: halo.obj</span>
+      </div>
+      <input type="file" id="file" accept=".obj,text/plain" hidden>
+
+      <h2>Orientation</h2>
+      <div class="field">
+        <label for="axes">Source axes</label>
+        <select id="axes">
+          <option value="yup_pz">Y up, character faces +Z (Blender OBJ default)</option>
+          <option value="yup_nz">Y up, character faces −Z</option>
+          <option value="zup_ny">Z up, character faces −Y (Blender scene axes)</option>
+          <option value="mc">Already Minecraft model space</option>
+        </select>
+        <span class="hint">Minecraft model space: +X player's left, +Y down, +Z behind.</span>
+      </div>
+      <div class="field">
+        <label for="origin">The model's origin is at</label>
+        <select id="origin">
+          <option value="feet">The feet (model made around a character)</option>
+          <option value="neck">The neck (Minecraft model origin)</option>
+        </select>
+      </div>
+
+      <h2>Size</h2>
+      <div class="pair">
+        <div class="field">
+          <label for="scale">Scale</label>
+          <input type="number" id="scale" value="1" step="0.01" min="0.0001">
+        </div>
+        <div class="field">
+          <label for="units">Source units</label>
+          <select id="units">
+            <option value="1">metres (1 m = 1 block)</option>
+            <option value="0.01">centimetres</option>
+            <option value="0.0625">MC pixels (16 = 1 block)</option>
+            <option value="0.0254">inches</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="check" for="fitOn"><input type="checkbox" id="fitOn"> <span>Fit largest side to <input type="number" id="fit" value="2" step="0.1" min="0.01" style="width:5.5em;display:inline-block;padding:3px 6px"> blocks</span></label>
+      </div>
+      <div class="field">
+        <span class="lbl">Extra offset (blocks)</span>
+        <div class="trio">
+          <label for="ox">x · left<input type="number" id="ox" value="0" step="0.05"></label>
+          <label for="oy">y · down<input type="number" id="oy" value="0" step="0.05"></label>
+          <label for="oz">z · back<input type="number" id="oz" value="0" step="0.05"></label>
+        </div>
+      </div>
+
+      <h2>Output</h2>
+      <div class="field">
+        <label for="grouping">Split into groups by</label>
+        <select id="grouping">
+          <option value="objmat">Object and material</option>
+          <option value="object">Object / group (o, g)</option>
+          <option value="material">Material (usemtl)</option>
+          <option value="single">One group</option>
+        </select>
+        <span class="hint">Each group can get its own texture and render type in layers.json.</span>
+      </div>
+      <div class="pair">
+        <div class="field">
+          <label for="precision">Decimals</label>
+          <select id="precision">
+            <option value="4">4 (smallest file)</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="normals">Normals</label>
+          <select id="normals">
+            <option value="file">From file (compute missing)</option>
+            <option value="smooth">Recompute smooth</option>
+            <option value="flat">Recompute flat</option>
+          </select>
+        </div>
+      </div>
+      <label class="check" for="flipV"><input type="checkbox" id="flipV" checked> <span>Flip texture V (OBJ UVs start bottom-left; Minecraft's start top-left)</span></label>
+    </section>
+
+    <!-- preview + output -->
+    <section class="panel" aria-label="Preview and output">
+      <div class="stage-wrap" id="stageWrap">
+        <canvas id="stage" aria-label="3D preview of the converted mesh on a player. Drag to orbit, scroll to zoom."></canvas>
+        <div class="views" role="group" aria-label="Camera">
+          <button data-view="back" aria-pressed="true">Back</button>
+          <button data-view="three">¾</button>
+          <button data-view="side">Side</button>
+          <button data-view="front">Front</button>
+          <button data-view="top">Top</button>
+          <button id="figToggle" aria-pressed="true">Player</button>
+        </div>
+        <div class="axes-key">drag to orbit · scroll to zoom<br>grid = 1 block</div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+      <div class="groups" id="groups"></div>
+      <div class="notes" id="notes"></div>
+
+      <div class="actions">
+        <input type="text" id="outName" class="out-name" value="halo.json" aria-label="Output file name">
+        <button class="btn" id="saveBtn">Save JSON</button>
+        <button class="btn ghost" id="copyBtn">Copy JSON</button>
+        <span class="status" id="status" role="status"></span>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tabJson" aria-selected="true" aria-controls="paneJson">Mesh JSON</button>
+        <button role="tab" id="tabLayer" aria-selected="false" aria-controls="paneLayer">layers.json entry</button>
+      </div>
+      <div id="paneJson" role="tabpanel" aria-labelledby="tabJson"><pre id="jsonPreview"></pre></div>
+      <div id="paneLayer" role="tabpanel" aria-labelledby="tabLayer" hidden>
+        <div class="actions" style="margin-bottom:8px"><button class="btn ghost" id="copyLayer">Copy entry</button><span class="hint">Paste into the "layers" array of config/rainium/layers.json, then put the mesh file next to it.</span></div>
+        <pre id="layerPreview"></pre>
+      </div>
+      <textarea class="code" id="copyFallback" aria-label="Full JSON for manual copying" hidden readonly></textarea>
+
+      <details>
+        <summary>What the converter does</summary>
+        <div class="hint">
+          Reads v, vt, vn, f, o, g and usemtl. Triangles become degenerate quads, quads stay quads, and larger polygons are fan-triangulated, since Minecraft's entity renderer draws quads. Vertices are written interleaved, 8 numbers each (x y z u v nx ny nz), with a "q" list of quad indices. Lines, points and materials' colours are ignored; give the layer a texture or a colour in layers.json instead.
+        </div>
+      </details>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+// ------------------------------------------------------------------ sample model
+function sampleObj() {
+  // A halo: torus 0.28 m radius above a 1.9 m character, Y up, facing +Z, tilted back 12°.
+  const R = 0.28, r = 0.032, NU = 32, NV = 10, tilt = -12 * Math.PI / 180, cy = 2.12, cz = -0.04;
+  const L = ["# Sample: halo for Rainium", "o halo", "usemtl gold"];
+  for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {
+    const u = i / NU * 2 * Math.PI, v = j / NV * 2 * Math.PI;
+    let x = (R + r * Math.cos(v)) * Math.cos(u), y = r * Math.sin(v), z = (R + r * Math.cos(v)) * Math.sin(u);
+    let nx = Math.cos(v) * Math.cos(u), ny = Math.sin(v), nz = Math.cos(v) * Math.sin(u);
+    const y2 = y * Math.cos(tilt) - z * Math.sin(tilt), z2 = y * Math.sin(tilt) + z * Math.cos(tilt);
+    const ny2 = ny * Math.cos(tilt) - nz * Math.sin(tilt), nz2 = ny * Math.sin(tilt) + nz * Math.cos(tilt);
+    L.push(`v ${x.toFixed(5)} ${(y2 + cy).toFixed(5)} ${(z2 + cz).toFixed(5)}`);
+    L.push(`vn ${nx.toFixed(4)} ${ny2.toFixed(4)} ${nz2.toFixed(4)}`);
+  }
+  for (let i = 0; i <= NU; i++) for (let j = 0; j <= NV; j++) L.push(`vt ${(i / NU).toFixed(4)} ${(j / NV).toFixed(4)}`);
+  const vi = (i, j) => (i % NU) * NV + (j % NV) + 1, ti = (i, j) => i * (NV + 1) + j + 1;
+  for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {
+    const a = [i, j], b = [i + 1, j], c = [i + 1, j + 1], d = [i, j + 1];
+    L.push("f " + [a, d, c, b].map(([p, q]) => `${vi(p, q)}/${ti(p, q)}/${vi(p, q)}`).join(" "));
+  }
+  return L.join("\n");
+}
+
+// ------------------------------------------------------------------ OBJ parsing
+function parseObj(text) {
+  const P = [], T = [], N = [], faces = [];
+  let obj = "", grp = "", mtl = "", skipped = 0;
+  const lines = text.split(/\r?\n/);
+  for (let li = 0; li < lines.length; li++) {
+    let line = lines[li];
+    while (line.endsWith("\\") && li + 1 < lines.length) line = line.slice(0, -1) + " " + lines[++li];
+    const t = line.trim();
+    if (!t || t[0] === "#") continue;
+    const parts = t.split(/\s+/), tag = parts[0];
+    if (tag === "v") P.push(+parts[1] || 0, +parts[2] || 0, +parts[3] || 0);
+    else if (tag === "vt") T.push(+parts[1] || 0, +(parts[2] ?? 0) || 0);
+    else if (tag === "vn") N.push(+parts[1] || 0, +parts[2] || 0, +parts[3] || 0);
+    else if (tag === "o") obj = parts.slice(1).join("_");
+    else if (tag === "g") grp = parts.slice(1).join("_");
+    else if (tag === "usemtl") mtl = parts.slice(1).join("_");
+    else if (tag === "f") {
+      const refs = [];
+      for (let k = 1; k < parts.length; k++) {
+        const c = parts[k].split("/");
+        const res = (s, len) => { if (s === undefined || s === "") return -1; const n = parseInt(s, 10); return n > 0 ? n - 1 : len + n; };
+        refs.push([res(c[0], P.length / 3), res(c[1], T.length / 2), res(c[2], N.length / 3)]);
+      }
+      if (refs.length >= 3) faces.push({ obj, grp, mtl, refs });
+    } else if (tag === "l" || tag === "p") skipped++;
+  }
+  return { P, T, N, faces, skipped };
+}
+
+// ------------------------------------------------------------------ conversion
+const AXES = {
+  yup_pz: (x, y, z) => [x, -y, -z],
+  yup_nz: (x, y, z) => [-x, -y, z],
+  zup_ny: (x, y, z) => [x, -z, y],
+  mc: (x, y, z) => [x, y, z],
+};
+
+function groupKey(f, mode) {
+  const o = f.obj || f.grp;
+  let k;
+  if (mode === "single") k = "main";
+  else if (mode === "object") k = o || "main";
+  else if (mode === "material") k = f.mtl || "main";
+  else k = [o, f.mtl].filter(Boolean).join("_") || "main";
+  return k.replace(/[^\w.-]+/g, "_");
+}
+
+function convert(m, o) {
+  const ax = AXES[o.axes];
+  const nv = m.P.length / 3;
+  const P = new Float64Array(m.P.length);
+  for (let i = 0; i < nv; i++) { const p = ax(m.P[i*3], m.P[i*3+1], m.P[i*3+2]); P[i*3] = p[0]; P[i*3+1] = p[1]; P[i*3+2] = p[2]; }
+  let scale = o.scale * o.units;
+  // used positions only, for bounds and fit
+  const used = new Uint8Array(nv);
+  for (const f of m.faces) for (const r of f.refs) if (r[0] >= 0 && r[0] < nv) used[r[0]] = 1;
+  let mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < nv; i++) if (used[i]) for (let a = 0; a < 3; a++) { mn[a] = Math.min(mn[a], P[i*3+a]); mx[a] = Math.max(mx[a], P[i*3+a]); }
+  if (o.fitOn && isFinite(mn[0])) {
+    const ext = Math.max(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]);
+    if (ext > 0) scale = o.fit / ext;
+  }
+  const off = [o.ox, o.oy + (o.origin === "feet" ? 1.5 : 0), o.oz];
+  const k = Math.pow(10, o.precision);
+  const rd = (x) => { const v = Math.round(x * k) / k; return v === 0 ? 0 : v; };
+
+  const groups = new Map();
+  let badRefs = 0, ngons = 0, missingUv = 0, missingN = 0;
+  for (const f of m.faces) {
+    const key = groupKey(f, o.grouping);
+    let g = groups.get(key);
+    if (!g) { g = { map: new Map(), pos: [], uv: [], nrm: [], hasN: [], q: [] }; groups.set(key, g); }
+    const idx = [];
+    let ok = true;
+    for (const r of f.refs) {
+      if (r[0] < 0 || r[0] >= nv) { ok = false; break; }
+      const id = r[0] + "/" + r[1] + "/" + (o.normals === "file" ? r[2] : -1);
+      let vi = g.map.get(id);
+      if (vi === undefined) {
+        vi = g.pos.length / 3; g.map.set(id, vi);
+        g.pos.push(P[r[0]*3] * scale + off[0], P[r[0]*3+1] * scale + off[1], P[r[0]*3+2] * scale + off[2]);
+        if (r[1] >= 0 && r[1] < m.T.length / 2) g.uv.push(m.T[r[1]*2], o.flipV ? 1 - m.T[r[1]*2+1] : m.T[r[1]*2+1]);
+        else { g.uv.push(0, 0); missingUv++; }
+        if (o.normals === "file" && r[2] >= 0 && r[2] < m.N.length / 3) {
+          const n = ax(m.N[r[2]*3], m.N[r[2]*3+1], m.N[r[2]*3+2]); const l = Math.hypot(n[0], n[1], n[2]) || 1;
+          g.nrm.push(n[0] / l, n[1] / l, n[2] / l); g.hasN.push(1);
+        } else { g.nrm.push(0, 0, 0); g.hasN.push(0); if (o.normals === "file") missingN++; }
+      }
+      idx.push(vi);
+    }
+    if (!ok) { badRefs++; continue; }
+    if (idx.length === 3) g.q.push(idx[0], idx[1], idx[2], idx[2]);
+    else if (idx.length === 4) g.q.push(idx[0], idx[1], idx[2], idx[3]);
+    else { ngons++; for (let j = 1; j + 1 < idx.length; j++) g.q.push(idx[0], idx[j], idx[j+1], idx[j+1]); }
+  }
+
+  // flat normals: give every quad its own vertices
+  if (o.normals === "flat") for (const g of groups.values()) {
+    const pos = [], uv = [], nrm = [], q = [];
+    for (let i = 0; i < g.q.length; i += 4) {
+      const ids = g.q.slice(i, i + 4);
+      const n = faceNormal(g.pos, ids[0], ids[1], ids[2]);
+      const base = pos.length / 3;
+      const uniq = ids[3] === ids[2] ? 3 : 4;
+      for (let j = 0; j < uniq; j++) { const v = ids[j]; pos.push(g.pos[v*3], g.pos[v*3+1], g.pos[v*3+2]); uv.push(g.uv[v*2], g.uv[v*2+1]); nrm.push(n[0], n[1], n[2]); }
+      q.push(base, base + 1, base + 2, base + (uniq === 4 ? 3 : 2));
+    }
+    Object.assign(g, { pos, uv, nrm, q, hasN: new Array(pos.length / 3).fill(1) });
+  }
+  // smooth normals for vertices that have none
+  for (const g of groups.values()) {
+    if (g.hasN.every(Boolean)) continue;
+    const acc = new Float64Array(g.pos.length);
+    for (let i = 0; i < g.q.length; i += 4) {
+      const n = faceNormal(g.pos, g.q[i], g.q[i+1], g.q[i+2], true);
+      const uniq = g.q[i+3] === g.q[i+2] ? 3 : 4;
+      for (let j = 0; j < uniq; j++) { const v = g.q[i+j]; acc[v*3] += n[0]; acc[v*3+1] += n[1]; acc[v*3+2] += n[2]; }
+    }
+    for (let v = 0; v < g.hasN.length; v++) if (!g.hasN[v]) {
+      const l = Math.hypot(acc[v*3], acc[v*3+1], acc[v*3+2]);
+      if (l > 1e-12) { g.nrm[v*3] = acc[v*3] / l; g.nrm[v*3+1] = acc[v*3+1] / l; g.nrm[v*3+2] = acc[v*3+2] / l; } else g.nrm[v*3+1] = -1;
+    }
+  }
+
+  // build output text (compact interleaved layout)
+  const parts = [];
+  let totalV = 0, totalQ = 0;
+  const bmn = [Infinity, Infinity, Infinity], bmx = [-Infinity, -Infinity, -Infinity];
+  const summary = [];
+  for (const [name, g] of groups) {
+    const n = g.pos.length / 3;
+    const v = new Array(n * 8);
+    for (let i = 0; i < n; i++) {
+      for (let a = 0; a < 3; a++) { const val = g.pos[i*3+a]; bmn[a] = Math.min(bmn[a], val); bmx[a] = Math.max(bmx[a], val); }
+      v[i*8] = rd(g.pos[i*3]); v[i*8+1] = rd(g.pos[i*3+1]); v[i*8+2] = rd(g.pos[i*3+2]);
+      v[i*8+3] = rd(g.uv[i*2]); v[i*8+4] = rd(g.uv[i*2+1]);
+      v[i*8+5] = rd(g.nrm[i*3]); v[i*8+6] = rd(g.nrm[i*3+1]); v[i*8+7] = rd(g.nrm[i*3+2]);
+    }
+    parts.push(JSON.stringify(name) + ':{"v":[' + v.join(",") + '],"q":[' + g.q.join(",") + "]}");
+    totalV += n; totalQ += g.q.length / 4;
+    summary.push({ name, verts: n, quads: g.q.length / 4, pos: g.pos, q: g.q, nrm: g.nrm });
+  }
+  const json = "{" + parts.join(",") + "}";
+  return { json, summary, totalV, totalQ, bounds: [bmn, bmx], scale, badRefs, ngons, missingUv, missingN };
+}
+
+function faceNormal(pos, a, b, c, raw) {
+  const ux = pos[b*3] - pos[a*3], uy = pos[b*3+1] - pos[a*3+1], uz = pos[b*3+2] - pos[a*3+2];
+  const vx = pos[c*3] - pos[a*3], vy = pos[c*3+1] - pos[a*3+1], vz = pos[c*3+2] - pos[a*3+2];
+  const n = [uy*vz - uz*vy, uz*vx - ux*vz, ux*vy - uy*vx];
+  if (raw) return n;
+  const l = Math.hypot(n[0], n[1], n[2]) || 1;
+  return [n[0] / l, n[1] / l, n[2] / l];
+}
+
+// ------------------------------------------------------------------ state + UI
+let model = null, srcName = "halo.obj", result = null;
+const ids = ["axes", "origin", "scale", "units", "fitOn", "fit", "ox", "oy", "oz", "grouping", "precision", "normals", "flipV"];
+function opts() {
+  const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
+  return {
+    axes: $("axes").value, origin: $("origin").value, scale: Math.max(num("scale", 1), 1e-6), units: +$("units").value,
+    fitOn: $("fitOn").checked, fit: Math.max(num("fit", 2), 1e-4), ox: num("ox", 0), oy: num("oy", 0), oz: num("oz", 0),
+    grouping: $("grouping").value, precision: +$("precision").value, normals: $("normals").value, flipV: $("flipV").checked,
+  };
+}
+
+function fmtBytes(n) { return n < 1024 ? n + " B" : n < 1048576 ? (n / 1024).toFixed(1) + " KB" : (n / 1048576).toFixed(2) + " MB"; }
+function fmt(n) { return (Math.round(n * 100) / 100).toString(); }
+
+let pending = 0;
+function update() {
+  cancelAnimationFrame(pending);
+  pending = requestAnimationFrame(run);
+}
+function run() {
+  if (!model) return;
+  const notes = [];
+  if (!model.faces.length) {
+    result = null;
+    $("stats").textContent = "";
+    $("groups").textContent = "";
+    showNotes([{ err: true, text: "No faces found in this file. Rainium needs polygon faces (f lines); lines and points can't be rendered." }]);
+    $("jsonPreview").textContent = ""; $("layerPreview").textContent = "";
+    $("saveBtn").disabled = $("copyBtn").disabled = true;
+    draw();
+    return;
+  }
+  const o = opts();
+  result = convert(model, o);
+  const [bmn, bmx] = result.bounds;
+  const size = [bmx[0] - bmn[0], bmx[1] - bmn[1], bmx[2] - bmn[2]];
+  const bytes = new Blob([result.json]).size;
+  const st = $("stats"); st.textContent = "";
+  for (const [k, v] of [["Vertices", result.totalV.toLocaleString()], ["Quads", result.totalQ.toLocaleString()], ["Size", `${fmt(size[0])} × ${fmt(size[1])} × ${fmt(size[2])} blocks`], ["File", fmtBytes(bytes)]]) {
+    const s = document.createElement("span"); s.append(k + " "); const b = document.createElement("b"); b.textContent = v; s.append(b); st.append(s);
+  }
+  const gEl = $("groups"); gEl.textContent = "";
+  for (const g of result.summary) { const c = document.createElement("span"); c.className = "chip"; c.textContent = `${g.name} · ${g.quads.toLocaleString()} quads`; gEl.append(c); }
+
+  const maxSide = Math.max(...size);
+  if (maxSide > 8) notes.push({ text: `The result is ${fmt(maxSide)} blocks across, much bigger than a player. If the model was made in centimetres, set Source units to centimetres, or tick "Fit largest side".` });
+  if (maxSide > 0 && maxSide < 0.08) notes.push({ text: `The result is only ${fmt(maxSide)} blocks across. Try a larger scale or "Fit largest side".` });
+  if (result.missingUv && result.missingUv === result.totalV) notes.push({ text: "The file has no texture coordinates, so a texture will show as one flat colour. Use a plain tint with \"color\" in layers.json, or unwrap UVs in your 3D editor." });
+  else if (result.missingUv) notes.push({ text: `${result.missingUv.toLocaleString()} vertices have no texture coordinates; they will sample the texture's top-left pixel.` });
+  if (result.badRefs) notes.push({ err: true, text: `${result.badRefs} face(s) point at vertices that don't exist and were left out.` });
+  if (model.skipped) notes.push({ text: `${model.skipped} line/point element(s) were ignored; only faces render.` });
+  if (result.totalQ > 40000) notes.push({ text: `${result.totalQ.toLocaleString()} quads is heavy for a player layer drawn every frame. Consider decimating the model.` });
+  showNotes(notes);
+
+  const prev = result.json.length > 3000 ? result.json.slice(0, 3000) + " …" : result.json;
+  $("jsonPreview").textContent = prev;
+  $("layerPreview").textContent = layerEntry();
+  $("saveBtn").disabled = !downloads; $("copyBtn").disabled = false;
+  $("copyFallback").hidden = true;
+  draw();
+}
+
+function showNotes(list) {
+  const el = $("notes"); el.textContent = "";
+  for (const n of list) { const d = document.createElement("div"); d.className = "note" + (n.err ? " err" : ""); d.textContent = n.text; el.append(d); }
+}
+
+function outFile() {
+  let n = $("outName").value.trim() || "mesh.json";
+  if (!/\.json$/i.test(n)) n += ".json";
+  return n;
+}
+
+function layerEntry() {
+  const file = outFile(), base = file.replace(/\.json$/i, "");
+  const entry = {
+    name: base,
+    mesh: file,
+    groups: result.summary.length > 1 ? result.summary.map((g) => g.name) : undefined,
+    texture: base + ".png",
+    render: "cutout_no_cull",
+    anchor: "body",
+    physics: true,
+  };
+  return JSON.stringify(entry, null, 2);
+}
+
+// ------------------------------------------------------------------ loading
+function loadText(text, name, label) {
+  model = parseObj(text);
+  srcName = name;
+  $("srcName").textContent = label || name;
+  $("outName").value = name.replace(/\.[^.]+$/, "") .replace(/[^\w.-]+/g, "_") + ".json";
+  update();
+}
+function loadFile(f) {
+  if (!f) return;
+  $("status").textContent = "Reading " + f.name + "…";
+  f.text().then((t) => { $("status").textContent = ""; loadText(t, f.name); }, () => { $("status").textContent = "Couldn't read that file."; });
+}
+const drop = $("drop");
+drop.addEventListener("click", () => $("file").click());
+drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } });
+$("file").addEventListener("change", (e) => loadFile(e.target.files[0]));
+for (const ev of ["dragenter", "dragover"]) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); });
+for (const ev of ["dragleave", "drop"]) drop.addEventListener(ev, () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+for (const id of ids) { $(id).addEventListener("input", update); $(id).addEventListener("change", update); }
+$("outName").addEventListener("input", () => { if (result) $("layerPreview").textContent = layerEntry(); });
+
+// ------------------------------------------------------------------ save / copy
+let downloads = null;
+$("saveBtn").disabled = true;
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("downloads").then((d) => { downloads = d; $("saveBtn").disabled = !d || !result; if (!d) $("saveBtn").hidden = true; }, () => { $("saveBtn").hidden = true; });
+} else { $("saveBtn").hidden = true; }
+
+$("saveBtn").addEventListener("click", async () => {
+  if (!downloads || !result) return;
+  $("status").textContent = "";
+  try {
+    await downloads.save({ filename: outFile(), data: new Blob([result.json], { type: "application/json" }) });
+    $("status").textContent = "Saved " + outFile();
+  } catch (e) {
+    const c = e && e.code;
+    $("status").textContent = c === "declined" ? "Save cancelled." : c === "rate_limited" ? "A save prompt is already open." : "Saving isn't available here. Use Copy JSON instead.";
+    if (c && c !== "declined" && c !== "rate_limited") $("saveBtn").hidden = true;
+  }
+});
+function copyText(text, label) {
+  const fallback = () => {
+    const ta = $("copyFallback"); ta.hidden = false; ta.value = text; ta.focus(); ta.select();
+    $("status").textContent = "Copying was blocked. The text is selected below; press Ctrl+C (⌘C).";
+  };
+  try {
+    navigator.clipboard.writeText(text).then(() => { $("status").textContent = label + " copied."; }, fallback);
+  } catch (e) { fallback(); }
+}
+$("copyBtn").addEventListener("click", () => { if (result) copyText(result.json, "Mesh JSON"); });
+$("copyLayer").addEventListener("click", () => { if (result) copyText(layerEntry(), "Layer entry"); });
+for (const [tab, pane, other, otherPane] of [["tabJson", "paneJson", "tabLayer", "paneLayer"], ["tabLayer", "paneLayer", "tabJson", "paneJson"]]) {
+  $(tab).addEventListener("click", () => { $(tab).setAttribute("aria-selected", "true"); $(other).setAttribute("aria-selected", "false"); $(pane).hidden = false; $(otherPane).hidden = true; });
+}
+
+// ------------------------------------------------------------------ 3D preview
+const cv = $("stage"), ctx = cv.getContext("2d");
+const cam = { yaw: 0, pitch: -0.12, dist: 5.2, ty: 0.45 };
+const VIEWS = { back: [0, -0.12], three: [0.7, -0.22], side: [Math.PI / 2, -0.05], front: [Math.PI, -0.12], top: [0.25, -1.25] };
+let showFig = true;
+document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => {
+  [cam.yaw, cam.pitch] = VIEWS[b.dataset.view];
+  document.querySelectorAll("[data-view]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  draw();
+}));
+$("figToggle").addEventListener("click", () => { showFig = !showFig; $("figToggle").setAttribute("aria-pressed", String(showFig)); draw(); });
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function rgb(hex) { const h = hex.replace("#", ""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+
+// player boxes in model space (blocks): [x0,y0,z0,x1,y1,z1]
+const FIG = [
+  [-0.25, -0.5, -0.25, 0.25, 0, 0.25],          // head
+  [-0.25, 0, -0.125, 0.25, 0.75, 0.125],        // body
+  [0.25, 0, -0.125, 0.5, 0.75, 0.125],          // left arm (+X)
+  [-0.5, 0, -0.125, -0.25, 0.75, 0.125],        // right arm
+  [0, 0.75, -0.125, 0.25, 1.5, 0.125],          // left leg
+  [-0.25, 0.75, -0.125, 0, 1.5, 0.125],         // right leg
+];
+function boxTris(b) {
+  const [x0, y0, z0, x1, y1, z1] = b, t = [];
+  const c = [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+  for (const f of [[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[4,5,1,0],[3,2,6,7]]) { t.push([c[f[0]], c[f[1]], c[f[2]]], [c[f[0]], c[f[2]], c[f[3]]]); }
+  return t;
+}
+const FIG_TRIS = FIG.flatMap(boxTris);
+
+function draw() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = css("--stage"); ctx.fillRect(0, 0, w, h);
+  const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  const f = Math.min(w, h) * 1.25;
+  // camera behind the player (+Z) looking toward -Z; screen x = -X so the player's left shows on the left
+  const proj = (p) => {
+    let x = p[0], y = p[1] - cam.ty, z = p[2];
+    const x1 = x * cy - z * sy, z1 = x * sy + z * cy;          // yaw around Y
+    const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;        // pitch around X
+    const depth = cam.dist - z2;
+    if (depth < 0.05) return null;
+    return [w / 2 - x1 * f / depth, h / 2 + y2 * f / depth, depth, [x1, y2, z2]];
+  };
+  // ground grid at the feet (y = 1.5)
+  ctx.strokeStyle = css("--stage-grid"); ctx.lineWidth = 1;
+  for (let i = -3; i <= 3; i++) for (const dir of [0, 1]) {
+    const a = dir ? [i, 1.5, -3] : [-3, 1.5, i], b = dir ? [i, 1.5, 3] : [3, 1.5, i];
+    const pa = proj(a), pb = proj(b);
+    if (pa && pb) { ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke(); }
+  }
+  const light = norm3([0.35, -0.8, 0.5]);
+  const tris = [];
+  const add = (a, b, c, col, alpha) => {
+    const A = proj(a), B = proj(b), C = proj(c);
+    if (!A || !B || !C) return;
+    const n = norm3(cross3(sub3(B[3], A[3]), sub3(C[3], A[3])));
+    const lit = 0.45 + 0.55 * Math.abs(n[0] * light[0] + n[1] * light[1] + n[2] * light[2]);
+    tris.push({ pts: [A, B, C], d: (A[2] + B[2] + C[2]) / 3, col, lit, alpha });
+  };
+  const fig = rgb(css("--figure")), mesh = rgb(css("--mesh"));
+  if (showFig) for (const t of FIG_TRIS) add(t[0], t[1], t[2], fig, 1);
+  if (result) for (const g of result.summary) {
+    const P = g.pos, Q = g.q;
+    const at = (i) => [P[i*3], P[i*3+1], P[i*3+2]];
+    for (let i = 0; i < Q.length; i += 4) {
+      add(at(Q[i]), at(Q[i+1]), at(Q[i+2]), mesh, 1);
+      if (Q[i+3] !== Q[i+2]) add(at(Q[i]), at(Q[i+2]), at(Q[i+3]), mesh, 1);
+    }
+  }
+  tris.sort((a, b) => b.d - a.d);
+  for (const t of tris) {
+    const [A, B, C] = t.pts, k = t.lit;
+    ctx.fillStyle = `rgb(${t.col[0] * k | 0},${t.col[1] * k | 0},${t.col[2] * k | 0})`;
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.lineTo(C[0], C[1]); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+}
+function sub3(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function cross3(a, b) { return [a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]]; }
+function norm3(v) { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+
+let drag = null;
+cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  cam.yaw = drag.yaw - (e.clientX - drag.x) * 0.01;
+  cam.pitch = Math.max(-1.5, Math.min(1.2, drag.pitch - (e.clientY - drag.y) * 0.01));
+  document.querySelectorAll("[data-view]").forEach((x) => x.setAttribute("aria-pressed", "false"));
+  requestAnimationFrame(draw);
+});
+cv.addEventListener("pointerup", () => { drag = null; });
+cv.addEventListener("pointercancel", () => { drag = null; });
+cv.addEventListener("wheel", (e) => { e.preventDefault(); cam.dist = Math.max(1.5, Math.min(30, cam.dist * Math.exp(e.deltaY * 0.0015))); requestAnimationFrame(draw); }, { passive: false });
+new ResizeObserver(() => draw()).observe($("stageWrap"));
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+loadText(sampleObj(), "halo.obj", "Sample loaded: halo.obj");
+})();
+</script>

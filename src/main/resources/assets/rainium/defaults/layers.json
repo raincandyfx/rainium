@@ -1,0 +1,17 @@
+{
+  // Rainium config. Saving this file (or any mesh/texture it uses) reloads it in-game.
+  // Full reference: README.txt in this folder.
+  "enabled": true,
+  "show_on": "self",            // self | all | others
+
+  "physics": {                  // trailing/sway applied to layers with "physics": true
+    "stiffness": 9.0, "damping": 0.75,
+    "lag": 0.035, "max_lag": 0.18,
+    "yaw_lag": 0.06, "max_yaw": 14,
+    "sway_deg": 1.5, "sway_hz": 0.25,
+    "bob": 0.012, "bob_hz": 0.5
+  },
+
+  // Add layers from the in-game editor (K or /rainium) or by hand; see README.txt.
+  "layers": []
+}

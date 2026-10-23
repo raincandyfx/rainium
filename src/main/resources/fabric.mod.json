@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "rainium",
+  "version": "${version}",
+  "name": "Rainium",
+  "description": "Puts any 3D mesh (wings, tails, halos...) on players. In-game editor (K or /rainium) with presets, OBJ import, live preview and physics.",
+  "authors": [
+    "raincandyfx"
+  ],
+  "contact": {
+    "homepage": "https://github.com/raincandyfx/rainium",
+    "sources": "https://github.com/raincandyfx/rainium",
+    "issues": "https://github.com/raincandyfx/rainium/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/rainium/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.github.raincandyfx.rainium.RainiumClient"
+    ],
+    "modmenu": [
+      "io.github.raincandyfx.rainium.RainiumModMenu"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

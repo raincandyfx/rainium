@@ -1,0 +1,219 @@
+package io.github.raincandyfx.rainium;
+
+import net.fabricmc.loader.api.FabricLoader;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+/**
+ * Ready-made layer sets, copied into config/rainium/presets/&lt;id&gt;/ the first time they're used.
+ *
+ *  - Gold halo: bundled with the mod as an example (assets/rainium/presets/halo).
+ *  - Eyed wings: read from a compatible wing mod jar in the mods folder (its wing mesh already
+ *    uses this mod's JSON format, so it is copied as-is). Not listed unless that mod is found.
+ */
+final class Presets {
+    /** A preset the editor can offer (only ones that can actually be installed are listed). */
+    record Info(String id, String name, String description) {}
+
+    static final String WINGS = "wings", HALO = "halo";
+
+    // Files read from a compatible wing mod, and the names they are saved under in presets/wings/.
+    private static final String PACK_MESH = "assets/ronova/meshes/custom_wing_mesh.json";
+    private static final String[][] PACK_FILES = {
+        {PACK_MESH, "wings_mesh.json"},
+        {"assets/ronova/textures/entity/custom_wing.png", "wings.png"},
+        {"assets/ronova/textures/entity/custom_wing_glow.png", "wings_glow.png"},
+        {"assets/ronova/textures/entity/custom_wing_eye.png", "wings_eye.png"},
+        {"assets/ronova/textures/entity/custom_wing_aura.png", "wings_aura.png"},
+    };
+
+    private final Assets assets;
+    private Path wingSource;         // cached
+    private long wingCheckedAt;
+
+    Presets(Assets assets) { this.assets = assets; }
+
+    /** Shown in the editor's preset list (translated). */
+    static String displayName(String id) { return Lang.t("preset." + id); }
+
+    /** Name of the folder a preset is added in. This is saved in layers.json like any folder name the
+     *  player types, so it stays the same whatever language the game is in (and works before the
+     *  game's language has loaded, when presets are added on first launch). */
+    private static String folderName(String id) { return id.equals(WINGS) ? "Eyed wings" : "Gold halo"; }
+
+    List<Info> list() {
+        List<Info> out = new ArrayList<>();
+        if (wingSource() != null || Files.exists(assets.dir().resolve("presets/wings/wings_mesh.json")))
+            out.add(new Info(WINGS, displayName(WINGS), Lang.t("preset.wings.description")));
+        out.add(new Info(HALO, displayName(HALO), Lang.t("preset.halo.description")));
+        return out;
+    }
+
+    /** Copies the preset's files into presets/&lt;id&gt;/ if needed and returns new layers for it, in a fresh folder. */
+    List<LayerConfig.Layer> install(String id) throws IOException {
+        List<LayerConfig.Layer> layers = switch (id) {
+            case WINGS -> wings();
+            case HALO -> halo();
+            default -> throw new IllegalArgumentException("unknown preset " + id);
+        };
+        String folder = assets.editable().uniqueFolderName(folderName(id));
+        for (LayerConfig.Layer l : layers) l.folder = folder;
+        return layers;
+    }
+
+    /** The preset's original settings for a layer created from it, or null. */
+    LayerConfig.Layer template(LayerConfig.Layer l) {
+        if (l.preset == null) return null;
+        String id = l.preset.substring(0, Math.max(0, l.preset.indexOf(':')));
+        try {
+            for (LayerConfig.Layer t : id.equals(WINGS) ? wings() : id.equals(HALO) ? halo() : List.<LayerConfig.Layer>of()) {
+                if (l.preset.equals(t.preset)) return t;
+            }
+        } catch (Exception ignored) { }
+        return null;
+    }
+
+    // ---------------------------------------------------------------- Eyed wings
+    private List<LayerConfig.Layer> wings() throws IOException {
+        Path dst = assets.dir().resolve("presets/wings");
+        Files.createDirectories(dst);
+        boolean have = true;
+        for (String[] f : PACK_FILES) have &= Files.exists(dst.resolve(f[1]));
+        if (!have) {
+            Path jar = wingSource();
+            if (jar == null) throw new IllegalStateException("no compatible wing mod found in the mods folder");
+            if (jar.toString().equals("<classpath>")) {
+                for (String[] f : PACK_FILES) {
+                    try (InputStream in = Presets.class.getResourceAsStream("/" + f[0])) {
+                        if (in == null) throw new IOException("the wing mod is missing some of its files");
+                        Files.copy(in, dst.resolve(f[1]), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            } else {
+                try (ZipFile zip = new ZipFile(jar.toFile())) {
+                    for (String[] f : PACK_FILES) {
+                        ZipEntry e = zip.getEntry(f[0]);
+                        if (e == null) throw new IOException("the wing mod is missing some of its files");
+                        try (InputStream in = zip.getInputStream(e)) {
+                            Files.copy(in, dst.resolve(f[1]), StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
+                }
+            }
+        }
+        String mesh = "presets/wings/wings_mesh.json";
+        List<LayerConfig.Layer> out = new ArrayList<>();
+        out.add(layer("Wings", mesh, List.of("wing"), "presets/wings/wings.png", LayerConfig.Render.CUTOUT_NO_CULL, 0xFFFFFFFF, false, true));
+        out.add(layer("Glow", mesh, List.of("wing_glow"), "presets/wings/wings_glow.png", LayerConfig.Render.EMISSIVE, 0xFFFFFFFF, true, true));
+        out.add(layer("Eyes", mesh, List.of("eye_core"), "presets/wings/wings_eye.png", LayerConfig.Render.CUTOUT_NO_CULL, 0xFFFFFFFF, true, true));
+        out.add(layer("Eye shine", mesh, List.of("eye_shell"), "presets/wings/wings_eye.png", LayerConfig.Render.TRANSLUCENT_CULL, 0x80FFFFFF, true, true));
+        out.add(layer("Aura", mesh, List.of("aura"), "presets/wings/wings_aura.png", LayerConfig.Render.TRANSLUCENT_EMISSIVE, 0x8CFFFFFF, true, false));
+        for (LayerConfig.Layer l : out) {
+            l.anchor = LayerConfig.Anchor.ROOT;   // the mesh is authored in model space
+            l.preset = WINGS + ":" + l.groups.get(0);
+        }
+        return out;
+    }
+
+    /** A compatible wing mod: on the classpath if it's loaded, otherwise a jar (or .jar.disabled) in the mods folder. */
+    Path wingSource() {
+        long now = System.currentTimeMillis();
+        if (now - wingCheckedAt < 5000) return wingSource;
+        wingCheckedAt = now;
+        wingSource = null;
+        if (Presets.class.getResource("/" + PACK_MESH) != null) {
+            wingSource = Path.of("<classpath>");
+            return wingSource;
+        }
+        Path mods;
+        try { mods = FabricLoader.getInstance().getGameDir().resolve("mods"); }
+        catch (Throwable t) { return null; }
+        if (!Files.isDirectory(mods)) return null;
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(mods)) {
+            for (Path p : ds) {
+                String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
+                if (!(n.endsWith(".jar") || n.endsWith(".jar.disabled"))) continue;
+                try (ZipFile zip = new ZipFile(p.toFile())) {
+                    if (zip.getEntry(PACK_MESH) != null) { wingSource = p; break; }
+                } catch (IOException ignored) { /* not a readable jar */ }
+            }
+        } catch (IOException ignored) { }
+        return wingSource;
+    }
+
+    // ---------------------------------------------------------------- Gold halo
+    private static final String HALO_RES = "/assets/rainium/presets/halo/";
+
+    private List<LayerConfig.Layer> halo() throws IOException {
+        Path dst = assets.dir().resolve("presets/halo");
+        Files.createDirectories(dst);
+        for (String f : new String[]{"halo.json", "halo.png"}) {
+            if (Files.exists(dst.resolve(f))) continue;
+            try (InputStream in = Presets.class.getResourceAsStream(HALO_RES + f)) {
+                if (in == null) throw new IOException("the mod jar is missing " + f);
+                Files.copy(in, dst.resolve(f));
+            }
+        }
+        String mesh = "presets/halo/halo.json", tex = "presets/halo/halo.png";
+        // One layer per part of the model (rings / center / rungs)
+        List<String> parts = new ArrayList<>(Mesh.fromJson(Json.parse(Files.readString(dst.resolve("halo.json")))).groups.keySet());
+        List<LayerConfig.Layer> out = new ArrayList<>();
+        String rungs = null;
+        for (String part : parts) {
+            String nice = part.contains("_") ? part.substring(0, part.indexOf('_')) : part;   // "rings_Ornament_Gold" -> "rings"
+            if (nice.equalsIgnoreCase("rungs")) rungs = part;
+            nice = nice.isEmpty() ? "Halo" : Character.toUpperCase(nice.charAt(0)) + nice.substring(1);
+            LayerConfig.Layer l = layer(parts.size() == 1 ? "Halo" : nice, mesh, parts.size() == 1 ? null : List.of(part), tex,
+                LayerConfig.Render.CUTOUT_NO_CULL, 0xFFFFFFFF, false, true);
+            haloPlacement(l);
+            l.preset = HALO + ":" + part;
+            out.add(l);
+        }
+        // Glow: the same model drawn again additively on top. A soft glow over the whole halo...
+        LayerConfig.Layer glow = layer("Glow", mesh, null, tex, LayerConfig.Render.EMISSIVE, 0xFF404040, true, true);
+        haloPlacement(glow);
+        glow.preset = HALO + ":glow";
+        out.add(glow);
+        // ...and a strong one on the rungs.
+        if (rungs != null) {
+            LayerConfig.Layer rg = layer("Rungs glow", mesh, List.of(rungs), tex, LayerConfig.Render.EMISSIVE, 0xFFFFFFFF, true, true);
+            haloPlacement(rg);
+            rg.preset = HALO + ":rungs_glow";
+            out.add(rg);
+        }
+        return out;
+    }
+
+    /** Fixed to the body (no lean), 225% size, pushed 0.1 back. */
+    private static void haloPlacement(LayerConfig.Layer l) {
+        l.anchor = LayerConfig.Anchor.ROOT;
+        l.scale = new float[]{2.25f, 2.25f, 2.25f};
+        l.offset = new float[]{0f, 0f, 0.1f};
+        l.rotation = new float[3];
+        l.physics = true;
+        l.mirror = false;
+    }
+
+    private static LayerConfig.Layer layer(String name, String mesh, List<String> groups, String texture,
+                                           LayerConfig.Render render, int color, boolean fullbright, boolean enabled) {
+        LayerConfig.Layer l = LayerConfig.newLayer(mesh);
+        l.label = name;
+        l.groups = groups == null ? null : new ArrayList<>(groups);
+        l.texture = texture;
+        l.render = render;
+        l.color = color;
+        l.fullbright = fullbright;
+        l.enabled = enabled;
+        return l;
+    }
+}

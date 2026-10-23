@@ -1,0 +1,60 @@
+plugins {
+    // Loom for unobfuscated Minecraft (26.1+): no mappings, no remapping.
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+// Jars are named rainium-<version>+<minecraft>.jar; the in-game updater picks releases by that name.
+version = "${project.mod_version}+${project.minecraft_version}"
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    // Mod Menu (for the "Configure" button in its mod list; optional at runtime), from Modrinth's maven.
+    exclusiveContent {
+        forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    compileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+
+    // The OBJ/glTF converter script is kept in tools/ and also copied into the
+    // player's config folder on first run.
+    from('tools/mesh_convert.py') {
+        into 'assets/rainium/defaults'
+    }
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
+    it.options.encoding = 'UTF-8'
+}
+
+jar {
+    inputs.property 'archivesName', project.base.archivesName
+
+    from('LICENSE') {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
