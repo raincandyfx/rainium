@@ -26,10 +26,6 @@ final class ParticleFx {
     private ParticleFx() {}
 
     private static final int MAX_TOTAL = 4000;
-    static final int MAX_PER_EMITTER = ParticleSim.MAX_PER_EMITTER;
-    static final String[] VANILLA = ParticleSim.VANILLA;
-    static String vanillaId(String name) { return ParticleSim.vanillaId(name); }
-    static String vanillaName(String texture) { return ParticleSim.vanillaName(texture); }
 
     // ------------------------------------------------------------------ in the game
 

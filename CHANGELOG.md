@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.3.8 (dev build)
+
+- Exported zips no longer include who each layer is shown on (including any player or armor stand names). Adding a shared set uses your own Visibility settings.
+- Code cleanup.
+
 ## 0.3.7 (dev build)
 
 - **Shown on** for each layer and folder: choose which players (just you, everyone, other players, listed players or nobody) and which armor stands each one appears on. Left on Default, a layer follows its folder, then Settings > Visibility.

@@ -20,7 +20,6 @@ import java.util.function.DoubleConsumer;
 import java.util.function.Consumer;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Map;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.input.KeyEvent;
 
@@ -1626,11 +1625,11 @@ public final class RainiumScreen extends Screen {
 
     /** Particle texture: Minecraft's particle pictures first, then PNGs from the rainium folder. */
     private int particleTexture(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Layer l) {
-        String vn = ParticleFx.vanillaName(l.texture);
+        String vn = ParticleSim.vanillaName(l.texture);
         String shown = vn != null ? Lang.t("particle." + vn) : l.texture == null ? Lang.t("value.none") : shortFile(l.texture);
         return cycle(g, mx, my, x, y, w, "particle_texture", shown, d -> {
             List<String> opts = new ArrayList<>();
-            for (String n : ParticleFx.VANILLA) opts.add(ParticleFx.vanillaId(n));
+            for (String n : ParticleSim.VANILLA) opts.add(ParticleSim.vanillaId(n));
             opts.addAll(pngFiles);
             if (l.texture != null && !opts.contains(l.texture)) opts.add(l.texture);
             int i = opts.indexOf(l.texture);

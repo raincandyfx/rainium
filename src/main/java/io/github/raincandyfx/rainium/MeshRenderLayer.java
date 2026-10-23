@@ -71,7 +71,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
             if (l.hideWhenFlying && state.isFallFlying) continue;
             if (!editorPreview && r != preview) {   // the editor's preview shows everything you're working on
                 LayerConfig cfg = st.config();
-                if (cfg.playersFor(l) == LayerConfig.ShowOn.LISTED && name[0] == null) name[0] = entityName(state.id, false);
+                if (cfg.playersFor(l) == LayerConfig.ShowOn.LISTED && name[0] == null) name[0] = entityName(state.id);
                 if (!cfg.showsOnPlayer(l, self, name[0])) continue;
             }
             submitAll(ps, collector, light, hurtOverlay, bones, sp, st, r, new Where("p" + state.id + (editorPreview ? "e" : ""), state.x, state.y, state.z, editorPreview));
@@ -145,7 +145,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
     }
 
     /** The name of the entity with this id, or null. */
-    static String entityName(int id, boolean unused) {
+    private static String entityName(int id) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return mc.player != null && mc.player.getId() == id ? mc.player.getName().getString() : null;
         net.minecraft.world.entity.Entity e = mc.level.getEntity(id);

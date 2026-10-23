@@ -273,6 +273,7 @@ final class Assets {
         for (LayerConfig.Layer l : parts) {
             Map<String, Object> m = l.toJson();
             m.remove("folder");
+            m.remove("show");   // who it shows on is the sharer's own choice (and may list names)
             if (l.mesh != null) m.put("mesh", zipName(files, l.mesh));
             if (l.texture != null && l.texture.indexOf(':') < 0) m.put("texture", zipName(files, l.texture));
             layerJson.add(m);
@@ -366,6 +367,7 @@ final class Assets {
                     if (m.get("mesh") instanceof String ms) m.put("mesh", sub + "/" + sanitizeFile(ms));
                     if (m.get("texture") instanceof String ts && ts.indexOf(':') < 0) m.put("texture", sub + "/" + sanitizeFile(ts));
                     m.put("folder", folderName);
+                    m.remove("show");   // sets exported by 0.3.7 may carry the sharer's choice
                     ls.add(m);
                 }
             }

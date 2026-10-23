@@ -187,13 +187,6 @@ final class LayerConfig {
         return t != null && t.matches("[a-z0-9_.-]+:[a-z0-9_./-]+");
     }
 
-    /** Whether a player name is on the "Listed players" list (not case-sensitive). */
-    boolean listsPlayer(String name) {
-        if (name == null) return false;
-        for (String p : players) if (p.equalsIgnoreCase(name.trim())) return true;
-        return false;
-    }
-
     /** Motion strength for a layer: its folder's setting, or 1. */
     float motionOf(Layer l) {
         if (l.folder == null) return 1f;
