@@ -498,6 +498,9 @@ public final class RainiumScreen extends Screen {
         }
 
         y = section(g, x, y, w, "look");
+        if (l.isParticles()) {
+            y = particleTexture(g, mx, my, x, y, w, l);
+        } else {
         List<String> groups = assets.groupsOf(l.mesh);
         String part = l.groups == null ? Lang.t("value.whole_model") : String.join(", ", l.groups);
         y = cycle(g, mx, my, x, y, w, "part", part, d -> {
@@ -526,6 +529,7 @@ public final class RainiumScreen extends Screen {
             l.texture = next.isEmpty() ? null : next;
             save();
         });
+        }
         y = cycle(g, mx, my, x, y, w, "style", styleName(l.render), d -> { l.render = cyc(LayerConfig.Render.values(), l.render, d); save(); });
         y = hue(g, mx, my, x, y, w, l);
         int alpha = (l.color >>> 24) & 0xFF;
@@ -537,15 +541,19 @@ public final class RainiumScreen extends Screen {
         });
         y = toggle(g, mx, my, x, y, w, "ignore_world_light", l.fullbright, () -> { l.fullbright = !l.fullbright; save(); });
 
+        if (l.isParticles()) y = particleSettings(g, mx, my, x, y + 4, w, l.particles);
+
         y = section(g, x, y + 4, w, "placement");
         y = cycle(g, mx, my, x, y, w, "attach_to", anchorName(l.anchor), d -> { l.anchor = cyc(LayerConfig.Anchor.values(), l.anchor, d); save(); });
         double step = STEPS[stepIndex];
-        exact(v -> { float s = (float) Math.max(0.01, v / 100.0); l.scale = new float[]{s, s, s}; save(); });
-        y = stepper(g, mx, my, x, y, w, "size", Math.round(l.scale[0] * 100) + "%", d -> {
-            float s = (float) Math.max(0.01, round(l.scale[0] + d * step));
-            l.scale = new float[]{s, s, s};
-            save();
-        });
+        if (!l.isParticles()) {
+            exact(v -> { float s = (float) Math.max(0.01, v / 100.0); l.scale = new float[]{s, s, s}; save(); });
+            y = stepper(g, mx, my, x, y, w, "size", Math.round(l.scale[0] * 100) + "%", d -> {
+                float s = (float) Math.max(0.01, round(l.scale[0] + d * step));
+                l.scale = new float[]{s, s, s};
+                save();
+            });
+        }
         String[] move = {"left", "down", "back"};
         for (int a = 0; a < 3; a++) {
             final int ai = a;
@@ -573,7 +581,7 @@ public final class RainiumScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "mirrored_copy", l.mirror, () -> { l.mirror = !l.mirror; save(); });
         y = toggle(g, mx, my, x, y, w, "sway_with_movement", l.physics, () -> { l.physics = !l.physics; save(); });
         y = toggle(g, mx, my, x, y, w, "hide_while_gliding", l.hideWhenFlying, () -> { l.hideWhenFlying = !l.hideWhenFlying; save(); });
-        y = cycle(g, mx, my, x, y, w, "model_axes", Lang.t(l.yUp ? "value.axes.blender" : "value.axes.minecraft"), d -> { l.yUp = !l.yUp; save(); });
+        if (!l.isParticles()) y = cycle(g, mx, my, x, y, w, "model_axes", Lang.t(l.yUp ? "value.axes.blender" : "value.axes.minecraft"), d -> { l.yUp = !l.yUp; save(); });
 
         y = section(g, x, y + 4, w, "layer");
         int half = (w - GAP) / 2, dx = x, dw = w;
@@ -726,6 +734,17 @@ public final class RainiumScreen extends Screen {
             y += ch + GAP;
         }
 
+        y = section(g, x, y + 5, w, "particles");
+        int pw = (w - GAP) / 2;
+        String[] starters = ParticleStarters.NAMES;
+        for (int i = 0; i < starters.length; i++) {
+            int bx = x + (i % 2) * (pw + GAP);
+            String id = starters[i];
+            secondaryButton(g, mx, my, bx, y, i % 2 == 0 ? pw : w - pw - GAP, Lang.t("starter." + id), () -> addParticles(id));
+            tip(mx, my, bx, y, pw, ROW, "starter_" + id);
+            if (i % 2 == 1 || i == starters.length - 1) y += ROW + GAP;
+        }
+
         y = section(g, x, y + 5, w, "your_models");
         List<String> own = new ArrayList<>();
         for (String f : meshFiles) if (!f.startsWith("presets/")) own.add(f);
@@ -824,6 +843,18 @@ public final class RainiumScreen extends Screen {
         g.text(font, kindText, x + w - kw - 3, y + 4, kind.equals("import") ? ACCENT : MUTED, false);
         hits.add(new Hit(x, y, w, ROW + 2, click, null));
         return y + ROW + 3;
+    }
+
+    private void addParticles(String starter) {
+        LayerConfig.Layer l = ParticleStarters.make(starter, Lang.t("starter." + starter));
+        List<LayerConfig.Layer> layers = assets.editable().layers;
+        layers.add(l);
+        selected = layers.size() - 1;
+        selectedFolder = null;
+        tab = Tab.EDIT;
+        rightScroll = 0;
+        save();
+        say(Lang.t("msg.added_file", l.label), ACCENT);
     }
 
     private void addPreset(Presets.Info p) {
@@ -1502,6 +1533,58 @@ public final class RainiumScreen extends Screen {
         drawSwitch(g, x + w - 19, y + 2, on);
         hits.add(new Hit(x, y, w, ROW, flip, null));
         return y + ROW + GAP;
+    }
+
+    /** Particle texture: Minecraft's particle pictures first, then PNGs from the rainium folder. */
+    private int particleTexture(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Layer l) {
+        String vn = ParticleFx.vanillaName(l.texture);
+        String shown = vn != null ? Lang.t("particle." + vn) : l.texture == null ? Lang.t("value.none") : shortFile(l.texture);
+        return cycle(g, mx, my, x, y, w, "particle_texture", shown, d -> {
+            List<String> opts = new ArrayList<>();
+            for (String n : ParticleFx.VANILLA) opts.add(ParticleFx.vanillaId(n));
+            opts.addAll(pngFiles);
+            if (l.texture != null && !opts.contains(l.texture)) opts.add(l.texture);
+            int i = opts.indexOf(l.texture);
+            l.texture = opts.get(Math.floorMod((i < 0 ? -1 : i) + d, opts.size()));
+            save();
+        });
+    }
+
+    /** How a particle emitter spawns and moves its particles. */
+    private int particleSettings(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Particles p) {
+        y = section(g, x, y, w, "particles");
+        y = cycle(g, mx, my, x, y, w, "p_when", Lang.t("value.p_when." + p.when.name().toLowerCase(Locale.ROOT)), d -> { p.when = cyc(LayerConfig.Particles.When.values(), p.when, d); save(); });
+        exact(v -> { p.rate = clampF((float) v, 0, 200); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_rate", fmt(p.rate) + "/s", d -> { p.rate = clampF(p.rate + d * (p.rate < 10 ? 1 : 5), 0, 200); save(); });
+        exact(v -> { p.life = clampF((float) v, 0.05f, 20); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_life", fmt(p.life) + " s", d -> { p.life = clampF(p.life + d * 0.25f, 0.05f, 20); save(); });
+        y = toggle(g, mx, my, x, y, w, "p_follow", p.follow, () -> { p.follow = !p.follow; save(); });
+
+        y = section(g, x, y + 4, w, "p_spawn");
+        y = cycle(g, mx, my, x, y, w, "p_shape", Lang.t("value.p_shape." + p.shape.name().toLowerCase(Locale.ROOT)), d -> { p.shape = cyc(LayerConfig.Particles.Shape.values(), p.shape, d); save(); });
+        if (p.shape != LayerConfig.Particles.Shape.POINT) {
+            exact(v -> { p.area = clampF((float) v, 0, 4); save(); });
+            y = stepper(g, mx, my, x, y, w, "p_area", fmt(p.area), d -> { p.area = clampF(p.area + d * 0.05f, 0, 4); save(); });
+        }
+        exact(v -> { p.size = clampF((float) v, 0.005f, 2); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_size", fmt(p.size), d -> { p.size = clampF(p.size + d * 0.01f, 0.005f, 2); save(); });
+        exact(v -> { p.endSize = clampF((float) v, 0, 2); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_end_size", fmt(p.endSize), d -> { p.endSize = clampF(p.endSize + d * 0.01f, 0, 2); save(); });
+        y = toggle(g, mx, my, x, y, w, "p_fade", p.fade, () -> { p.fade = !p.fade; save(); });
+
+        y = section(g, x, y + 4, w, "p_motion");
+        y = cycle(g, mx, my, x, y, w, "p_direction", Lang.t("value.p_direction." + p.direction.name().toLowerCase(Locale.ROOT)), d -> { p.direction = cyc(LayerConfig.Particles.Direction.values(), p.direction, d); save(); });
+        exact(v -> { p.speed = clampF((float) v, 0, 10); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_speed", fmt(p.speed), d -> { p.speed = clampF(p.speed + d * 0.05f, 0, 10); save(); });
+        exact(v -> { p.spread = clampF((float) v, 0, 180); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_spread", fmt(p.spread) + "°", d -> { p.spread = clampF(p.spread + d * 5, 0, 180); save(); });
+        exact(v -> { p.gravity = clampF((float) v, -20, 20); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_gravity", fmt(p.gravity), d -> { p.gravity = clampF(p.gravity + d * 0.1f, -20, 20); save(); });
+        exact(v -> { p.drag = clampF((float) v, 0, 10); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_drag", fmt(p.drag), d -> { p.drag = clampF(p.drag + d * 0.1f, 0, 10); save(); });
+        exact(v -> { p.spin = clampF((float) v, -720, 720); save(); });
+        y = stepper(g, mx, my, x, y, w, "p_spin", fmt(p.spin) + "°/s", d -> { p.spin = clampF(p.spin + d * 15, -720, 720); save(); });
+        return y;
     }
 
     /** Hue shift: a stepper (type or scroll for exact values) and a strip to click a shift directly. */

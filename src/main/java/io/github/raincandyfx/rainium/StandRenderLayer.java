@@ -50,6 +50,7 @@ final class StandRenderLayer<S extends LivingEntityRenderState, M extends Entity
                 default -> { }   // body, head and root all start at the neck
             }
         };
-        for (Assets.Resolved r : st.layers()) MeshRenderLayer.submitAll(ps, collector, light, overlay, bones, Sway.Pose.REST, st, r);
+        MeshRenderLayer.Where where = new MeshRenderLayer.Where("s" + Math.round(state.x * 16) + "," + Math.round(state.y * 16) + "," + Math.round(state.z * 16), state.x, state.y, state.z, false);
+        for (Assets.Resolved r : st.layers()) MeshRenderLayer.submitAll(ps, collector, light, overlay, bones, Sway.Pose.REST, st, r, where);
     }
 }

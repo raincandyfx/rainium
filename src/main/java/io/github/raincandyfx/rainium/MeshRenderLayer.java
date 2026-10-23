@@ -67,29 +67,36 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         for (Assets.Resolved r : layers) {
             LayerConfig.Layer l = r.cfg();
             if (l.hideWhenFlying && state.isFallFlying) continue;
-            submitAll(ps, collector, light, hurtOverlay, bones, sp, st, r);
+            submitAll(ps, collector, light, hurtOverlay, bones, sp, st, r, new Where("p" + state.id + (editorPreview ? "e" : ""), state.x, state.y, state.z, editorPreview));
         }
     }
 
     /** Moves the pose to an attachment point of the model being drawn. */
     interface Bones { void apply(PoseStack ps, LayerConfig.Anchor anchor); }
 
+    /** Which entity is being drawn (for particle emitters): a key, its position, and whether it's the editor's preview. */
+    record Where(String key, double x, double y, double z, boolean preview) {}
+
     static void submitAll(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, Bones bones, Sway.Pose sp,
-                          Assets.State st, Assets.Resolved r) {
+                          Assets.State st, Assets.Resolved r, Where where) {
         LayerConfig.Layer l = r.cfg();
         if (l.anchor.limb()) {
             // On an arm or leg, "Mirrored copy" means a copy on the opposite limb.
-            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_NONE);
-            if (l.mirror) submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor.opposite(), MIRROR_LIMB);
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_NONE, where);
+            if (l.mirror) submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor.opposite(), MIRROR_LIMB, where);
+        } else if (l.isParticles() && l.mirror) {
+            // a mirrored emitter is a second emitter on the other side
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_NONE, where);
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_LIMB, where);
         } else {
-            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, l.mirror ? MIRROR_BOTH : MIRROR_NONE);
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, l.mirror ? MIRROR_BOTH : MIRROR_NONE, where);
         }
     }
 
     private static final int MIRROR_NONE = 0, MIRROR_BOTH = 1, MIRROR_LIMB = 2;
 
     private static void submitLayer(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, Bones bones, Sway.Pose sp,
-                                    Assets.State st, Assets.Resolved r, LayerConfig.Anchor anchor, int mirrorMode) {
+                                    Assets.State st, Assets.Resolved r, LayerConfig.Anchor anchor, int mirrorMode, Where where) {
         LayerConfig.Layer l = r.cfg();
         ps.pushPose();
         if (l.physics) {
@@ -107,8 +114,10 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         if (l.rotation[0] != 0) ps.rotateDegrees(Axis.XP, l.rotation[0]);
         if (l.rotation[1] != 0) ps.rotateDegrees(Axis.YP, l.rotation[1]);
         if (l.rotation[2] != 0) ps.rotateDegrees(Axis.ZP, l.rotation[2]);
-        ps.scale(l.scale[0], l.scale[1], l.scale[2]);
-        if (l.yUp) ps.rotateDegrees(Axis.XP, 180f); // Y-up/front +Z  ->  model space (Y down, back +Z)
+        if (!l.isParticles()) {
+            ps.scale(l.scale[0], l.scale[1], l.scale[2]);
+            if (l.yUp) ps.rotateDegrees(Axis.XP, 180f); // Y-up/front +Z  ->  model space (Y down, back +Z)
+        }
 
         boolean emissive = l.render == LayerConfig.Render.EMISSIVE || l.render == LayerConfig.Render.TRANSLUCENT_EMISSIVE;
         int lightValue = (l.fullbright || emissive) ? FULL_BRIGHT : light;
@@ -116,6 +125,12 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         int order = l.order >= 0 ? l.order : defaultOrder(l.render);
         final Mesh.Group[] groups = r.groups();
         final int color = l.hue == 0 ? l.color : Hue.rotateArgb(l.color, l.hue);
+        if (l.isParticles()) {
+            String key = where.key() + "|" + st.config().layers.indexOf(l) + "|" + anchor + "|" + mirrorMode;   // survives saves (layers are rebuilt on each)
+            ParticleFx.submit(key, l, ps, where.preview(), where.x(), where.y(), where.z(), collector, order, renderType(l.render, r.texture()), color, lightValue, overlay);
+            ps.popPose();
+            return;
+        }
         SubmitNodeCollector.CustomGeometryRenderer geo = (pose, vc) -> emit(groups, pose, vc, color, lightValue, overlay, mirrorMode);
         OrderedSubmitNodeCollector target = order == 0 ? collector : collector.order(order);
         target.submitCustomGeometry(ps, renderType(l.render, r.texture()), geo);

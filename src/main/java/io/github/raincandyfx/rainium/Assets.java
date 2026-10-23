@@ -154,6 +154,11 @@ final class Assets {
         boolean anyPhysics = false;
         for (LayerConfig.Layer l : cfg.layers) {
             if (!cfg.isActive(l)) continue;
+            if (l.isParticles()) {
+                out.add(new Resolved(l, new Mesh.Group[0], texture(l, texIds, newStamps)));
+                anyPhysics |= l.physics;
+                continue;
+            }
             Path meshPath = dir.resolve(l.mesh).normalize();
             newStamps.put(meshPath, stamp(meshPath));
             Mesh mesh = mesh(l.mesh);
@@ -268,7 +273,7 @@ final class Assets {
         for (LayerConfig.Layer l : parts) {
             Map<String, Object> m = l.toJson();
             m.remove("folder");
-            m.put("mesh", zipName(files, l.mesh));
+            if (l.mesh != null) m.put("mesh", zipName(files, l.mesh));
             if (l.texture != null && l.texture.indexOf(':') < 0) m.put("texture", zipName(files, l.texture));
             layerJson.add(m);
         }

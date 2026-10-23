@@ -42,6 +42,9 @@ final class LayerConfig {
         String label;
         String folder;                // null = not in a folder
         String preset;                // "presetId:part" when created from a preset (for Reset to preset)
+        Particles particles;          // non-null for a particle emitter (then there is no mesh)
+
+        boolean isParticles() { return particles != null; }
 
         Map<String, Object> toJson() {
             Map<String, Object> m = new java.util.LinkedHashMap<>();
@@ -49,8 +52,11 @@ final class LayerConfig {
             if (folder != null) m.put("folder", folder);
             if (preset != null) m.put("preset", preset);
             if (!enabled) m.put("enabled", false);
-            m.put("mesh", mesh);
-            m.put("groups", groups == null ? "*" : new ArrayList<Object>(groups));
+            if (particles != null) m.put("particles", particles.toJson());
+            else {
+                m.put("mesh", mesh);
+                m.put("groups", groups == null ? "*" : new ArrayList<Object>(groups));
+            }
             if (texture != null) m.put("texture", texture);
             m.put("render", render.name().toLowerCase(Locale.ROOT));
             if (color != 0xFFFFFFFF) m.put("color", String.format("#%08X", color));
@@ -110,6 +116,7 @@ final class LayerConfig {
         to.render = from.render;
         to.color = from.color;
         to.hue = from.hue;
+        if (from.particles != null && to.particles != null) to.particles = from.particles.copy();
         to.fullbright = from.fullbright;
         to.anchor = from.anchor;
         to.offset = from.offset.clone();
@@ -306,8 +313,12 @@ final class LayerConfig {
         Layer l = new Layer();
         l.enabled = bool(m, "enabled", true);
         Object mesh = m.get("mesh");
-        if (!(mesh instanceof String) || ((String) mesh).isBlank()) throw new IllegalArgumentException("\"mesh\" (file name) is required");
-        l.mesh = (String) mesh;
+        if (m.get("particles") instanceof Map<?, ?> pm) {
+            l.particles = Particles.fromJson((Map<String, Object>) pm);
+        } else {
+            if (!(mesh instanceof String) || ((String) mesh).isBlank()) throw new IllegalArgumentException("\"mesh\" (file name) is required");
+            l.mesh = (String) mesh;
+        }
         Object g = m.get("groups");
         if (g == null) g = m.get("group");
         if (g instanceof String s && !s.equals("*")) l.groups = List.of(s);
@@ -443,6 +454,83 @@ final class LayerConfig {
         @SuppressWarnings("unchecked")
         Layer c = layer((Map<String, Object>) Json.parse(JsonWriter.write(l.toJson())), 0);
         return c;
+    }
+
+    /** Settings of a particle emitter layer. Sizes and distances in blocks, times in seconds. */
+    static final class Particles {
+        enum Shape { POINT, SPHERE, BOX, RING }
+        enum When { ALWAYS, MOVING, STILL, SPEED }          // SPEED: more particles the faster you move
+        enum Direction { UP, DOWN, OUT, BACK, FORWARD, RANDOM }
+
+        Shape shape = Shape.SPHERE;
+        float area = 0.25f;           // radius (sphere/ring) or half-size (box)
+        float rate = 8f;              // particles per second
+        When when = When.ALWAYS;
+        float life = 1.5f;
+        float size = 0.08f, endSize = 0.03f;
+        float speed = 0.3f;
+        Direction direction = Direction.UP;
+        float spread = 30f;           // degrees of randomness around the direction
+        float gravity = 0f;           // blocks/s², positive pulls down
+        float drag = 0.5f;            // speed lost per second (fraction)
+        float spin = 0f;              // degrees per second
+        boolean fade = true;
+        boolean follow = false;       // true: particles move with you; false: they stay where they spawned (a trail)
+
+        Map<String, Object> toJson() {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("shape", shape.name().toLowerCase(Locale.ROOT));
+            m.put("area", (double) area);
+            m.put("rate", (double) rate);
+            m.put("when", when.name().toLowerCase(Locale.ROOT));
+            m.put("life", (double) life);
+            m.put("size", (double) size);
+            m.put("end_size", (double) endSize);
+            m.put("speed", (double) speed);
+            m.put("direction", direction.name().toLowerCase(Locale.ROOT));
+            m.put("spread", (double) spread);
+            m.put("gravity", (double) gravity);
+            m.put("drag", (double) drag);
+            m.put("spin", (double) spin);
+            m.put("fade", fade);
+            m.put("follow", follow);
+            return m;
+        }
+
+        static Particles fromJson(Map<String, Object> m) {
+            Particles p = new Particles();
+            p.shape = enumOf(Shape.class, m.get("shape"), Shape.SPHERE, "particles.shape");
+            p.area = clamp(f(m, "area", p.area), 0f, 4f);
+            p.rate = clamp(f(m, "rate", p.rate), 0f, 200f);
+            p.when = enumOf(When.class, m.get("when"), When.ALWAYS, "particles.when");
+            p.life = clamp(f(m, "life", p.life), 0.05f, 20f);
+            p.size = clamp(f(m, "size", p.size), 0.005f, 2f);
+            p.endSize = clamp(f(m, "end_size", p.endSize), 0f, 2f);
+            p.speed = clamp(f(m, "speed", p.speed), 0f, 10f);
+            p.direction = enumOf(Direction.class, m.get("direction"), Direction.UP, "particles.direction");
+            p.spread = clamp(f(m, "spread", p.spread), 0f, 180f);
+            p.gravity = clamp(f(m, "gravity", p.gravity), -20f, 20f);
+            p.drag = clamp(f(m, "drag", p.drag), 0f, 10f);
+            p.spin = clamp(f(m, "spin", p.spin), -720f, 720f);
+            p.fade = bool(m, "fade", true);
+            p.follow = bool(m, "follow", false);
+            return p;
+        }
+
+        Particles copy() { return fromJson(toJson()); }
+
+        private static float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
+    }
+
+    static Layer newParticleLayer(String name) {
+        Layer l = new Layer();
+        l.particles = new Particles();
+        l.label = name;
+        l.render = Render.TRANSLUCENT_EMISSIVE;
+        l.fullbright = true;
+        l.texture = "minecraft:textures/particle/glitter_7.png";
+        l.offset = new float[]{0f, 0.35f, 0.15f};
+        return l;
     }
 
     static Layer newLayer(String mesh) {

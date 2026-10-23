@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.3.5 (dev build)
+
+- **Particle emitters**: a new kind of layer that gives off particles, with Minecraft's particle pictures or your own PNGs. Start from Sparkles, Embers, Hearts, Trail, Aura or an empty emitter on the Add tab, then adjust when they appear, how many, where (point, ball, box or ring), size over time, fading, direction, speed, spread, gravity, drag, spin, and whether they move with you or leave a trail. Emitters use the same look and placement options as models.
+
 ## 0.3.4 (dev build)
 
 - **Show on** has a new choice, **Listed players**: your layers appear on the players you name.

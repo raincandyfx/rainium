@@ -64,6 +64,16 @@ To convert without opening the game, there are two converters in [`tools/`](tool
 
 Your `config/rainium` folder also has a `README.txt` with the full details: the coordinate system, the mesh file formats and every option in `layers.json`.
 
+## Particles
+
+Besides models, a layer can be a **particle emitter**. On the **Add** tab, start from **Sparkles**, **Embers**, **Hearts**, **Trail**, **Aura** or an **Empty emitter**, then fine-tune it on the Edit tab:
+
+- **Picture:** one of Minecraft's particles (flame, sparkle, heart, note, smoke, petal and more) or any PNG you put in the rainium folder. Style, hue and opacity work like on models.
+- **When and how many:** always, only while moving, only while standing still, or more the faster you move; how many per second and how long each lasts.
+- **Where they appear:** a point, a ball, a box or a ring around the attachment point, at any size. Attach emitters to your body, head, arms or legs like any layer.
+- **How they move:** direction, speed, spread, gravity (negative floats up), drag and spin, plus size over time and fading out.
+- **Move with me:** particles either travel along with you or stay where they appeared, leaving a trail.
+
 ## Presets
 
 | Preset | |
