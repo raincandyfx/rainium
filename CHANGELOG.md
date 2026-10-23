@@ -2,6 +2,14 @@
 
 Rainium is in beta: versions stay at 0.1.x until 1.0.0.
 
+## 0.1.6
+
+- Cleaner editor with less text:
+  - Layers in the list take one line each.
+  - Duplicate, Copy style and Paste style share one row; Remove and Reset to preset moved to the bottom of the layer's settings.
+  - Explanations that were always on screen are now tooltips (hover a button or setting).
+- Motion is now a single **Feel** choice (Still, Calm, Normal, Lively, Bouncy). Turn on **Fine-tune** to see every motion setting.
+
 ## 0.1.5
 
 - Small cleanup: removed leftover text and files that were no longer used.

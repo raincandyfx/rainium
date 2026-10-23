@@ -120,6 +120,7 @@ public final class RainiumScreen extends Screen {
     }
 
     private static boolean updateAnnounced;
+    private static boolean showMotionDetails;
 
     private void close() {
         commitEdit();
@@ -220,9 +221,6 @@ public final class RainiumScreen extends Screen {
     private void header(GuiGraphicsExtractor g, int mx, int my, int W) {
         String title = Lang.t("name");
         g.text(font, title, 8, 9, TEXT, false);
-        int tw = font.width(Component.literal(title));
-        g.fill(8 + tw + 6, 10, 8 + tw + 7, 17, FAINT);
-        g.text(font, Lang.t("header.autosave"), 8 + tw + 12, 9, FAINT, false);
 
         LayerConfig c = assets.editable();
         int x = W - 6;
@@ -326,16 +324,14 @@ public final class RainiumScreen extends Screen {
     }
 
     private int layerRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, LayerConfig.Layer l, int idx, boolean parentOn) {
-        int rh = 24;
+        int rh = 18;
         boolean on = l.enabled && parentOn;
         boolean sel = selectedFolder == null && idx == selected, hov = in(mx, my, rx, ry, rwid, rh - 2);
         if (sel) { g.fill(rx, ry, rx + rwid, ry + rh - 2, ACCENT_DIM); g.fill(rx, ry, rx + 2, ry + rh - 2, ACCENT); }
         else if (hov) g.fill(rx, ry, rx + rwid, ry + rh - 2, HOVER);
-        g.fill(rx + 6, ry + 5, rx + 10, ry + 17, on ? (l.color | 0xFF000000) : FAINT);
-        int textW = rwid - 34;
-        g.text(font, fit(l.label, textW), rx + 15, ry + 3, on ? TEXT : MUTED, false);
-        g.text(font, fit(styleName(l.render) + " · " + (l.groups == null ? shortFile(l.mesh) : String.join(", ", l.groups)), textW), rx + 15, ry + 12, on ? MUTED : FAINT, false);
-        visibilityBox(g, mx, my, rx + rwid - 14, ry + 7, l.enabled, () -> { l.enabled = !l.enabled; save(); });
+        g.fill(rx + 6, ry + 3, rx + 10, ry + 13, on ? (l.color | 0xFF000000) : FAINT);
+        g.text(font, fit(l.label, rwid - 34), rx + 15, ry + 4, on ? TEXT : MUTED, false);
+        visibilityBox(g, mx, my, rx + rwid - 14, ry + 4, l.enabled, () -> { l.enabled = !l.enabled; save(); });
         hits.add(new Hit(rx, ry, rwid - 18, rh - 2, () -> selectLayer(idx), null));
         return ry + rh;
     }
@@ -447,10 +443,10 @@ public final class RainiumScreen extends Screen {
         textField(g, mx, my, x, y - 2, w, 12, "name:layer:" + selected, l.label, false, TEXT, v -> {
             if (!v.isBlank()) { l.label = v.trim(); save(); }
         });
-        g.text(font, fit(l.mesh, w), x, y + 10, FAINT, false);
-        y += 23;
-        int half = (w - GAP) / 2;
-        secondaryButton(g, mx, my, x, y, half, Lang.t("button.duplicate"), () -> {
+        y += 14;
+        // one row: Duplicate · Copy style · Paste style (tooltips explain them)
+        int third = (w - GAP * 2) / 3, bx2 = x + third + GAP, bx3 = x + (third + GAP) * 2, w3 = w - (third + GAP) * 2;
+        secondaryButton(g, mx, my, x, y, third, Lang.t("button.duplicate"), () -> {
             LayerConfig.Layer c = assets.editable().copyLayer(l);
             c.label = Lang.t("layer.copy_name", c.label);
             layers.add(selected + 1, c);
@@ -458,45 +454,23 @@ public final class RainiumScreen extends Screen {
             save();
             say(Lang.t("msg.duplicated", l.label), MUTED);
         });
-        boolean arm = confirmDelete == selected;
-        int dx = x + half + GAP, dw = w - half - GAP;
-        boolean dh = in(mx, my, dx, y, dw, ROW);
-        g.fill(dx, y, dx + dw, y + ROW, arm ? 0xFF5A2338 : dh ? FIELD_HOVER : FIELD);
-        g.outline(dx, y, dw, ROW, arm ? DANGER : FIELD_EDGE);
-        String dl = fit(Lang.t(arm ? "button.confirm" : "button.remove"), dw - 4);
-        g.text(font, dl, dx + (dw - font.width(Component.literal(dl))) / 2, y + 3, arm ? DANGER : TEXT, false);
-        hits.add(new Hit(dx, y, dw, ROW, () -> {
-            if (confirmDelete != selected) { confirmDelete = selected; keepConfirm = true; return; }
-            String n = layers.remove(selected).label;
-            confirmDelete = -1;
-            save();
-            say(Lang.t("msg.removed", n), MUTED);
-        }, null));
-        y += ROW + GAP;
-        secondaryButton(g, mx, my, x, y, half, Lang.t("button.copy_style"), () -> {
+        tip(mx, my, x, y, third, ROW, "duplicate");
+        secondaryButton(g, mx, my, bx2, y, third, Lang.t("button.copy_style"), () -> {
             styleClipboard = assets.editable().copyLayer(l);
             say(Lang.t("msg.style_copied", l.label), MUTED);
         });
+        tip(mx, my, bx2, y, third, ROW, "copy_style");
         if (styleClipboard != null) {
-            secondaryButton(g, mx, my, x + half + GAP, y, w - half - GAP, Lang.t("button.paste_style"), () -> {
+            secondaryButton(g, mx, my, bx3, y, w3, Lang.t("button.paste_style"), () -> {
                 LayerConfig.copyStyle(styleClipboard, l);
                 save();
                 say(Lang.t("msg.style_pasted", l.label), MUTED);
             });
         } else {
-            iconButton(g, mx, my, x + half + GAP, y, w - half - GAP, Lang.t("button.paste_style"), false, null);
+            iconButton(g, mx, my, bx3, y, w3, Lang.t("button.paste_style"), false, null);
         }
+        tip(mx, my, bx3, y, w3, ROW, "paste_style");
         y += ROW + GAP;
-        if (l.preset != null) {
-            y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.reset_preset"), () -> {
-                LayerConfig.Layer t = assets.presets.template(l);
-                if (t == null) { say(Lang.t("msg.preset_missing"), DANGER); return; }
-                LayerConfig.copyStyle(t, l);
-                l.mesh = t.mesh; l.groups = t.groups; l.texture = t.texture;
-                save();
-                say(Lang.t("msg.reset_preset", l.label), MUTED);
-            });
-        }
         y += 3;
 
         List<String> folderOpts = new ArrayList<>();
@@ -598,6 +572,35 @@ public final class RainiumScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "sway_with_movement", l.physics, () -> { l.physics = !l.physics; save(); });
         y = toggle(g, mx, my, x, y, w, "hide_while_gliding", l.hideWhenFlying, () -> { l.hideWhenFlying = !l.hideWhenFlying; save(); });
         y = cycle(g, mx, my, x, y, w, "model_axes", Lang.t(l.yUp ? "value.axes.blender" : "value.axes.minecraft"), d -> { l.yUp = !l.yUp; save(); });
+
+        y = section(g, x, y + 4, w, "layer");
+        int half = (w - GAP) / 2, dx = x, dw = w;
+        if (l.preset != null) {
+            secondaryButton(g, mx, my, x, y, half, Lang.t("button.reset_preset"), () -> {
+                LayerConfig.Layer t = assets.presets.template(l);
+                if (t == null) { say(Lang.t("msg.preset_missing"), DANGER); return; }
+                LayerConfig.copyStyle(t, l);
+                l.mesh = t.mesh; l.groups = t.groups; l.texture = t.texture;
+                save();
+                say(Lang.t("msg.reset_preset", l.label), MUTED);
+            });
+            tip(mx, my, x, y, half, ROW, "reset_preset");
+            dx = x + half + GAP; dw = w - half - GAP;
+        }
+        boolean arm = confirmDelete == selected;
+        boolean dh = in(mx, my, dx, y, dw, ROW);
+        g.fill(dx, y, dx + dw, y + ROW, arm ? 0xFF5A2338 : dh ? FIELD_HOVER : FIELD);
+        g.outline(dx, y, dw, ROW, arm ? DANGER : FIELD_EDGE);
+        String dl = fit(Lang.t(arm ? "button.confirm" : "button.remove"), dw - 4);
+        g.text(font, dl, dx + (dw - font.width(Component.literal(dl))) / 2, y + 3, arm ? DANGER : TEXT, false);
+        hits.add(new Hit(dx, y, dw, ROW, () -> {
+            if (confirmDelete != selected) { confirmDelete = selected; keepConfirm = true; return; }
+            String n = layers.remove(selected).label;
+            confirmDelete = -1;
+            save();
+            say(Lang.t("msg.removed", n), MUTED);
+        }, null));
+        y += ROW + GAP;
         return y;
     }
 
@@ -667,7 +670,7 @@ public final class RainiumScreen extends Screen {
                 say(Lang.t("msg.export_failed", ex.getMessage()), DANGER);
             }
         });
-        y = wrapped(g, x, y, w, Lang.t("folder.export_hint"), FAINT);
+        tip(mx, my, x, y - ROW - GAP, w, ROW, "export_zip");
 
         y = section(g, x, y + 4, w, "folder");
         int half = (w - GAP) / 2;
@@ -679,6 +682,7 @@ public final class RainiumScreen extends Screen {
             save();
             say(Lang.t("msg.ungrouped", name), MUTED);
         });
+        tip(mx, my, x, y, half, ROW, "ungroup");
         int dx = x + half + GAP, dw = w - half - GAP;
         boolean dh = in(mx, my, dx, y, dw, ROW);
         g.fill(dx, y, dx + dw, y + ROW, confirmFolderDelete ? 0xFF5A2338 : dh ? FIELD_HOVER : FIELD);
@@ -695,8 +699,8 @@ public final class RainiumScreen extends Screen {
             save();
             say(Lang.t("msg.folder_removed", name, parts.size()), MUTED);
         }, null));
-        y += ROW + GAP;
-        return wrapped(g, x, y + 2, w, Lang.t("folder.remove_hint"), FAINT);
+        tip(mx, my, dx, y, dw, ROW, "remove_folder");
+        return y + ROW + GAP;
     }
 
     // ------------------------------------------------------------------- Add
@@ -841,7 +845,6 @@ public final class RainiumScreen extends Screen {
                 y = toggle(g, mx, my, x, y, w, "one_layer_per_part_in_a_folder", importAsFolder, () -> importAsFolder = !importAsFolder);
             }
             y = primaryButtonRow(g, mx, my, x, y, w, Lang.t(impResult.groups().size() > 1 && importAsFolder ? "button.add_as_folder" : "button.add_as_layer"), this::commitImport);
-            y = wrapped(g, x, y, w, Lang.t("import.preview_hint"), FAINT);
         }
         y = section(g, x, y + 4, w, "orientation");
         y = cycle(g, mx, my, x, y, w, "axes", Lang.t("import.axes." + imp.axes.name().toLowerCase(Locale.ROOT)), d -> { imp.axes = cyc(ObjImport.Axes.values(), imp.axes, d); reconvert(); });
@@ -937,26 +940,35 @@ public final class RainiumScreen extends Screen {
 
         LayerConfig.Physics p = c.physics;
         y = section(g, x, y + 4, w, "motion");
-        exact(v -> { p.lag = clampF((float) v, 0, 0.2f); save(); });
-        y = stepper(g, mx, my, x, y, w, "trail", fmt(p.lag), d -> { p.lag = clampF(p.lag + d * 0.005f, 0, 0.2f); save(); });
-        exact(v -> { p.maxLag = clampF((float) v, 0, 1f); save(); });
-        y = stepper(g, mx, my, x, y, w, "max_trail", fmt(p.maxLag), d -> { p.maxLag = clampF(p.maxLag + d * 0.02f, 0, 1f); save(); });
-        exact(v -> { p.yawLag = clampF((float) v, 0, 0.5f); save(); });
-        y = stepper(g, mx, my, x, y, w, "turn_lag", fmt(p.yawLag), d -> { p.yawLag = clampF(p.yawLag + d * 0.01f, 0, 0.5f); save(); });
-        exact(v -> { p.maxYaw = clampF((float) v, 0, 60); save(); });
-        y = stepper(g, mx, my, x, y, w, "max_turn", fmt(p.maxYaw) + "°", d -> { p.maxYaw = clampF(p.maxYaw + d, 0, 60); save(); });
-        exact(v -> { p.stiffness = clampF((float) v, 1, 40); save(); });
-        y = stepper(g, mx, my, x, y, w, "springiness", fmt(p.stiffness), d -> { p.stiffness = clampF(p.stiffness + d * 0.5f, 1, 40); save(); });
-        exact(v -> { p.damping = clampF((float) v, 0.1f, 2f); save(); });
-        y = stepper(g, mx, my, x, y, w, "damping", fmt(p.damping), d -> { p.damping = clampF(p.damping + d * 0.05f, 0.1f, 2f); save(); });
-        exact(v -> { p.swayDeg = clampF((float) v, 0, 20); save(); });
-        y = stepper(g, mx, my, x, y, w, "idle_sway", fmt(p.swayDeg) + "°", d -> { p.swayDeg = clampF(p.swayDeg + d * 0.25f, 0, 20); save(); });
-        exact(v -> { p.swayHz = clampF((float) v, 0, 3); save(); });
-        y = stepper(g, mx, my, x, y, w, "sway_speed", fmt(p.swayHz) + " Hz", d -> { p.swayHz = clampF(p.swayHz + d * 0.05f, 0, 3); save(); });
-        exact(v -> { p.bob = clampF((float) v, 0, 0.2f); save(); });
-        y = stepper(g, mx, my, x, y, w, "idle_bob", fmt(p.bob), d -> { p.bob = clampF(p.bob + d * 0.002f, 0, 0.2f); save(); });
-        exact(v -> { p.bobHz = clampF((float) v, 0, 3); save(); });
-        y = stepper(g, mx, my, x, y, w, "bob_speed", fmt(p.bobHz) + " Hz", d -> { p.bobHz = clampF(p.bobHz + d * 0.05f, 0, 3); save(); });
+        int feel = Motion.match(p);
+        y = cycle(g, mx, my, x, y, w, "motion_feel", Lang.t(feel < 0 ? "value.feel.custom" : "value.feel." + Motion.NAMES[feel]), d -> {
+            int cur = Motion.match(p);
+            Motion.apply(p, Math.floorMod((cur < 0 ? Motion.NORMAL : cur) + d, Motion.NAMES.length));
+            save();
+        });
+        y = toggle(g, mx, my, x, y, w, "fine_tune_motion", showMotionDetails, () -> showMotionDetails = !showMotionDetails);
+        if (showMotionDetails) {
+            exact(v -> { p.lag = clampF((float) v, 0, 0.2f); save(); });
+            y = stepper(g, mx, my, x, y, w, "trail", fmt(p.lag), d -> { p.lag = clampF(p.lag + d * 0.005f, 0, 0.2f); save(); });
+            exact(v -> { p.maxLag = clampF((float) v, 0, 1f); save(); });
+            y = stepper(g, mx, my, x, y, w, "max_trail", fmt(p.maxLag), d -> { p.maxLag = clampF(p.maxLag + d * 0.02f, 0, 1f); save(); });
+            exact(v -> { p.yawLag = clampF((float) v, 0, 0.5f); save(); });
+            y = stepper(g, mx, my, x, y, w, "turn_lag", fmt(p.yawLag), d -> { p.yawLag = clampF(p.yawLag + d * 0.01f, 0, 0.5f); save(); });
+            exact(v -> { p.maxYaw = clampF((float) v, 0, 60); save(); });
+            y = stepper(g, mx, my, x, y, w, "max_turn", fmt(p.maxYaw) + "°", d -> { p.maxYaw = clampF(p.maxYaw + d, 0, 60); save(); });
+            exact(v -> { p.stiffness = clampF((float) v, 1, 40); save(); });
+            y = stepper(g, mx, my, x, y, w, "springiness", fmt(p.stiffness), d -> { p.stiffness = clampF(p.stiffness + d * 0.5f, 1, 40); save(); });
+            exact(v -> { p.damping = clampF((float) v, 0.1f, 2f); save(); });
+            y = stepper(g, mx, my, x, y, w, "damping", fmt(p.damping), d -> { p.damping = clampF(p.damping + d * 0.05f, 0.1f, 2f); save(); });
+            exact(v -> { p.swayDeg = clampF((float) v, 0, 20); save(); });
+            y = stepper(g, mx, my, x, y, w, "idle_sway", fmt(p.swayDeg) + "°", d -> { p.swayDeg = clampF(p.swayDeg + d * 0.25f, 0, 20); save(); });
+            exact(v -> { p.swayHz = clampF((float) v, 0, 3); save(); });
+            y = stepper(g, mx, my, x, y, w, "sway_speed", fmt(p.swayHz) + " Hz", d -> { p.swayHz = clampF(p.swayHz + d * 0.05f, 0, 3); save(); });
+            exact(v -> { p.bob = clampF((float) v, 0, 0.2f); save(); });
+            y = stepper(g, mx, my, x, y, w, "idle_bob", fmt(p.bob), d -> { p.bob = clampF(p.bob + d * 0.002f, 0, 0.2f); save(); });
+            exact(v -> { p.bobHz = clampF((float) v, 0, 3); save(); });
+            y = stepper(g, mx, my, x, y, w, "bob_speed", fmt(p.bobHz) + " Hz", d -> { p.bobHz = clampF(p.bobHz + d * 0.05f, 0, 3); save(); });
+    }
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.reset_motion"), () -> {
             LayerConfig.Physics def = new LayerConfig.Physics();
             p.stiffness = def.stiffness; p.damping = def.damping; p.lag = def.lag; p.maxLag = def.maxLag;
@@ -985,7 +997,6 @@ public final class RainiumScreen extends Screen {
             });
             y += ROW + GAP;
         }
-        y = wrapped(g, x, y, w, Lang.t("settings.privacy_hint"), FAINT);
 
         y = section(g, x, y + 4, w, "updates");
         y = toggle(g, mx, my, x, y, w, "automatic_updates", c.autoUpdate, () -> { c.autoUpdate = !c.autoUpdate; save(); Updater.checkAsync(c.autoUpdate); });
