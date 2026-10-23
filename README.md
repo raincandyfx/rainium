@@ -96,6 +96,9 @@ When the editor shows a folder path, it replaces your computer's account name wi
 **Can other players see my cosmetics?**
 No. Rainium is a personal, client-side cosmetic, so only you see what you set up. To share a look, send someone your files or an exported zip.
 
+**Can I put my cosmetics on friends or on an armor stand?**
+On your screen, yes. In **Settings > Visibility**, **Show on** can include everyone, other players, or a list of player names, and **Armor stands** shows them on armor stands with a name tag you choose (for screenshots and displays). Nobody else sees this.
+
 **Does it work on servers?**
 Yes. It only runs on your side, so it works on any server and nothing needs to be installed there.
 

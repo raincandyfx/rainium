@@ -787,6 +787,18 @@ public final class RainiumScreen extends Screen {
         return y + rh + 1;
     }
 
+    /** "Label   [text]" row: click the text to type, Enter saves. */
+    private int textRow(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, String value, String placeholder, Consumer<String> commit) {
+        int lw = labelWidth(w);
+        g.text(font, fit(Lang.t("label." + id), lw - 2), x, y + 3, MUTED, false);
+        tip(mx, my, x, y, lw - 2, ROW, id);
+        g.fill(x + lw, y, x + w, y + ROW, FIELD);
+        boolean empty = value == null || value.isBlank();
+        textField(g, mx, my, x + lw + 4, y + 1, w - lw - 6, ROW - 2, "text:" + id, empty ? "" : value, false, TEXT, commit);
+        if (empty && !("text:" + id).equals(editId)) g.text(font, fit(placeholder, w - lw - 8), x + lw + 4, y + 3, FAINT, false);
+        return y + ROW + GAP;
+    }
+
     /** Draws a thumbnail (or an empty frame while it's being made), one fill per run of equal pixels. */
     private void thumb(GuiGraphicsExtractor g, int x, int y, int[] px) {
         int n = Thumbs.SIZE;
@@ -989,6 +1001,15 @@ public final class RainiumScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "show_layers", c.enabled, () -> { c.enabled = !c.enabled; save(); });
         String who = Lang.t("value.show_on." + c.showOn.name().toLowerCase(Locale.ROOT));
         y = cycle(g, mx, my, x, y, w, "show_on", who, d -> { c.showOn = cyc(LayerConfig.ShowOn.values(), c.showOn, d); save(); });
+        if (c.showOn == LayerConfig.ShowOn.LISTED)
+            y = textRow(g, mx, my, x, y, w, "players", String.join(", ", c.players), Lang.t("value.players_empty"), v -> {
+                c.players.clear();
+                for (String n : v.split("[,\\s]+")) if (!n.isBlank()) c.players.add(n.trim());
+                save();
+            });
+        y = toggle(g, mx, my, x, y, w, "armor_stands", c.armorStands, () -> { c.armorStands = !c.armorStands; save(); });
+        if (c.armorStands)
+            y = textRow(g, mx, my, x, y, w, "stand_name", c.armorStandName, "", v -> { c.armorStandName = v.trim(); save(); });
 
         LayerConfig.Physics p = c.physics;
         y = section(g, x, y + 4, w, "motion");
@@ -1288,7 +1309,7 @@ public final class RainiumScreen extends Screen {
             if (c != 0) {
                 if (editReplace) editBuf.setLength(0);
                 editReplace = false;
-                if (editBuf.length() < 40) editBuf.append(c);
+                if (editBuf.length() < (editNumeric ? 40 : 200)) editBuf.append(c);
             }
             return true;   // swallow everything else while typing (so letters don't trigger keybinds)
         }

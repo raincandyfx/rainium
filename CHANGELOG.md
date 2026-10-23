@@ -2,6 +2,12 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.3.4 (dev build)
+
+- **Show on** has a new choice, **Listed players**: your layers appear on the players you name.
+- **Armor stands**: your layers can also appear on armor stands with a chosen name tag (default "Rainium"), for screenshots and displays.
+- Both only change what you see.
+
 ## 0.3.3 (dev build)
 
 - The Add tab shows a small picture of each preset and model.

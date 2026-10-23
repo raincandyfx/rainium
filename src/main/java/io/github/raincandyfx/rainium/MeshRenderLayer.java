@@ -43,7 +43,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         java.util.List<Assets.Resolved> layers = new java.util.ArrayList<>(st.config().enabled ? st.layers() : java.util.List.of());
         if (preview != null) layers.add(preview);
         if (layers.isEmpty()) return;
-        if (!editorPreview && !shouldShow(st.config().showOn, state.id)) return;
+        if (!editorPreview && !shouldShow(st.config(), state.id)) return;
 
         Sway.Pose sp = Sway.Pose.REST;
         if (st.anyPhysics() || preview != null) {
@@ -52,24 +52,44 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         }
         int hurtOverlay = LivingEntityRenderer.getOverlayCoords(state, 0f);
         PlayerModel model = getParentModel();
+        Bones bones = (p, anchor) -> {
+            switch (anchor) {
+                case BODY -> model.body.translateAndRotate(p);
+                case HEAD -> model.head.translateAndRotate(p);
+                case LEFT_ARM -> model.leftArm.translateAndRotate(p);
+                case RIGHT_ARM -> model.rightArm.translateAndRotate(p);
+                case LEFT_LEG -> model.leftLeg.translateAndRotate(p);
+                case RIGHT_LEG -> model.rightLeg.translateAndRotate(p);
+                case ROOT -> { }
+            }
+        };
 
         for (Assets.Resolved r : layers) {
             LayerConfig.Layer l = r.cfg();
             if (l.hideWhenFlying && state.isFallFlying) continue;
-            if (l.anchor.limb()) {
-                // On an arm or leg, "Mirrored copy" means a copy on the opposite limb.
-                submitLayer(ps, collector, light, hurtOverlay, model, sp, st, r, l.anchor, MIRROR_NONE);
-                if (l.mirror) submitLayer(ps, collector, light, hurtOverlay, model, sp, st, r, l.anchor.opposite(), MIRROR_LIMB);
-            } else {
-                submitLayer(ps, collector, light, hurtOverlay, model, sp, st, r, l.anchor, l.mirror ? MIRROR_BOTH : MIRROR_NONE);
-            }
+            submitAll(ps, collector, light, hurtOverlay, bones, sp, st, r);
+        }
+    }
+
+    /** Moves the pose to an attachment point of the model being drawn. */
+    interface Bones { void apply(PoseStack ps, LayerConfig.Anchor anchor); }
+
+    static void submitAll(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, Bones bones, Sway.Pose sp,
+                          Assets.State st, Assets.Resolved r) {
+        LayerConfig.Layer l = r.cfg();
+        if (l.anchor.limb()) {
+            // On an arm or leg, "Mirrored copy" means a copy on the opposite limb.
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_NONE);
+            if (l.mirror) submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor.opposite(), MIRROR_LIMB);
+        } else {
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, l.mirror ? MIRROR_BOTH : MIRROR_NONE);
         }
     }
 
     private static final int MIRROR_NONE = 0, MIRROR_BOTH = 1, MIRROR_LIMB = 2;
 
-    private void submitLayer(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, PlayerModel model, Sway.Pose sp,
-                             Assets.State st, Assets.Resolved r, LayerConfig.Anchor anchor, int mirrorMode) {
+    private static void submitLayer(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, Bones bones, Sway.Pose sp,
+                                    Assets.State st, Assets.Resolved r, LayerConfig.Anchor anchor, int mirrorMode) {
         LayerConfig.Layer l = r.cfg();
         ps.pushPose();
         if (l.physics) {
@@ -79,15 +99,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
                 ps.rotateDegrees(Axis.YP, sp.yawDeg() * k);
             }
         }
-        switch (anchor) {
-            case BODY -> model.body.translateAndRotate(ps);
-            case HEAD -> model.head.translateAndRotate(ps);
-            case LEFT_ARM -> model.leftArm.translateAndRotate(ps);
-            case RIGHT_ARM -> model.rightArm.translateAndRotate(ps);
-            case LEFT_LEG -> model.leftLeg.translateAndRotate(ps);
-            case RIGHT_LEG -> model.rightLeg.translateAndRotate(ps);
-            case ROOT -> { }
-        }
+        bones.apply(ps, anchor);
         // The copy on the opposite limb is the layer reflected left/right: reflect the layer's own
         // placement here and its vertices in emit (two reflections, so faces keep their winding).
         if (mirrorMode == MIRROR_LIMB) ps.scale(-1f, 1f, 1f);
@@ -110,11 +122,28 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         ps.popPose();
     }
 
-    private static boolean shouldShow(LayerConfig.ShowOn mode, int id) {
+    private static boolean shouldShow(LayerConfig cfg, int id) {
+        LayerConfig.ShowOn mode = cfg.showOn;
         if (mode == LayerConfig.ShowOn.ALL) return true;
         Minecraft mc = Minecraft.getInstance();
         boolean self = mc.player == null || mc.player.getId() == id; // no player (e.g. menus) -> treat as self
-        return mode == LayerConfig.ShowOn.SELF ? self : !self;
+        return switch (mode) {
+            case SELF -> self;
+            case OTHERS -> !self;
+            case LISTED -> cfg.listsPlayer(entityName(id, false));
+            default -> true;
+        };
+    }
+
+    /** The name (or, for custom=true, the name tag) of the entity with this id, or null. */
+    static String entityName(int id, boolean custom) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return mc.player != null && mc.player.getId() == id ? mc.player.getName().getString() : null;
+        net.minecraft.world.entity.Entity e = mc.level.getEntity(id);
+        if (e == null) return null;
+        if (!custom) return e.getName().getString();
+        net.minecraft.network.chat.Component n = e.getCustomName();
+        return n == null ? null : n.getString();
     }
 
     private static int defaultOrder(LayerConfig.Render r) {

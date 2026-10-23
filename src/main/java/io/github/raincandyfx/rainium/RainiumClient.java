@@ -30,6 +30,7 @@ public final class RainiumClient implements ClientModInitializer {
             if (renderer instanceof AvatarRenderer<?> avatar) {
                 helper.register(new MeshRenderLayer(avatar));
             }
+            if (type == net.minecraft.world.entity.EntityType.ARMOR_STAND) registerStandLayer(renderer, helper);
         });
 
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("rainium", "main"));
@@ -60,5 +61,10 @@ public final class RainiumClient implements ClientModInitializer {
     }
 
     static void open() { openNextTick = true; }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void registerStandLayer(Object renderer, LivingEntityRenderLayerRegistrationCallback.RegistrationHelper helper) {
+        helper.register(new StandRenderLayer((net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
+    }
 
 }

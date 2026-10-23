@@ -7,7 +7,7 @@ import java.util.Map;
 
 /** Parsed contents of config/rainium/layers.json. Pure data; no Minecraft classes. */
 final class LayerConfig {
-    enum ShowOn { SELF, ALL, OTHERS }
+    enum ShowOn { SELF, ALL, OTHERS, LISTED }
     enum Anchor {
         BODY, ROOT, HEAD, LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG;   // left/right are the player's own
         boolean limb() { return ordinal() >= LEFT_ARM.ordinal(); }
@@ -91,6 +91,13 @@ final class LayerConfig {
         float motion = 1f;            // multiplier on movement sway for this folder's parts (0 = still)
     }
 
+    /** Whether a player name is on the "Listed players" list (not case-sensitive). */
+    boolean listsPlayer(String name) {
+        if (name == null) return false;
+        for (String p : players) if (p.equalsIgnoreCase(name.trim())) return true;
+        return false;
+    }
+
     /** Motion strength for a layer: its folder's setting, or 1. */
     float motionOf(Layer l) {
         if (l.folder == null) return 1f;
@@ -122,6 +129,9 @@ final class LayerConfig {
 
     boolean enabled = true;
     ShowOn showOn = ShowOn.SELF;
+    List<String> players = new ArrayList<>();          // for ShowOn.LISTED
+    boolean armorStands = false;                       // also draw layers on armor stands named armorStandName
+    String armorStandName = "Rainium";
     Privacy.Mode privacyMode = Privacy.Mode.INGAME;   // what replaces the account name in shown paths
     String privacyName = "";
     boolean autoUpdate = true;                         // check GitHub for updates once per launch
@@ -229,6 +239,11 @@ final class LayerConfig {
         LayerConfig c = new LayerConfig();
         c.enabled = bool(m, "enabled", true);
         c.showOn = enumOf(ShowOn.class, m.get("show_on"), ShowOn.SELF, "show_on");
+        if (m.get("players") instanceof List<?> pl) for (Object o : pl) if (o != null && !String.valueOf(o).isBlank()) c.players.add(String.valueOf(o).trim());
+        if (m.get("armor_stands") instanceof Map<?, ?> am) {
+            if (am.get("enabled") instanceof Boolean b) c.armorStands = b;
+            if (am.get("name") instanceof String n) c.armorStandName = n;
+        }
         if (m.get("updates") instanceof Map<?, ?> um) {
             if (um.get("automatic") instanceof Boolean b) c.autoUpdate = b;
             if (um.get("dev_builds") instanceof Boolean b) c.devUpdates = b;
@@ -385,6 +400,11 @@ final class LayerConfig {
         Map<String, Object> m = new java.util.LinkedHashMap<>();
         m.put("enabled", enabled);
         m.put("show_on", showOn.name().toLowerCase(Locale.ROOT));
+        if (!players.isEmpty()) m.put("players", new ArrayList<Object>(players));
+        Map<String, Object> as = new java.util.LinkedHashMap<>();
+        as.put("enabled", armorStands);
+        as.put("name", armorStandName);
+        m.put("armor_stands", as);
         Map<String, Object> pv = new java.util.LinkedHashMap<>();
         pv.put("name_in_paths", privacyMode.name().toLowerCase(Locale.ROOT));
         if (privacyName != null && !privacyName.isBlank()) pv.put("custom_name", privacyName);
