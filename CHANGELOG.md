@@ -1,6 +1,10 @@
 # Changelog
 
-Rainium is in beta: versions stay at 0.1.x until 1.0.0.
+Rainium is in beta (0.x) until 1.0.0.
+
+## 0.2.0
+
+- First release on GitHub, and a check that automatic updates work: with 0.1.6 installed, the game should download this version and install it when you close it. Nothing else changed since 0.1.6.
 
 ## 0.1.6
 
