@@ -173,6 +173,20 @@ final class Assets {
     }
 
     /** Load (or fetch from cache) a mesh file from the folder. Throws with a readable message on failure. */
+    /** Parts of a model file for a thumbnail: mesh JSON, OBJ, glTF or GLB (imported with default options). */
+    java.util.Collection<Mesh.Group> previewGroups(String file) {
+        try {
+            String lower = file.toLowerCase(Locale.ROOT);
+            Path p = dir.resolve(file).normalize();
+            if (lower.endsWith(".json")) return mesh(file).groups.values();
+            ObjImport.Parsed parsed = lower.endsWith(".obj") ? ObjImport.parse(Files.readString(p))
+                : GltfImport.load(Files.readAllBytes(p), p.getParent()).parsed();
+            return Mesh.fromJson(Json.parse(ObjImport.convert(parsed, new ObjImport.Options()).json())).groups.values();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     synchronized Mesh mesh(String file) throws IOException {
         Path meshPath = dir.resolve(file).normalize();
         long ms = stamp(meshPath);

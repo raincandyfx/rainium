@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.3.3 (dev build)
+
+- The Add tab shows a small picture of each preset and model.
+
 ## 0.3.2 (dev build)
 
 - The editor imports **glTF and GLB** models as well as OBJ, with the same live preview and options. A texture packed inside a `.glb` is saved next to the model and used automatically.

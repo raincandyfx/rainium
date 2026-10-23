@@ -708,14 +708,16 @@ public final class RainiumScreen extends Screen {
     // ------------------------------------------------------------------- Add
     private int addTab(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
         y = section(g, x, y, w, "presets");
+        int th = Thumbs.SIZE + 4;   // thumbnail column
         for (Presets.Info p : presetList) {
-            List<String> lines = wrapLines(p.description(), w - 12, 2);
-            int ch = 19 + lines.size() * 10 + 3;
+            List<String> lines = wrapLines(p.description(), w - 12 - th, 2);
+            int ch = Math.max(19 + lines.size() * 10 + 3, th + 6);
             boolean hov = in(mx, my, x, y, w, ch);
             g.fill(x, y, x + w, y + ch, hov ? FIELD_HOVER : FIELD);
             g.fill(x, y, x + 2, y + ch, ACCENT);
-            g.text(font, fit(p.name(), w - 46), x + 7, y + 5, TEXT, false);
-            for (int li = 0; li < lines.size(); li++) g.text(font, lines.get(li), x + 7, y + 18 + li * 10, MUTED, false);
+            thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
+            g.text(font, fit(p.name(), w - 46 - th), x + 7 + th, y + 5, TEXT, false);
+            for (int li = 0; li < lines.size(); li++) g.text(font, lines.get(li), x + 7 + th, y + 18 + li * 10, MUTED, false);
             String chip = Lang.t("preset.add");
             int cwid = font.width(Component.literal(chip)) + 8;
             g.fill(x + w - cwid - 5, y + 4, x + w - 5, y + 14, ACCENT);
@@ -730,10 +732,10 @@ public final class RainiumScreen extends Screen {
         if (own.isEmpty() && objFiles.isEmpty()) {
             y = wrapped(g, x, y, w, Lang.t("add.empty_hint"), MUTED);
         }
-        for (String f : own) y = listRow(g, mx, my, x, y, w, f, "mesh", () -> addMesh(f));
+        for (String f : own) y = modelRow(g, mx, my, x, y, w, f, "mesh", () -> addMesh(f));
         for (String f : objFiles) {
             if (f.startsWith("presets/")) continue;
-            y = listRow(g, mx, my, x, y, w, f, "import", () -> openImport(f));
+            y = modelRow(g, mx, my, x, y, w, f, "import", () -> openImport(f));
         }
         if (!setZips.isEmpty()) {
             y = section(g, x, y + 5, w, "shared_sets");
@@ -768,6 +770,37 @@ public final class RainiumScreen extends Screen {
         if (state != null) cfg.folders.put(to, state);
         selectedFolder = to;
         save();
+    }
+
+    /** A model file in the Add tab, with a small picture of it. */
+    private int modelRow(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String file, String kind, Runnable click) {
+        int rh = Thumbs.SIZE + 2;
+        boolean hov = in(mx, my, x, y, w, rh);
+        if (hov) g.fill(x, y, x + w, y + rh, HOVER);
+        java.nio.file.Path path = assets.dir().resolve(file);
+        thumb(g, x + 1, y + 1, Thumbs.get(Thumbs.key(path), () -> assets.previewGroups(file)));
+        String kindText = Lang.t("add.kind." + kind);
+        int kw = font.width(Component.literal(kindText)), tx = x + Thumbs.SIZE + 6;
+        g.text(font, fit(file, x + w - kw - 8 - tx), tx, y + (rh - 8) / 2, TEXT, false);
+        g.text(font, kindText, x + w - kw - 3, y + (rh - 8) / 2, kind.equals("import") ? ACCENT : MUTED, false);
+        hits.add(new Hit(x, y, w, rh, click, null));
+        return y + rh + 1;
+    }
+
+    /** Draws a thumbnail (or an empty frame while it's being made), one fill per run of equal pixels. */
+    private void thumb(GuiGraphicsExtractor g, int x, int y, int[] px) {
+        int n = Thumbs.SIZE;
+        g.fill(x, y, x + n, y + n, 0x40081038);
+        if (px == null) return;
+        for (int r = 0; r < n; r++) {
+            int c = 0;
+            while (c < n) {
+                int col = px[r * n + c], end = c + 1;
+                while (end < n && px[r * n + end] == col) end++;
+                if ((col >>> 24) != 0) g.fill(x + c, y + r, x + end, y + r + 1, col);
+                c = end;
+            }
+        }
     }
 
     private int listRow(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String name, String kind, Runnable click) {

@@ -59,6 +59,38 @@ final class Presets {
         return out;
     }
 
+    /** The preset's model for a thumbnail, read without installing anything; null if unavailable. */
+    java.util.Collection<Mesh.Group> previewGroups(String id) {
+        try {
+            String json = null;
+            if (id.equals(HALO)) {
+                try (InputStream in = Presets.class.getResourceAsStream(HALO_RES + "halo.json")) { if (in != null) json = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
+            } else if (id.equals(WINGS)) {
+                Path copied = assets.dir().resolve("presets/wings/wings_mesh.json");
+                if (Files.exists(copied)) json = Files.readString(copied);
+                else {
+                    Path jar = wingSource();
+                    if (jar != null && !jar.toString().equals("<classpath>")) {
+                        try (ZipFile zip = new ZipFile(jar.toFile())) {
+                            ZipEntry e = zip.getEntry(PACK_MESH);
+                            if (e != null) try (InputStream in = zip.getInputStream(e)) { json = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
+                        }
+                    } else if (jar != null) {
+                        try (InputStream in = Presets.class.getResourceAsStream("/" + PACK_MESH)) { if (in != null) json = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
+                    }
+                }
+            }
+            if (json == null) return null;
+            Mesh m = Mesh.fromJson(Json.parse(json));
+            // the wings preset hides its aura by default; leave it out of the picture too
+            java.util.List<Mesh.Group> gs = new java.util.ArrayList<>();
+            for (Mesh.Group g : m.groups.values()) if (!g.name().startsWith("aura")) gs.add(g);
+            return gs;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /** Copies the preset's files into presets/&lt;id&gt;/ if needed and returns new layers for it, in a fresh folder. */
     List<LayerConfig.Layer> install(String id) throws IOException {
         List<LayerConfig.Layer> layers = switch (id) {
