@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +42,8 @@ final class Updater {
     private static volatile State state = State.IDLE;
     private static volatile String detail = "";      // version for READY, reason for FAILED/UNAVAILABLE
     private static volatile boolean swapScheduled, swapCancelled;
+    private static volatile Path pendingOld, pendingNew;    // what the exit hook installs
+    private static volatile boolean includeDev;             // also take dev builds (pre-releases, x.y.1+)
 
     private Updater() {}
 
@@ -74,15 +75,17 @@ final class Updater {
         return p.length < 3 || num(p[2]) == 0;
     }
 
-    /** From GitHub's release list, the newest jar for this Minecraft version that beats current, or null. */
+    /** From GitHub's release list, the newest jar for this Minecraft version that beats current, or null.
+     *  Dev builds (pre-releases and x.y.1+ versions) only count when includeDev is on; drafts never do. */
     @SuppressWarnings("unchecked")
-    static Pick choose(Object releases, String current, String minecraft) {
+    static Pick choose(Object releases, String current, String minecraft, boolean includeDev) {
         if (!(releases instanceof List)) return null;
         Pick best = null;
         for (Object r : (List<Object>) releases) {
             if (!(r instanceof Map)) continue;
             Map<String, Object> rel = (Map<String, Object>) r;
-            if (Boolean.TRUE.equals(rel.get("draft")) || Boolean.TRUE.equals(rel.get("prerelease"))) continue;
+            if (Boolean.TRUE.equals(rel.get("draft"))) continue;
+            if (!includeDev && Boolean.TRUE.equals(rel.get("prerelease"))) continue;
             if (!(rel.get("assets") instanceof List)) continue;
             for (Object a : (List<Object>) rel.get("assets")) {
                 if (!(a instanceof Map)) continue;
@@ -91,7 +94,7 @@ final class Updater {
                 Matcher m = ASSET.matcher(name);
                 if (!m.matches() || !m.group(2).equals(minecraft)) continue;
                 String v = m.group(1);
-                if (!isStable(v)) continue;   // x.y.1+ are dev builds; players only get x.y.0 releases
+                if (!includeDev && !isStable(v)) continue;   // x.y.1+ are dev builds; by default only x.y.0 releases
                 if (compare(v, current) <= 0 || (best != null && compare(v, best.version()) <= 0)) continue;
                 String digest = asset.get("digest") instanceof String d && d.startsWith("sha256:") ? d.substring(7) : null;
                 long size = asset.get("size") instanceof Number n ? n.longValue() : -1;
@@ -121,7 +124,8 @@ final class Updater {
     // ------------------------------------------------------------------ in the game
 
     /** Starts a background check (unless disabled). Safe to call more than once; one check runs at a time. */
-    static synchronized void checkAsync(boolean enabled) {
+    static synchronized void checkAsync(boolean enabled, boolean dev) {
+        includeDev = dev;
         if (!enabled) { state = State.DISABLED; detail = ""; swapCancelled = true; return; }   // also drops a pending install
         if (state == State.CHECKING || state == State.READY) return;
         state = State.CHECKING;
@@ -150,7 +154,7 @@ final class Updater {
                 .timeout(Duration.ofSeconds(20)).build(), HttpResponse.BodyHandlers.ofString());
             if (res.statusCode() != 200) { finish(State.FAILED, "GitHub answered " + res.statusCode()); return; }
 
-            Pick pick = choose(Json.parse(res.body()), current, minecraft);
+            Pick pick = choose(Json.parse(res.body()), current, minecraft, includeDev);
             if (pick == null) { finish(State.UP_TO_DATE, current); return; }
 
             Path target = dir.resolve(pick.name());
@@ -175,6 +179,14 @@ final class Updater {
         } catch (Exception e) {
             finish(State.FAILED, e.getClass().getSimpleName() + (e.getMessage() == null ? "" : ": " + e.getMessage()));
         }
+    }
+
+    /** After the update settings change: drop any pending install and check again with the new settings. */
+    static synchronized void recheck(boolean enabled, boolean dev) {
+        if (state == State.CHECKING) { includeDev = dev; return; }
+        swapCancelled = true;
+        if (state == State.READY) state = State.IDLE;
+        checkAsync(enabled, dev);
     }
 
     private static void finish(State s, String d) {
@@ -211,21 +223,23 @@ final class Updater {
      * that waits for the game to close and then replaces the old jar with the new one.
      */
     private static synchronized void scheduleSwap(Path oldJar, Path newJar) throws IOException {
+        pendingOld = oldJar;
+        pendingNew = newJar;
         swapCancelled = false;
-        if (swapScheduled) return;
+        if (swapScheduled) return;   // the hook below always installs the latest pendingNew
         Path helper = newJar.resolveSibling("swap-helper.jar");
         Files.copy(oldJar, helper, StandardCopyOption.REPLACE_EXISTING);
         String java = ProcessHandle.current().info().command().orElse(null);
         if (java == null) throw new IOException("can't find the Java runtime");
         long pid = ProcessHandle.current().pid();
-        List<String> cmd = new ArrayList<>(List.of(java, "-cp", helper.toString(), UpdateSwap.class.getName(),
-            String.valueOf(pid), oldJar.toString(), newJar.toString()));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (swapCancelled) return;
+            if (swapCancelled || pendingNew == null) return;
+            List<String> cmd = List.of(java, "-cp", helper.toString(), UpdateSwap.class.getName(),
+                String.valueOf(pid), pendingOld.toString(), pendingNew.toString());
             try {
                 new ProcessBuilder(cmd)
                     .redirectErrorStream(true)
-                    .redirectOutput(ProcessBuilder.Redirect.appendTo(newJar.resolveSibling("update.log").toFile()))
+                    .redirectOutput(ProcessBuilder.Redirect.appendTo(helper.resolveSibling("update.log").toFile()))
                     .start();
             } catch (IOException ignored) { }
         }, "rainium-update-swap"));

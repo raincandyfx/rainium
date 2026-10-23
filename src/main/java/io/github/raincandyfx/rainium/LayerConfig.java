@@ -115,6 +115,7 @@ final class LayerConfig {
     Privacy.Mode privacyMode = Privacy.Mode.INGAME;   // what replaces the account name in shown paths
     String privacyName = "";
     boolean autoUpdate = true;                         // check GitHub for updates once per launch
+    boolean devUpdates = false;                        // also install dev builds (x.y.1+ pre-releases)
     final Physics physics = new Physics();
     final List<Layer> layers = new ArrayList<>();
     final Map<String, Folder> folders = new java.util.LinkedHashMap<>();
@@ -218,7 +219,10 @@ final class LayerConfig {
         LayerConfig c = new LayerConfig();
         c.enabled = bool(m, "enabled", true);
         c.showOn = enumOf(ShowOn.class, m.get("show_on"), ShowOn.SELF, "show_on");
-        if (m.get("updates") instanceof Map<?, ?> um && um.get("automatic") instanceof Boolean b) c.autoUpdate = b;
+        if (m.get("updates") instanceof Map<?, ?> um) {
+            if (um.get("automatic") instanceof Boolean b) c.autoUpdate = b;
+            if (um.get("dev_builds") instanceof Boolean b) c.devUpdates = b;
+        }
         if (m.get("privacy") instanceof Map) {
             Map<String, Object> pm = (Map<String, Object>) m.get("privacy");
             Object mode = pm.get("name_in_paths");
@@ -377,6 +381,7 @@ final class LayerConfig {
         m.put("privacy", pv);
         Map<String, Object> up = new java.util.LinkedHashMap<>();
         up.put("automatic", autoUpdate);
+        up.put("dev_builds", devUpdates);
         m.put("updates", up);
         Map<String, Object> p = new java.util.LinkedHashMap<>();
         p.put("stiffness", physics.stiffness); p.put("damping", physics.damping);

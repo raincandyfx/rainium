@@ -999,12 +999,14 @@ public final class RainiumScreen extends Screen {
         }
 
         y = section(g, x, y + 4, w, "updates");
-        y = toggle(g, mx, my, x, y, w, "automatic_updates", c.autoUpdate, () -> { c.autoUpdate = !c.autoUpdate; save(); Updater.checkAsync(c.autoUpdate); });
+        y = toggle(g, mx, my, x, y, w, "automatic_updates", c.autoUpdate, () -> { c.autoUpdate = !c.autoUpdate; save(); Updater.recheck(c.autoUpdate, c.devUpdates); });
+        if (c.autoUpdate)
+            y = toggle(g, mx, my, x, y, w, "dev_updates", c.devUpdates, () -> { c.devUpdates = !c.devUpdates; save(); Updater.recheck(true, c.devUpdates); });
         Updater.State us = Updater.state();
         int uc = us == Updater.State.READY ? ACCENT : us == Updater.State.FAILED ? WARN : FAINT;
         y = wrapped(g, x, y, w, Lang.t("update." + us.name().toLowerCase(Locale.ROOT), Updater.detail()), uc);
         if (us != Updater.State.CHECKING && us != Updater.State.READY && us != Updater.State.UNAVAILABLE)
-            y = secondaryButton(g, mx, my, x, y + 2, w, Lang.t("button.check_updates"), () -> Updater.checkAsync(true));
+            y = secondaryButton(g, mx, my, x, y + 2, w, Lang.t("button.check_updates"), () -> Updater.checkAsync(true, c.devUpdates));
         if (assets.lastError() != null) y = wrapped(g, x, y + 2, w, Lang.t("settings.problem", assets.lastError()), DANGER);
         return y;
     }

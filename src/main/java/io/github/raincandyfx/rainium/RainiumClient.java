@@ -24,7 +24,7 @@ public final class RainiumClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ASSETS.init();
-        Updater.checkAsync(ASSETS.editable().autoUpdate);
+        Updater.checkAsync(ASSETS.editable().autoUpdate, ASSETS.editable().devUpdates);
 
         LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, ctx) -> {
             if (renderer instanceof AvatarRenderer<?> avatar) {
