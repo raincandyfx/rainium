@@ -49,6 +49,7 @@
 - **Look:** texture, style (solid, see-through, glow), hue and opacity.
 - **Placement:** what it's attached to (body, head, or body without leaning), size, position and angle.
 - **Behaviour:** a mirrored copy (model one wing, get two), swaying with movement, hiding while gliding.
+- **Shown on:** which players and armor stands this layer appears on.
 
 Hover over any setting's name for a short explanation. Click any number to type an exact value, and use **Undo** / **Redo** in the top bar (or <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd>).
 
@@ -108,6 +109,8 @@ No. Rainium is a personal, client-side cosmetic, so only you see what you set up
 
 **Can I put my cosmetics on friends or on an armor stand?**
 On your screen, yes. In **Settings > Visibility**, **Show on** can include everyone, other players, or a list of player names, and **Armor stands** shows them on armor stands with a name tag you choose (for screenshots and displays). Nobody else sees this.
+
+Each layer and folder can also choose for itself under **Shown on** on the Edit tab, for example wings just on you and a halo on an armor stand named "Display". Left on **Default**, it follows its folder, then Settings.
 
 **Does it work on servers?**
 Yes. It only runs on your side, so it works on any server and nothing needs to be installed there.

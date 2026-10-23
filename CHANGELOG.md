@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.3.7 (dev build)
+
+- **Shown on** for each layer and folder: choose which players (just you, everyone, other players, listed players or nobody) and which armor stands each one appears on. Left on Default, a layer follows its folder, then Settings > Visibility.
+- Player name lists can be separated by commas or spaces.
+
 ## 0.3.6 (dev build)
 
 - Fixed particle layers failing on Windows with "Illegal char <:>" when using a Minecraft particle picture.

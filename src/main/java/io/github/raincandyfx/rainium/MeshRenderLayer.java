@@ -43,7 +43,9 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         java.util.List<Assets.Resolved> layers = new java.util.ArrayList<>(st.config().enabled ? st.layers() : java.util.List.of());
         if (preview != null) layers.add(preview);
         if (layers.isEmpty()) return;
-        if (!editorPreview && !shouldShow(st.config(), state.id)) return;
+        Minecraft mc = Minecraft.getInstance();
+        boolean self = mc.player == null || mc.player.getId() == state.id;   // no player (e.g. menus) -> treat as self
+        String[] name = {null};   // looked up only if a layer needs it
 
         Sway.Pose sp = Sway.Pose.REST;
         if (st.anyPhysics() || preview != null) {
@@ -67,6 +69,11 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         for (Assets.Resolved r : layers) {
             LayerConfig.Layer l = r.cfg();
             if (l.hideWhenFlying && state.isFallFlying) continue;
+            if (!editorPreview && r != preview) {   // the editor's preview shows everything you're working on
+                LayerConfig cfg = st.config();
+                if (cfg.playersFor(l) == LayerConfig.ShowOn.LISTED && name[0] == null) name[0] = entityName(state.id, false);
+                if (!cfg.showsOnPlayer(l, self, name[0])) continue;
+            }
             submitAll(ps, collector, light, hurtOverlay, bones, sp, st, r, new Where("p" + state.id + (editorPreview ? "e" : ""), state.x, state.y, state.z, editorPreview));
         }
     }
@@ -135,19 +142,6 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         OrderedSubmitNodeCollector target = order == 0 ? collector : collector.order(order);
         target.submitCustomGeometry(ps, renderType(l.render, r.texture()), geo);
         ps.popPose();
-    }
-
-    private static boolean shouldShow(LayerConfig cfg, int id) {
-        LayerConfig.ShowOn mode = cfg.showOn;
-        if (mode == LayerConfig.ShowOn.ALL) return true;
-        Minecraft mc = Minecraft.getInstance();
-        boolean self = mc.player == null || mc.player.getId() == id; // no player (e.g. menus) -> treat as self
-        return switch (mode) {
-            case SELF -> self;
-            case OTHERS -> !self;
-            case LISTED -> cfg.listsPlayer(entityName(id, false));
-            default -> true;
-        };
     }
 
     /** The name of the entity with this id, or null. */

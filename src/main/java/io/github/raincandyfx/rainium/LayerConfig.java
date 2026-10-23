@@ -7,7 +7,7 @@ import java.util.Map;
 
 /** Parsed contents of config/rainium/layers.json. Pure data; no Minecraft classes. */
 final class LayerConfig {
-    enum ShowOn { SELF, ALL, OTHERS, LISTED }
+    enum ShowOn { SELF, ALL, OTHERS, LISTED, NOBODY }
     enum Anchor {
         BODY, ROOT, HEAD, LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG;   // left/right are the player's own
         boolean limb() { return ordinal() >= LEFT_ARM.ordinal(); }
@@ -39,6 +39,7 @@ final class LayerConfig {
         boolean mirror = false;       // also draw a copy mirrored across X
         int order = -1;               // submit order; -1 = automatic (0 opaque, 1 translucent, 2 emissive)
         boolean hideWhenFlying = false;
+        Audience show = new Audience();   // who this layer shows on; unset parts come from its folder, then Settings
         String label;
         String folder;                // null = not in a folder
         String preset;                // "presetId:part" when created from a preset (for Reset to preset)
@@ -70,6 +71,7 @@ final class LayerConfig {
             if (mirror) m.put("mirror", true);
             m.put("physics", physics);
             if (hideWhenFlying) m.put("hide_when_flying", true);
+            if (!show.isDefault()) m.put("show", show.toJson());
             if (order >= 0) m.put("order", order);
             return m;
         }
@@ -95,6 +97,89 @@ final class LayerConfig {
         boolean enabled = true;
         boolean collapsed = false;
         float motion = 1f;            // multiplier on movement sway for this folder's parts (0 = still)
+        Audience show = new Audience();   // who the folder's parts show on (unless a part sets its own)
+    }
+
+    /**
+     * Who a layer or folder is drawn on. Each part can be left unset ("Default"), in which case it
+     * comes from the folder, and then from Settings > Visibility.
+     */
+    static final class Audience {
+        ShowOn players;          // null = default
+        List<String> names;      // player names for LISTED (null = default list)
+        List<String> stands;     // armor stand names (null = default; empty = none)
+
+        boolean isDefault() { return players == null && names == null && stands == null; }
+
+        Map<String, Object> toJson() {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            if (players != null) m.put("players", players.name().toLowerCase(Locale.ROOT));
+            if (names != null) m.put("names", new ArrayList<Object>(names));
+            if (stands != null) m.put("stands", new ArrayList<Object>(stands));
+            return m;
+        }
+
+        static Audience fromJson(Map<String, Object> m) {
+            Audience a = new Audience();
+            if (m.get("players") != null) a.players = enumOf(ShowOn.class, m.get("players"), ShowOn.SELF, "show.players");
+            if (m.get("names") instanceof List<?> l) a.names = cleanNames(l);
+            if (m.get("stands") instanceof List<?> l) a.stands = cleanNames(l);
+            return a;
+        }
+
+        Audience copy() { return fromJson(toJson()); }
+
+        private static List<String> cleanNames(List<?> l) {
+            List<String> out = new ArrayList<>();
+            for (Object o : l) if (o != null && !String.valueOf(o).isBlank()) out.add(String.valueOf(o).trim());
+            return out;
+        }
+    }
+
+    /** Who a layer shows on among players, after folder and Settings defaults. */
+    ShowOn playersFor(Layer l) {
+        if (l.show.players != null) return l.show.players;
+        Folder f = l.folder == null ? null : folders.get(l.folder);
+        if (f != null && f.show.players != null) return f.show.players;
+        return showOn;
+    }
+
+    /** The names a "Listed players" layer shows on. */
+    List<String> namesFor(Layer l) {
+        if (l.show.names != null) return l.show.names;
+        Folder f = l.folder == null ? null : folders.get(l.folder);
+        if (f != null && f.show.names != null) return f.show.names;
+        return players;
+    }
+
+    /** The armor stand names a layer shows on (empty = none). */
+    List<String> standsFor(Layer l) {
+        if (l.show.stands != null) return l.show.stands;
+        Folder f = l.folder == null ? null : folders.get(l.folder);
+        if (f != null && f.show.stands != null) return f.show.stands;
+        return armorStands && armorStandName != null && !armorStandName.isBlank() ? List.of(armorStandName.trim()) : List.of();
+    }
+
+    /** Whether layer l shows on the player with this name (self = it's you). */
+    boolean showsOnPlayer(Layer l, boolean self, String name) {
+        return switch (playersFor(l)) {
+            case SELF -> self;
+            case ALL -> true;
+            case OTHERS -> !self;
+            case NOBODY -> false;
+            case LISTED -> {
+                if (name == null) yield false;
+                for (String n : namesFor(l)) if (n.equalsIgnoreCase(name.trim())) yield true;
+                yield false;
+            }
+        };
+    }
+
+    /** Whether layer l shows on an armor stand with this name tag. */
+    boolean showsOnStand(Layer l, String standName) {
+        if (standName == null) return false;
+        for (String n : standsFor(l)) if (n.equalsIgnoreCase(standName.trim())) return true;
+        return false;
     }
 
     /** True for a game resource id like "minecraft:textures/particle/flame.png" (not a file in the config folder). */
@@ -291,6 +376,7 @@ final class LayerConfig {
                     f.enabled = bool(fm, "enabled", true);
                     f.collapsed = bool(fm, "collapsed", false);
                     f.motion = Math.max(0f, Math.min(5f, f(fm, "motion", 1f)));
+                    if (fm.get("show") instanceof Map<?, ?> sm) f.show = Audience.fromJson((Map<String, Object>) sm);
                 } else if (e.getValue() instanceof Boolean b) {
                     f.enabled = b;
                 }
@@ -350,6 +436,7 @@ final class LayerConfig {
         l.physics = bool(m, "physics", true);
         l.mirror = bool(m, "mirror", false);
         l.hideWhenFlying = bool(m, "hide_when_flying", false);
+        if (m.get("show") instanceof Map<?, ?> sm) l.show = Audience.fromJson((Map<String, Object>) sm);
         if (m.get("order") instanceof Number x) l.order = x.intValue();
         l.label = m.get("name") instanceof String s ? s : "layer #" + n;
         l.folder = m.get("folder") instanceof String s && !s.isBlank() ? s : null;
@@ -445,6 +532,7 @@ final class LayerConfig {
                 fm.put("enabled", f.enabled);
                 if (f.collapsed) fm.put("collapsed", true);
                 if (f.motion != 1f) fm.put("motion", (double) f.motion);
+                if (!f.show.isDefault()) fm.put("show", f.show.toJson());
                 fs.put(name, fm);
             }
             m.put("folders", fs);

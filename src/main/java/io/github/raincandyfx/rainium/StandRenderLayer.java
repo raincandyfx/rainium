@@ -36,10 +36,12 @@ final class StandRenderLayer<S extends LivingEntityRenderState, M extends Entity
     @Override
     public void submit(PoseStack ps, SubmitNodeCollector collector, int light, S state, float yRot, float xRot) {
         Assets.State st = RainiumClient.ASSETS.current();
-        if (st == null || !st.config().enabled || !st.config().armorStands || state.isInvisible) return;
-        String want = st.config().armorStandName == null ? "" : st.config().armorStandName.trim();
+        if (st == null || !st.config().enabled || state.isInvisible) return;
+        boolean any = false;   // skip the name lookup when no layer goes on stands
+        for (Assets.Resolved r : st.layers()) if (!st.config().standsFor(r.cfg()).isEmpty()) { any = true; break; }
+        if (!any) return;
         String name = standName(state);
-        if (name == null || !name.trim().equalsIgnoreCase(want)) return;
+        if (name == null) return;
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0f);
         MeshRenderLayer.Bones bones = (p, anchor) -> {
             switch (anchor) {
@@ -51,6 +53,7 @@ final class StandRenderLayer<S extends LivingEntityRenderState, M extends Entity
             }
         };
         MeshRenderLayer.Where where = new MeshRenderLayer.Where("s" + Math.round(state.x * 16) + "," + Math.round(state.y * 16) + "," + Math.round(state.z * 16), state.x, state.y, state.z, false);
-        for (Assets.Resolved r : st.layers()) MeshRenderLayer.submitAll(ps, collector, light, overlay, bones, Sway.Pose.REST, st, r, where);
+        for (Assets.Resolved r : st.layers())
+            if (st.config().showsOnStand(r.cfg(), name)) MeshRenderLayer.submitAll(ps, collector, light, overlay, bones, Sway.Pose.REST, st, r, where);
     }
 }

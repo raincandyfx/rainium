@@ -91,6 +91,10 @@ LAYER OPTIONS (each entry of "layers")
   name        label shown in the editor
   folder      folder this layer belongs to (top-level "folders": {"Name": {"enabled": false}}
               switches a whole folder off)
+  show        who this layer appears on, instead of the Settings choice (also allowed on a folder,
+              for every layer in it): { "players": self|all|others|listed|nobody,
+              "names": ["Alex"], "stands": ["Display"] }  ("stands": [] = no armor stands).
+              Anything left out follows the folder, then Settings.
   particles   makes the layer a particle emitter instead of a model (no "mesh" needed):
               { "shape": point|sphere|box|ring, "area": 0.25, "rate": 8, "when": always|moving|still|speed,
                 "life": 1.5, "size": 0.08, "end_size": 0.03, "speed": 0.3,

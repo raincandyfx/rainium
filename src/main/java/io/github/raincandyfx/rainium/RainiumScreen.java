@@ -598,6 +598,7 @@ public final class RainiumScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "mirrored_copy", l.mirror, () -> { l.mirror = !l.mirror; save(); });
         y = toggle(g, mx, my, x, y, w, "sway_with_movement", l.physics, () -> { l.physics = !l.physics; save(); });
         y = toggle(g, mx, my, x, y, w, "hide_while_gliding", l.hideWhenFlying, () -> { l.hideWhenFlying = !l.hideWhenFlying; save(); });
+        y = audience(g, mx, my, x, y + 4, w, l.show, l.folder == null ? null : assets.editable().folders.get(l.folder));
         if (!l.isParticles()) y = cycle(g, mx, my, x, y, w, "model_axes", Lang.t(l.yUp ? "value.axes.blender" : "value.axes.minecraft"), d -> { l.yUp = !l.yUp; save(); });
 
         y = section(g, x, y + 4, w, "layer");
@@ -686,6 +687,8 @@ public final class RainiumScreen extends Screen {
                 say(Lang.t("msg.style_pasted_all", parts.size()), MUTED);
             });
         }
+
+        y = audience(g, mx, my, x, y + 4, w, f.show, null);
 
         y = section(g, x, y + 4, w, "share");
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.export_zip"), () -> {
@@ -1054,7 +1057,7 @@ public final class RainiumScreen extends Screen {
         if (c.showOn == LayerConfig.ShowOn.LISTED)
             y = textRow(g, mx, my, x, y, w, "players", String.join(", ", c.players), Lang.t("value.players_empty"), v -> {
                 c.players.clear();
-                for (String n : v.split("[,\\s]+")) if (!n.isBlank()) c.players.add(n.trim());
+                c.players.addAll(splitPlayers(v));
                 save();
             });
         y = toggle(g, mx, my, x, y, w, "armor_stands", c.armorStands, () -> { c.armorStands = !c.armorStands; save(); });
@@ -1556,6 +1559,69 @@ public final class RainiumScreen extends Screen {
         drawSwitch(g, x + w - 19, y + 2, on);
         hits.add(new Hit(x, y, w, ROW, flip, null));
         return y + ROW + GAP;
+    }
+
+    /**
+     * "Shown on" settings for a layer (folder = the layer's folder, or null) or a folder (folder = null).
+     * "Default" uses the folder's choice, then Settings > Visibility; the default in force is shown in brackets.
+     */
+    private int audience(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Audience a, LayerConfig.Folder folder) {
+        LayerConfig c = assets.editable();
+        y = section(g, x, y, w, "shown_on");
+        LayerConfig.ShowOn inheritedMode = folder != null && folder.show.players != null ? folder.show.players : c.showOn;
+        List<String> inheritedNames = folder != null && folder.show.names != null ? folder.show.names : c.players;
+        List<String> inheritedStands = folder != null && folder.show.stands != null ? folder.show.stands
+            : c.armorStands && !c.armorStandName.isBlank() ? List.of(c.armorStandName) : List.of();
+
+        // players: Default, then each choice
+        LayerConfig.ShowOn[] modes = LayerConfig.ShowOn.values();
+        String pv = a.players == null
+            ? Lang.t("value.default_is", Lang.t("value.show_on." + inheritedMode.name().toLowerCase(Locale.ROOT)))
+            : Lang.t("value.show_on." + a.players.name().toLowerCase(Locale.ROOT));
+        y = cycle(g, mx, my, x, y, w, "on_players", pv, d -> {
+            int i = a.players == null ? -1 : a.players.ordinal();
+            int n = Math.floorMod(i + 1 + d, modes.length + 1) - 1;   // -1 = Default
+            a.players = n < 0 ? null : modes[n];
+            if (a.players == LayerConfig.ShowOn.LISTED && a.names == null) a.names = new ArrayList<>(inheritedNames);
+            if (a.players != LayerConfig.ShowOn.LISTED) a.names = null;
+            save();
+        });
+        if (a.players == LayerConfig.ShowOn.LISTED) {
+            y = textRow(g, mx, my, x, y, w, "players", String.join(", ", a.names), Lang.t("value.players_empty"), v -> {
+                a.names = splitPlayers(v);
+                save();
+            });
+        }
+
+        // armor stands: Default / None / Named
+        String sv = a.stands == null
+            ? Lang.t("value.default_is", inheritedStands.isEmpty() ? Lang.t("value.stands.none") : String.join(", ", inheritedStands))
+            : a.stands.isEmpty() ? Lang.t("value.stands.none") : Lang.t("value.stands.named");
+        y = cycle(g, mx, my, x, y, w, "on_stands", sv, d -> {
+            int i = a.stands == null ? 0 : a.stands.isEmpty() ? 1 : 2;
+            int n = Math.floorMod(i + d, 3);
+            a.stands = n == 0 ? null : n == 1 ? new ArrayList<>() : new ArrayList<>(inheritedStands.isEmpty() ? List.of("Rainium") : inheritedStands);
+            save();
+        });
+        if (a.stands != null && !a.stands.isEmpty()) {
+            y = textRow(g, mx, my, x, y, w, "stand_names", String.join(", ", a.stands), Lang.t("value.players_empty"), v -> {
+                a.stands = splitNames(v);
+                save();
+            });
+        }
+        return y;
+    }
+
+    /** Player names: separated by commas or spaces (names can't contain spaces). */
+    private static List<String> splitPlayers(String v) { return split(v, "[,\\s]+"); }
+
+    /** Armor stand names: separated by commas (name tags can contain spaces). */
+    private static List<String> splitNames(String v) { return split(v, ","); }
+
+    private static List<String> split(String v, String sep) {
+        List<String> out = new ArrayList<>();
+        for (String n : v.split(sep)) if (!n.isBlank()) out.add(n.trim());
+        return out;
     }
 
     /** Particle texture: Minecraft's particle pictures first, then PNGs from the rainium folder. */
