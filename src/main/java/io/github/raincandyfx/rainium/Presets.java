@@ -118,6 +118,7 @@ final class Presets {
         out.add(layer("Eyes", mesh, List.of("eye_core"), "presets/wings/wings_eye.png", LayerConfig.Render.CUTOUT_NO_CULL, 0xFFFFFFFF, true, true));
         out.add(layer("Eye shine", mesh, List.of("eye_shell"), "presets/wings/wings_eye.png", LayerConfig.Render.TRANSLUCENT_CULL, 0x80FFFFFF, true, true));
         out.add(layer("Aura", mesh, List.of("aura"), "presets/wings/wings_aura.png", LayerConfig.Render.TRANSLUCENT_EMISSIVE, 0x8CFFFFFF, true, false));
+        out.get(out.size() - 1).mirror = true;   // the aura mesh covers one wing; the mirrored copy covers the other
         for (LayerConfig.Layer l : out) {
             l.anchor = LayerConfig.Anchor.ROOT;   // the mesh is authored in model space
             l.preset = WINGS + ":" + l.groups.get(0);
@@ -168,28 +169,15 @@ final class Presets {
         // One layer per part of the model (rings / center / rungs)
         List<String> parts = new ArrayList<>(Mesh.fromJson(Json.parse(Files.readString(dst.resolve("halo.json")))).groups.keySet());
         List<LayerConfig.Layer> out = new ArrayList<>();
-        String rungs = null;
         for (String part : parts) {
             String nice = part.contains("_") ? part.substring(0, part.indexOf('_')) : part;   // "rings_Ornament_Gold" -> "rings"
-            if (nice.equalsIgnoreCase("rungs")) rungs = part;
             nice = nice.isEmpty() ? "Halo" : Character.toUpperCase(nice.charAt(0)) + nice.substring(1);
             LayerConfig.Layer l = layer(parts.size() == 1 ? "Halo" : nice, mesh, parts.size() == 1 ? null : List.of(part), tex,
                 LayerConfig.Render.CUTOUT_NO_CULL, 0xFFFFFFFF, false, true);
             haloPlacement(l);
+            l.fullbright = nice.equalsIgnoreCase("rungs");   // the rungs ignore world light, so they glow in the dark
             l.preset = HALO + ":" + part;
             out.add(l);
-        }
-        // Glow: the same model drawn again additively on top. A soft glow over the whole halo...
-        LayerConfig.Layer glow = layer("Glow", mesh, null, tex, LayerConfig.Render.EMISSIVE, 0xFF404040, true, true);
-        haloPlacement(glow);
-        glow.preset = HALO + ":glow";
-        out.add(glow);
-        // ...and a strong one on the rungs.
-        if (rungs != null) {
-            LayerConfig.Layer rg = layer("Rungs glow", mesh, List.of(rungs), tex, LayerConfig.Render.EMISSIVE, 0xFFFFFFFF, true, true);
-            haloPlacement(rg);
-            rg.preset = HALO + ":rungs_glow";
-            out.add(rg);
         }
         return out;
     }

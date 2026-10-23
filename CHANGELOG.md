@@ -2,6 +2,12 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.2.1 (dev build)
+
+- Fixed the wings' Aura showing on only one wing: it now has a mirrored copy, like the original.
+- Gold halo: the rungs ignore world light so they glow in the dark, replacing the two extra glow layers.
+- Both apply to newly added presets. For an existing setup, use **Reset to preset** on the Aura and on the halo's Rungs (and remove the halo's old Glow / Rungs glow layers), or add the preset again.
+
 ## 0.2.0
 
 - First release on GitHub, and a check that automatic updates work: with 0.1.6 installed, the game should download this version and install it when you close it.
