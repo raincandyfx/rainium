@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.3.1 (dev build)
+
+- New attachment points: **Left arm, Right arm, Left leg, Right leg**. Layers on them swing with your arms and legs. With **Mirrored copy** on, a copy goes on the other arm or leg.
+
 ## 0.3.0
 
 - New **Include dev builds** switch in Settings > Updates: also installs dev builds (early versions like 0.3.1) automatically. Off by default.

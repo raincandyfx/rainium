@@ -1502,6 +1502,10 @@ public final class RainiumScreen extends Screen {
             case BODY -> Lang.t("value.anchor.body");
             case HEAD -> Lang.t("value.anchor.head");
             case ROOT -> Lang.t("value.anchor.body_no_lean");
+            case LEFT_ARM -> Lang.t("value.anchor.left_arm");
+            case RIGHT_ARM -> Lang.t("value.anchor.right_arm");
+            case LEFT_LEG -> Lang.t("value.anchor.left_leg");
+            case RIGHT_LEG -> Lang.t("value.anchor.right_leg");
         };
     }
 

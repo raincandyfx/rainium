@@ -56,38 +56,58 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         for (Assets.Resolved r : layers) {
             LayerConfig.Layer l = r.cfg();
             if (l.hideWhenFlying && state.isFallFlying) continue;
-            ps.pushPose();
-            if (l.physics) {
-                float k = st.config().motionOf(l);   // per-folder motion strength
-                if (k != 0f) {
-                    ps.translate(sp.x() * k, sp.y() * k, sp.z() * k);
-                    ps.rotateDegrees(Axis.YP, sp.yawDeg() * k);
-                }
+            if (l.anchor.limb()) {
+                // On an arm or leg, "Mirrored copy" means a copy on the opposite limb.
+                submitLayer(ps, collector, light, hurtOverlay, model, sp, st, r, l.anchor, MIRROR_NONE);
+                if (l.mirror) submitLayer(ps, collector, light, hurtOverlay, model, sp, st, r, l.anchor.opposite(), MIRROR_LIMB);
+            } else {
+                submitLayer(ps, collector, light, hurtOverlay, model, sp, st, r, l.anchor, l.mirror ? MIRROR_BOTH : MIRROR_NONE);
             }
-            switch (l.anchor) {
-                case BODY -> model.body.translateAndRotate(ps);
-                case HEAD -> model.head.translateAndRotate(ps);
-                case ROOT -> { }
-            }
-            ps.translate(l.offset[0], l.offset[1], l.offset[2]);
-            if (l.rotation[0] != 0) ps.rotateDegrees(Axis.XP, l.rotation[0]);
-            if (l.rotation[1] != 0) ps.rotateDegrees(Axis.YP, l.rotation[1]);
-            if (l.rotation[2] != 0) ps.rotateDegrees(Axis.ZP, l.rotation[2]);
-            ps.scale(l.scale[0], l.scale[1], l.scale[2]);
-            if (l.yUp) ps.rotateDegrees(Axis.XP, 180f); // Y-up/front +Z  ->  model space (Y down, back +Z)
-
-            boolean emissive = l.render == LayerConfig.Render.EMISSIVE || l.render == LayerConfig.Render.TRANSLUCENT_EMISSIVE;
-            int lightValue = (l.fullbright || emissive) ? FULL_BRIGHT : light;
-            int overlay = emissive ? OverlayTexture.NO_OVERLAY : hurtOverlay;
-            int order = l.order >= 0 ? l.order : defaultOrder(l.render);
-            final Mesh.Group[] groups = r.groups();
-            final int color = l.hue == 0 ? l.color : Hue.rotateArgb(l.color, l.hue);
-            final boolean mirror = l.mirror;
-            SubmitNodeCollector.CustomGeometryRenderer geo = (pose, vc) -> emit(groups, pose, vc, color, lightValue, overlay, mirror);
-            OrderedSubmitNodeCollector target = order == 0 ? collector : collector.order(order);
-            target.submitCustomGeometry(ps, renderType(l.render, r.texture()), geo);
-            ps.popPose();
         }
+    }
+
+    private static final int MIRROR_NONE = 0, MIRROR_BOTH = 1, MIRROR_LIMB = 2;
+
+    private void submitLayer(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, PlayerModel model, Sway.Pose sp,
+                             Assets.State st, Assets.Resolved r, LayerConfig.Anchor anchor, int mirrorMode) {
+        LayerConfig.Layer l = r.cfg();
+        ps.pushPose();
+        if (l.physics) {
+            float k = st.config().motionOf(l);   // per-folder motion strength
+            if (k != 0f) {
+                ps.translate(sp.x() * k, sp.y() * k, sp.z() * k);
+                ps.rotateDegrees(Axis.YP, sp.yawDeg() * k);
+            }
+        }
+        switch (anchor) {
+            case BODY -> model.body.translateAndRotate(ps);
+            case HEAD -> model.head.translateAndRotate(ps);
+            case LEFT_ARM -> model.leftArm.translateAndRotate(ps);
+            case RIGHT_ARM -> model.rightArm.translateAndRotate(ps);
+            case LEFT_LEG -> model.leftLeg.translateAndRotate(ps);
+            case RIGHT_LEG -> model.rightLeg.translateAndRotate(ps);
+            case ROOT -> { }
+        }
+        // The copy on the opposite limb is the layer reflected left/right: reflect the layer's own
+        // placement here and its vertices in emit (two reflections, so faces keep their winding).
+        if (mirrorMode == MIRROR_LIMB) ps.scale(-1f, 1f, 1f);
+        ps.translate(l.offset[0], l.offset[1], l.offset[2]);
+        if (l.rotation[0] != 0) ps.rotateDegrees(Axis.XP, l.rotation[0]);
+        if (l.rotation[1] != 0) ps.rotateDegrees(Axis.YP, l.rotation[1]);
+        if (l.rotation[2] != 0) ps.rotateDegrees(Axis.ZP, l.rotation[2]);
+        ps.scale(l.scale[0], l.scale[1], l.scale[2]);
+        if (l.yUp) ps.rotateDegrees(Axis.XP, 180f); // Y-up/front +Z  ->  model space (Y down, back +Z)
+
+        boolean emissive = l.render == LayerConfig.Render.EMISSIVE || l.render == LayerConfig.Render.TRANSLUCENT_EMISSIVE;
+        int lightValue = (l.fullbright || emissive) ? FULL_BRIGHT : light;
+        int overlay = emissive ? OverlayTexture.NO_OVERLAY : hurtOverlay;
+        int order = l.order >= 0 ? l.order : defaultOrder(l.render);
+        final Mesh.Group[] groups = r.groups();
+        final int color = l.hue == 0 ? l.color : Hue.rotateArgb(l.color, l.hue);
+        SubmitNodeCollector.CustomGeometryRenderer geo = (pose, vc) -> emit(groups, pose, vc, color, lightValue, overlay, mirrorMode);
+        OrderedSubmitNodeCollector target = order == 0 ? collector : collector.order(order);
+        target.submitCustomGeometry(ps, renderType(l.render, r.texture()), geo);
+        ps.popPose();
     }
 
     private static boolean shouldShow(LayerConfig.ShowOn mode, int id) {
@@ -116,19 +136,19 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         };
     }
 
-    static void emit(Mesh.Group[] groups, PoseStack.Pose pose, VertexConsumer vc, int color, int light, int overlay, boolean mirror) {
+    static void emit(Mesh.Group[] groups, PoseStack.Pose pose, VertexConsumer vc, int color, int light, int overlay, int mirrorMode) {
         for (Mesh.Group g : groups) {
-            emitGroup(g, pose, vc, color, light, overlay, false);
-            if (mirror) emitGroup(g, pose, vc, color, light, overlay, true);
+            if (mirrorMode == MIRROR_LIMB) { emitGroup(g, pose, vc, color, light, overlay, -1f, false); continue; }
+            emitGroup(g, pose, vc, color, light, overlay, 1f, false);
+            if (mirrorMode == MIRROR_BOTH) emitGroup(g, pose, vc, color, light, overlay, -1f, true);
         }
     }
 
-    private static void emitGroup(Mesh.Group g, PoseStack.Pose pose, VertexConsumer vc, int color, int light, int overlay, boolean mirror) {
+    private static void emitGroup(Mesh.Group g, PoseStack.Pose pose, VertexConsumer vc, int color, int light, int overlay, float sx, boolean reverse) {
         float[] v = g.v();
         int[] q = g.q();
-        float sx = mirror ? -1f : 1f;
         for (int k = 0; k < q.length; k += 4) {
-            if (mirror) {
+            if (reverse) {
                 for (int j = 3; j >= 0; j--) vertex(v, q[k + j], pose, vc, color, light, overlay, sx);
             } else {
                 for (int j = 0; j < 4; j++) vertex(v, q[k + j], pose, vc, color, light, overlay, sx);

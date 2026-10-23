@@ -8,7 +8,17 @@ import java.util.Map;
 /** Parsed contents of config/rainium/layers.json. Pure data; no Minecraft classes. */
 final class LayerConfig {
     enum ShowOn { SELF, ALL, OTHERS }
-    enum Anchor { BODY, ROOT, HEAD }
+    enum Anchor {
+        BODY, ROOT, HEAD, LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG;   // left/right are the player's own
+        boolean limb() { return ordinal() >= LEFT_ARM.ordinal(); }
+        Anchor opposite() {
+            return switch (this) {
+                case LEFT_ARM -> RIGHT_ARM; case RIGHT_ARM -> LEFT_ARM;
+                case LEFT_LEG -> RIGHT_LEG; case RIGHT_LEG -> LEFT_LEG;
+                default -> this;
+            };
+        }
+    }
     enum Render { CUTOUT, CUTOUT_NO_CULL, TRANSLUCENT, TRANSLUCENT_CULL, EMISSIVE, TRANSLUCENT_EMISSIVE }
 
     static final class Layer {
