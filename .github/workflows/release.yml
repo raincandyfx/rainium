@@ -1,8 +1,10 @@
 name: Build & release
 
-# Every push to main is built to check it still compiles.
-# Pushing a tag like v0.1.5 builds that version and publishes it as a GitHub release
-# (the version comes from the tag); the in-game updater picks releases up from there.
+# Every push to main is built. When the push carries a version (mod_version in
+# gradle.properties) that has no release yet, that version is published:
+#   x.y.0  -> a normal release: what players get, including through the in-game updater
+#   x.y.1+ -> a pre-release marked "dev build": downloadable for testing, never auto-installed
+# Pushing a tag like v0.3.0 by hand publishes that version too.
 on:
   push:
     branches: [main]
@@ -11,11 +13,32 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: Work out the version
+        id: v
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            v="${GITHUB_REF_NAME#v}"; publish=true
+          else
+            v="$(sed -n 's/^mod_version=//p' gradle.properties | tr -d '[:space:]')"
+            if git ls-remote --exit-code --tags origin "refs/tags/v$v" >/dev/null; then publish=false; else publish=true; fi
+          fi
+          patch="${v##*.}"
+          if [[ "$patch" == "0" ]]; then dev=false; else dev=true; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "dev=$dev" >> "$GITHUB_OUTPUT"
+          echo "Version $v, publish: $publish, dev build: $dev"
 
       - uses: actions/setup-java@v5
         with:
@@ -28,25 +51,31 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          args=""
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then args="-Pmod_version=${GITHUB_REF_NAME#v}"; fi
-          if ! ./gradlew build $args 2>&1 | tee build.log; then
+          if ! ./gradlew build -Pmod_version="${{ steps.v.outputs.version }}" 2>&1 | tee build.log; then
             # surface the cause as annotations, which show on the run page without opening the log
             grep -E -A8 "What went wrong|error:|Could not" build.log | head -60 | while IFS= read -r l; do echo "::error::$l"; done
             exit 1
           fi
 
       - name: Release notes from CHANGELOG.md
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.v.outputs.publish == 'true'
+        shell: bash
         run: |
-          v="${GITHUB_REF_NAME#v}"
+          v="${{ steps.v.outputs.version }}"
           awk -v v="$v" '/^## /{ if (p) exit; p = ($2 == v) ; next } p' CHANGELOG.md > notes.md
           if [ ! -s notes.md ]; then echo "Rainium $v" > notes.md; fi
+          if [ "${{ steps.v.outputs.dev }}" = "true" ]; then
+            printf '> Dev build for testing. The in-game updater skips it; it installs only x.y.0 releases.\n\n' | cat - notes.md > n && mv n notes.md
+          fi
 
       - uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.v.outputs.publish == 'true'
         with:
-          name: Rainium ${{ github.ref_name }}
+          tag_name: v${{ steps.v.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Rainium v${{ steps.v.outputs.version }}${{ steps.v.outputs.dev == 'true' && ' (dev build)' || '' }}
+          prerelease: ${{ steps.v.outputs.dev == 'true' }}
+          make_latest: ${{ steps.v.outputs.dev == 'true' && 'false' || 'true' }}
           body_path: notes.md
           # rainium-<version>+<minecraft>.jar: the in-game updater looks for exactly this name
           files: |

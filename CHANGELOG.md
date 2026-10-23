@@ -4,7 +4,8 @@ Rainium is in beta (0.x) until 1.0.0.
 
 ## 0.2.0
 
-- First release on GitHub, and a check that automatic updates work: with 0.1.6 installed, the game should download this version and install it when you close it. Nothing else changed since 0.1.6.
+- First release on GitHub, and a check that automatic updates work: with 0.1.6 installed, the game should download this version and install it when you close it.
+- Automatic updates only install main releases (x.y.0). Versions like 0.2.1 are dev builds for testing: published as pre-releases and never installed automatically.
 
 ## 0.1.6
 

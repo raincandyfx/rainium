@@ -29,7 +29,9 @@ import java.util.zip.ZipFile;
  * Minecraft version (named rainium-&lt;version&gt;+&lt;minecraft&gt;.jar), downloads it into
  * config/rainium/update/, checks it, and swaps it into the mods folder after the game closes.
  * The swap runs in a small separate Java process, because Windows doesn't allow replacing a jar the
- * game still has open. Nothing is ever downgraded, and drafts and pre-releases are ignored.
+ * game still has open. Only player releases (versions ending in .0, e.g. 0.3.0) are installed:
+ * dev builds (0.3.1, 0.3.2 ...) are published as pre-releases for testing and skipped here, as are
+ * drafts. Nothing is ever downgraded.
  */
 final class Updater {
     static final String REPO = "raincandyfx/rainium";
@@ -66,6 +68,12 @@ final class Updater {
         try { return Integer.parseInt(s.replaceAll("\\D.*", "")); } catch (NumberFormatException e) { return 0; }
     }
 
+    /** Player releases end in .0 (0.2.0, 1.3.0); anything else (0.2.1, 1.3.4) is a dev build. */
+    static boolean isStable(String version) {
+        String[] p = version.split("[+-]", 2)[0].split("\\.");
+        return p.length < 3 || num(p[2]) == 0;
+    }
+
     /** From GitHub's release list, the newest jar for this Minecraft version that beats current, or null. */
     @SuppressWarnings("unchecked")
     static Pick choose(Object releases, String current, String minecraft) {
@@ -83,6 +91,7 @@ final class Updater {
                 Matcher m = ASSET.matcher(name);
                 if (!m.matches() || !m.group(2).equals(minecraft)) continue;
                 String v = m.group(1);
+                if (!isStable(v)) continue;   // x.y.1+ are dev builds; players only get x.y.0 releases
                 if (compare(v, current) <= 0 || (best != null && compare(v, best.version()) <= 0)) continue;
                 String digest = asset.get("digest") instanceof String d && d.startsWith("sha256:") ? d.substring(7) : null;
                 long size = asset.get("size") instanceof Number n ? n.longValue() : -1;

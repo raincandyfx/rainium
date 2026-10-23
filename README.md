@@ -83,6 +83,8 @@ Once per launch, Rainium checks this page's releases for a newer version made fo
 
 You can turn this off, see the status, or check right away in **Settings > Updates**. Checking means your game contacts GitHub, which can see your IP address.
 
+Only main releases (versions ending in **.0**, like 0.3.0) are installed automatically. Releases marked **dev build** (0.3.1, 0.3.2 ...) are early test versions: you can download them by hand from the releases page, and the game won't replace them until the next main release.
+
 ## Privacy
 
 Rainium doesn't collect or send anything about you. Its only network request is the optional update check above.
