@@ -17,7 +17,7 @@
 
 ## What it does
 
-- **Wear any 3D model.** Put wings on your back, a halo behind your head, a tail, ears or anything else. Import your own OBJ models right in the game.
+- **Wear any 3D model.** Put wings on your back, a halo behind your head, a tail, ears or anything else. Import your own OBJ, glTF or GLB models right in the game.
 - **Edit it live.** Press <kbd>K</kbd> and change textures, colours, glow, size, position and angle while watching your player update in real time. Everything saves automatically, and Undo is always there.
 - **Natural movement.** Cosmetics trail behind you as you run and turn, and sway gently when you stand still. You can make each one as bouncy or as still as you like.
 - **Group parts into folders.** A model made of several parts stays together: switch it on or off, resize it or move it in one go.
@@ -41,7 +41,7 @@
 **Try the example halo.** Rainium comes with a Gold halo that starts switched off. In the layer list on the left, click the square next to **Gold halo** to show it.
 
 **Add your own model.**
-1. Click **Open rainium folder** (on the Add or Settings tab) and drop in your `.obj` file, plus its `.png` texture if it has one.
+1. Click **Open rainium folder** (on the Add or Settings tab) and drop in your `.obj`, `.gltf` or `.glb` file, plus its `.png` texture if it has one (a texture inside a `.glb` is picked up automatically).
 2. On the **Add** tab, click your model. A live preview appears on your player while you adjust its size, orientation and position.
 3. Click **Add as layer** (or **Add as folder** if the model has several parts).
 
@@ -56,9 +56,9 @@ Hover over any setting's name for a short explanation. Click any number to type 
 
 ## Models from other programs
 
-The in-game import reads **OBJ** files, which nearly every 3D program can export. Blender exports work with the default settings.
+The in-game import reads **OBJ**, **glTF** and **GLB** files, which nearly every 3D program can export. Blender exports work with the default settings.
 
-For **glTF / GLB** files, or to convert without opening the game, there are two converters in [`tools/`](tools):
+To convert without opening the game, there are two converters in [`tools/`](tools):
 - `obj-converter.html`: open it in your browser, drop in an OBJ and download the result. Your model never leaves your computer.
 - `mesh_convert.py`: a command-line converter for OBJ, glTF and GLB (needs Python 3.8 or newer).
 

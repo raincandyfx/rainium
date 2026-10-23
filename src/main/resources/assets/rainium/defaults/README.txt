@@ -10,7 +10,7 @@ IN-GAME EDITOR: press K (rebindable under Controls > Rainium), run /rainium, or 
                 together, Ungroup, Remove folder). A layer's "Folder" picker moves it in/out.
   Edit tab:     part, model, texture, style, hue, opacity, placement, mirroring and sway,
                 shown live on your player. Duplicate / Remove sit under the layer's name.
-  Add tab:      presets, mesh files in this folder, and .obj files to import (with a live
+  Add tab:      presets, mesh files in this folder, and .obj / .gltf / .glb files to import (with a live
                 preview while you adjust axes, units and size).
   Settings tab: who sees the layers, motion/sway tuning, folder shortcuts, automatic updates
                 (checked once per launch from the mod's GitHub releases), and privacy:
@@ -63,8 +63,8 @@ MESH FILE FORMATS (all JSON; pick whichever is easiest)
      "flip_v": true flips texture V (for UVs authored with 0,0 at the bottom-left).
   3) A single group without a name: { "positions": [...], "triangles": [...] }
 
-  OBJ files can be imported from the in-game editor (Add tab). For glTF / GLB, or to
-  convert outside the game, use mesh_convert.py (copied into this folder):
+  OBJ, glTF and GLB files can be imported from the in-game editor (Add tab). To convert
+  outside the game, use mesh_convert.py (copied into this folder):
       python mesh_convert.py model.glb wings.json --scale 0.06
 
 LAYER OPTIONS (each entry of "layers")

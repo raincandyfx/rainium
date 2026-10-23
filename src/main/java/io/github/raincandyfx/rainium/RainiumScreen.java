@@ -78,6 +78,8 @@ public final class RainiumScreen extends Screen {
     private final ObjImport.Options imp = new ObjImport.Options();
     private String impFile;
     private ObjImport.Parsed impParsed;
+    private byte[] impPng;                                  // texture found inside a glTF/GLB being imported
+    private final List<ObjImport.Warning> impNotes = new ArrayList<>();
     private ObjImport.Result impResult;
     private String impError;
 
@@ -815,8 +817,20 @@ public final class RainiumScreen extends Screen {
     private void openImport(String f) {
         impFile = f;
         rightScroll = 0;
+        impPng = null;
+        impNotes.clear();
         try {
-            impParsed = ObjImport.parse(assets.readFile(f));
+            String lower = f.toLowerCase(Locale.ROOT);
+            if (lower.endsWith(".gltf") || lower.endsWith(".glb")) {
+                java.nio.file.Path file = assets.dir().resolve(f).normalize();
+                GltfImport.Loaded ld = GltfImport.load(java.nio.file.Files.readAllBytes(file), file.getParent());
+                impParsed = ld.parsed();
+                impPng = ld.png();
+                if (ld.textures() > 0 && ld.png() == null) impNotes.add(new ObjImport.Warning("texture_not_png"));
+                else if (ld.textures() > 1) impNotes.add(new ObjImport.Warning("extra_textures", ld.textures() - 1));
+            } else {
+                impParsed = ObjImport.parse(assets.readFile(f));
+            }
             impError = null;
         } catch (Exception e) {
             impParsed = null;
@@ -841,6 +855,7 @@ public final class RainiumScreen extends Screen {
             g.text(font, fit(Lang.t("import.parts", String.join(", ", impResult.groups())), w), x, y, FAINT, false);
             y += 13;
             for (ObjImport.Warning warn : impResult.warnings()) y = wrapped(g, x, y, w, Lang.t("import.warn." + warn.key(), warn.args()), WARN);
+            for (ObjImport.Warning warn : impNotes) y = wrapped(g, x, y, w, Lang.t("import.warn." + warn.key(), warn.args()), WARN);
             if (impResult.groups().size() > 1) {
                 y = toggle(g, mx, my, x, y, w, "one_layer_per_part_in_a_folder", importAsFolder, () -> importAsFolder = !importAsFolder);
             }
@@ -895,9 +910,13 @@ public final class RainiumScreen extends Screen {
         if (impResult == null || impFile == null) return;
         try {
             String fileOnly = impFile.substring(impFile.lastIndexOf('/') + 1);
-            String base = fileOnly.replaceAll("(?i)\\.obj$", "");
+            String base = fileOnly.replaceAll("(?i)\\.(obj|gltf|glb)$", "");
             String name = assets.writeMesh(base, impResult.json());
             String png = Assets.sanitizeFile(base) + ".png";
+            if (impPng != null && !pngFiles.contains(png)) {   // texture that came inside a glTF/GLB
+                java.nio.file.Files.write(assets.dir().resolve(png), impPng);
+                pngFiles = assets.files("png");
+            }
             String tex = pngFiles.contains(png) ? png : pngFiles.contains(base + ".png") ? base + ".png" : null;
             List<LayerConfig.Layer> layers = assets.editable().layers;
             List<String> parts = impResult.groups();
@@ -1144,7 +1163,10 @@ public final class RainiumScreen extends Screen {
         long now = System.currentTimeMillis();
         if (!force && now - filesCheckedAt < 2000) return;
         filesCheckedAt = now;
-        objFiles = assets.files("obj");
+        List<String> models = new ArrayList<>(assets.files("obj"));
+        models.addAll(assets.files("gltf"));
+        models.addAll(assets.files("glb"));
+        objFiles = models;
         meshFiles = assets.files("json");
         pngFiles = assets.files("png");
         presetList = assets.presets.list();
