@@ -173,13 +173,13 @@
 
   /* ============ HOME ============ */
   .home { position: absolute; inset: 0; overflow: hidden; }
-  .strip { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: clamp(150px, 15vw, 260px); background: var(--paper);
+  .strip { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: clamp(200px, 23vw, 400px); background: var(--paper);
     clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%); }
-  .vname { position: absolute; z-index: 3; left: clamp(4px, 1vw, 18px); bottom: 2vh; margin: 0; writing-mode: vertical-rl; transform: rotate(180deg);
+  .vname { position: absolute; z-index: 3; left: clamp(60px, 8vw, 150px); bottom: 2vh; margin: 0; writing-mode: vertical-rl; transform: rotate(180deg);
     font-size: clamp(8rem, 23vh, 15rem); color: var(--ink); line-height: 0.78; pointer-events: none; }
   .vname .echo { position: absolute; inset: 0; transform: translate(0.08em, -0.06em); color: transparent; -webkit-text-stroke: 2px #9aa3c2; z-index: -1; }
 
-  .hero { position: absolute; z-index: 4; left: 1vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
+  .hero { position: absolute; z-index: 4; left: 9vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
   .hero .ph { width: 100%; height: 100%; aspect-ratio: auto; clip-path: polygon(14% 0, 100% 0, 78% 100%, 0 100%); outline-offset: -10px;
     background: repeating-linear-gradient(-50deg, rgba(255,255,255,0.1) 0 2px, transparent 2px 16px), rgba(255,255,255,0.12); }
   .hero .ph span { font-size: 1.15rem; }
@@ -187,7 +187,7 @@
   .hero .ph.has img { object-fit: contain; object-position: center bottom; }
   /* The character recorded in game. When it loads, it replaces the picture slot. */
   .hero-model { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; }
-  .hero-model canvas { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; aspect-ratio: 598 / 960; transform: translate(-50%, -50%); }
+  .hero-model canvas { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; aspect-ratio: 674 / 960; transform: translate(-50%, -50%); }
   .hero-model.video img { display: none; }
   .hero-model img { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; transform: translate(-50%, -50%); }
   .hero-model .f { opacity: 0; }
@@ -207,7 +207,7 @@
   /* The pan off to the home page */
   .intro.panning { transform: translateX(-104%); transition: transform 0.8s cubic-bezier(.7,0,.2,1); pointer-events: none; }
 
-  .wallet { position: absolute; z-index: 5; left: clamp(70px, 7vw, 120px); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
+  .wallet { position: absolute; z-index: 5; left: clamp(120px, 13vw, 220px); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
     padding: 6px 18px 6px 12px; min-width: 170px; text-decoration: none; }
   .wallet b { display: block; font-weight: 600; font-stretch: 90%; font-size: 1.7rem; line-height: 1; letter-spacing: -0.01em; }
   .wallet span { font-style: italic; font-size: 0.72rem; font-weight: 600; }
@@ -909,15 +909,15 @@ function md(src) {
 
 <script>
 /* ---------- Home: the player and halo, recorded in game ----------
-   hero/sway.mp4 (or .webm) is a seamless 4 s loop at 30 fps, with the picture in the top half and its
+   hero/sway.mp4 (or .webm) is a seamless 2 s loop at 30 fps (frames 14–74 of the in-game recording), with the picture in the top half and its
    transparency in the bottom half (so it works in every browser); WebGL puts them back together.
-   If video or WebGL isn't available, the 33 still frames in hero/ cross-fade instead. */
+   If video or WebGL isn't available, every 4th frame (hero/00–15.webp) cross-fades instead. */
 window.startHero = (function () {
   let started = false;
   const onHome = () => document.body.dataset.page === "home" && !document.hidden;
   function videoPlayer(host, hero, still) {
     const canvas = document.createElement("canvas");
-    canvas.width = 598; canvas.height = 960;
+    canvas.width = 674; canvas.height = 960;
     const gl = canvas.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false });
     if (!gl) return false;
     const vs = "attribute vec2 p; varying vec2 uv; void main(){ uv = vec2(p.x * 0.5 + 0.5, 0.5 - p.y * 0.5); gl_Position = vec4(p, 0.0, 1.0); }";
@@ -963,7 +963,7 @@ window.startHero = (function () {
   }
   function fallback(host, hero, still) {
     const back = host.querySelector(".b"), front = host.querySelector(".f");
-    const N = 33, STEP = 240;
+    const N = 16, STEP = 133;
     const src = (i) => "hero/" + String(i).padStart(2, "0") + ".webp";
     const frames = [];
     for (let i = 0; i < N; i++) {
