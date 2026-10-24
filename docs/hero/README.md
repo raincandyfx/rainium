@@ -2,14 +2,18 @@
 
 The home page shows one of these at random; the arrows under the character step through the rest, round and round.
 
-Each folder here is one character, recorded in game with Rainium's recorder (0.4.2 or later):
+Each folder here is one character, recorded in game with Rainium's recorder (0.4.3 or later, 120 fps):
 
-None yet: new recordings are being made in game. Until one is added, the home page shows a picture placeholder.
+| Folder | Recording |
+|---|---|
+| `halo/` | Gold halo |
+| `wings/` | Dark red wings (mirrored so the wings sit on the left) |
+| `pod/` | Floating robot pod |
 
 ## Adding one
 
-1. Unzip the recording somewhere (a folder of `frame_00001.png` …).
-2. Run `python3 docs/hero/tools/make_clip.py <that folder> <name>`. Add `--flip` to mirror it (keep wings/halos on the left so they overlap the white band), and `--first N` / `--last N` to use only part of the recording. It needs numpy, opencv-python, pillow and ffmpeg, and takes a while.
-3. It prints a line like `{ id: "name", w: 704, h: 1322 }`. Add that to `CLIPS` in `docs/index.html`, with a `label` describing the character for screen readers. Optional: `k` (size on screen, 1 = as recorded), `x` / `y` (where its centre sits, 0–1 across and down the area).
+1. Get the recording's frames somewhere (a folder of `frame_00001.png` …). About 9 seconds is enough; the animations repeat every 8.
+2. Run `python3 docs/hero/tools/make_loop.py <that folder> <name>`. Add `--flip` to mirror it (keep wings/halos on the left so they overlap the white band). It uses every 4th frame of a 120 fps recording, so it plays in real time at 30 fps, finds where the motion repeats, and loops there. No frames are invented. Needs numpy, opencv-python, pillow and ffmpeg.
+3. It prints a line like `{ id: "name", w: 748, h: 1326, label: "" }`. Add that to `CLIPS` in `docs/index.html`, fill in `label` (what the character looks like, for screen readers), and add `k: 0.75` like the others. Optional: `x` / `y` (where its centre sits, 0–1 across and down the area).
 
-The clips play 30 fps recordings 6× slower than captured (for 120 fps recordings use `--slow 1.5`), forward and then backward (so the end never jumps back to the start).
+`make_clip.py` is the older tool that slowed 30 fps recordings down with made-up in-between frames; it's no longer used.

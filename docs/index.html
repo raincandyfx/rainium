@@ -960,15 +960,16 @@ function md(src) {
 
 <script>
 /* ---------- Home: characters recorded in game, as a gallery that goes round and round ----------
-   Each clip lives in hero/<id>/ and is made by hero/tools/make_clip.py from an in-game recording:
-   clip.mp4 / clip.webm play the recording slowed down, forward then backward (ping-pong), with the picture in the
+   Each clip lives in hero/<id>/ and is made by hero/tools/make_loop.py from an in-game recording:
+   clip.mp4 / clip.webm play a looping stretch of the recording in real time, with the picture in the
    top half and its transparency in the bottom half (so it works in every browser); WebGL puts them back together.
-   If video or WebGL isn't available, 00–31.webp cross-fade instead, also ping-pong.
+   If video or WebGL isn't available, 00–31.webp cross-fade instead.
    w/h: the clip's size (as printed by make_clip.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
    A visitor gets a random one; the arrows step through the rest. */
-// Empty for now: new recordings are being made in game. Until then the picture placeholder shows.
-// Example entry: { id: "sway", w: 682, h: 960, label: "A player wearing the Gold halo, swaying gently" },
 const CLIPS = [
+  { id: "halo", w: 832, h: 1162, k: 0.75, label: "A player wearing the Gold halo" },
+  { id: "wings", w: 748, h: 1326, k: 0.75, label: "A player with dark red wings" },
+  { id: "pod", w: 910, h: 1226, k: 0.68, y: 0.48, label: "A player with a floating robot pod" },
 ];
 window.startHero = (function () {
   let started = false;
@@ -1039,11 +1040,11 @@ window.startHero = (function () {
     host.classList.remove("out");
   }
 
-  // Still pictures, cross-faded forward then backward
+  // Still pictures, cross-faded in a loop
   function stills(c) {
-    const N = 32, STEP = 800, token = {};
+    const N = 32, STEP = 250, token = {};
     fb = token;
-    const order = [...Array(N).keys(), ...Array.from({ length: N - 2 }, (_, k) => N - 2 - k)]; // 0…31…1
+    const order = [...Array(N).keys()]; // the clips loop, so the stills do too
     const frames = [];
     for (let i = 0; i < N; i++) {
       const im = new Image();
