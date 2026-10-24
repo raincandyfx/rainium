@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rainium Downloads</title>
+<meta name="description" content="Download Rainium for Minecraft 26.3.">
+<style>
+  :root {
+    --bg: #f6f7f9; --fg: #1b1e23; --muted: #5e6670; --card: #ffffff;
+    --line: #dde1e6; --accent: #2f6fde; --accent-fg: #ffffff; --tag: #eef1f5;
+    --warn-bg: #fff6e0; --warn-fg: #7a5600;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121417; --fg: #e6e8eb; --muted: #9aa3ad; --card: #1b1e22;
+      --line: #2c3036; --accent: #5b8ff0; --accent-fg: #0d1117; --tag: #262a30;
+      --warn-bg: #3a2f12; --warn-fg: #f1d48a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 40px 16px 64px; }
+  header h1 { margin: 0; font-size: 2rem; letter-spacing: -0.01em; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  a { color: var(--accent); }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px; margin-top: 24px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 1.25rem; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+  .tag {
+    display: inline-block; background: var(--tag); border-radius: 4px;
+    padding: 1px 7px; font-size: 0.8rem; margin-left: 6px; vertical-align: 2px;
+  }
+  .btn {
+    display: inline-block; margin-top: 14px; padding: 10px 18px; border-radius: 8px;
+    background: var(--accent); color: var(--accent-fg); text-decoration: none; font-weight: 600;
+  }
+  .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  .warn {
+    background: var(--warn-bg); color: var(--warn-fg); border-radius: 6px;
+    padding: 8px 12px; font-size: 0.9rem; margin-top: 10px;
+  }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--muted); }
+  .notes { margin-top: 8px; overflow-wrap: anywhere; }
+  .notes h3, .notes h4 { margin: 14px 0 4px; font-size: 1rem; }
+  .notes ul { padding-left: 20px; margin: 6px 0; }
+  .notes p { margin: 6px 0; }
+  code { background: var(--tag); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  td { padding: 8px 4px; border-top: 1px solid var(--line); }
+  td:last-child { text-align: right; white-space: nowrap; }
+  label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 0.9rem; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  ol { padding-left: 20px; margin: 8px 0 0; }
+  footer { margin-top: 32px; color: var(--muted); font-size: 0.85rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Rainium</h1>
+    <p>A mod for Minecraft 26.3. Currently in beta.</p>
+  </header>
+
+  <section id="status" class="card">Loading releases…</section>
+
+  <section id="latest" class="card" hidden></section>
+  <section id="dev" class="card" hidden></section>
+
+  <section class="card">
+    <h2>Installing</h2>
+    <ol>
+      <li>Download the <code>.jar</code> above.</li>
+      <li>Put it in your Minecraft <code>mods</code> folder.</li>
+      <li>Launch the game. Rainium checks for updates once per launch and installs them when the game closes.</li>
+    </ol>
+    <p class="meta">Want dev builds automatically? In game: Settings &rsaquo; Updates &rsaquo; Include dev builds.</p>
+  </section>
+
+  <section id="older" class="card" hidden>
+    <div class="row">
+      <h2>All versions</h2>
+      <label><input type="checkbox" id="showDev"> Show dev builds</label>
+    </div>
+    <table><tbody id="olderRows"></tbody></table>
+  </section>
+
+  <footer>
+    Source and issues on <a href="https://github.com/raincandyfx/rainium">GitHub</a>.
+  </footer>
+</main>
+
+<script>
+const REPO = "raincandyfx/rainium";
+const JAR = /^rainium-([^+]+)\+([0-9][0-9.]*)\.jar$/;
+const $ = (id) => document.getElementById(id);
+
+fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`)
+  .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(render)
+  .catch(() => {
+    $("status").innerHTML =
+      `Couldn't load releases right now. Download directly from ` +
+      `<a href="https://github.com/${REPO}/releases">GitHub Releases</a>.`;
+  });
+
+function render(releases) {
+  const all = releases
+    .filter((r) => !r.draft)
+    .map((r) => {
+      const jar = r.assets.find((a) => JAR.test(a.name));
+      if (!jar) return null;
+      const [, version, mc] = jar.name.match(JAR);
+      return { r, jar, version, mc, dev: r.prerelease, date: new Date(r.published_at) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.date - a.date);
+
+  if (!all.length) {
+    $("status").innerHTML = `No downloads yet. Check <a href="https://github.com/${REPO}/releases">GitHub Releases</a>.`;
+    return;
+  }
+  $("status").hidden = true;
+
+  const latest = all.find((x) => !x.dev);
+  const newestDev = all.find((x) => x.dev);
+
+  if (latest) {
+    $("latest").innerHTML = card(latest, "Latest release");
+    $("latest").hidden = false;
+  }
+  if (newestDev && (!latest || newestDev.date > latest.date)) {
+    $("dev").innerHTML = card(newestDev, "Newest dev build",
+      `<div class="warn">Dev builds are work in progress and may be unstable.</div>`, true);
+    $("dev").hidden = false;
+  }
+
+  const fill = () => {
+    const showDev = $("showDev").checked;
+    $("olderRows").innerHTML = all
+      .filter((x) => showDev || !x.dev)
+      .map((x) => `<tr>
+        <td><strong>${esc(x.version)}</strong>${x.dev ? '<span class="tag">dev</span>' : ""}
+          <span class="meta"> · MC ${esc(x.mc)} · ${fmtDate(x.date)}</span></td>
+        <td><a href="${x.jar.browser_download_url}">Download</a></td>
+      </tr>`).join("");
+  };
+  $("showDev").addEventListener("change", fill);
+  fill();
+  $("older").hidden = false;
+}
+
+function card(x, label, extra = "", secondary = false) {
+  return `
+    <div class="meta">${label}</div>
+    <h2>Rainium ${esc(x.version)}<span class="tag">Minecraft ${esc(x.mc)}</span></h2>
+    <div class="meta">Released ${fmtDate(x.date)} · ${fmtSize(x.jar.size)}</div>
+    ${extra}
+    <a class="btn${secondary ? " secondary" : ""}" href="${x.jar.browser_download_url}">Download ${esc(x.jar.name)}</a>
+    ${x.r.body ? `<details${secondary ? "" : " open"}><summary>Release notes</summary>
+      <div class="notes">${md(x.r.body)}</div></details>` : ""}`;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function fmtDate(d) {
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+function fmtSize(b) {
+  return b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+}
+
+// Tiny Markdown subset for release notes: headings, bullet lists, paragraphs,
+// `code`, **bold**, and [links](https://...).
+function md(src) {
+  const inline = (t) => esc(t)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
+  let out = "", inList = false, para = [];
+  const flushPara = () => { if (para.length) { out += `<p>${inline(para.join(" "))}</p>`; para = []; } };
+  const closeList = () => { if (inList) { out += "</ul>"; inList = false; } };
+  for (const raw of src.replace(/\r/g, "").split("\n")) {
+    const line = raw.trimEnd();
+    let m;
+    if ((m = line.match(/^#{1,6}\s+(.*)/))) {
+      flushPara(); closeList();
+      out += `<h4>${inline(m[1])}</h4>`;
+    } else if ((m = line.match(/^\s*[-*]\s+(.*)/))) {
+      flushPara();
+      if (!inList) { out += "<ul>"; inList = true; }
+      out += `<li>${inline(m[1])}</li>`;
+    } else if (!line.trim()) {
+      flushPara(); closeList();
+    } else {
+      closeList(); para.push(line.trim());
+    }
+  }
+  flushPara(); closeList();
+  return out;
+}
+</script>
+</body>
+</html>
