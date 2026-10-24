@@ -10,7 +10,7 @@ on:
     branches: [main]
     tags: ['v*']
     # The downloads site lives in docs/; pushes that only touch it don't build the mod.
-    paths-ignore: ['docs/**']
+    paths-ignore: ['docs/**', 'vercel.json']
 
 permissions:
   contents: write
