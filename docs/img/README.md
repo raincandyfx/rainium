@@ -4,6 +4,7 @@ Drop a picture into this folder with one of the names below and the site shows i
 
 | File | Page | Shows | Shape |
 |---|---|---|---|
+| `hero.png` | Home | A player wearing Rainium cosmetics, cut out on a transparent background (it sits over the menu screen like a game character) | 3:4 portrait, e.g. 1200×1600, PNG with transparency |
 | `features-hero.png` | Features (top) | Wings with glowing trim, worn on a player at night | 4:3, e.g. 1600×1200 |
 | `materials.png` | Features | A model split into its material parts in the layer list | square, e.g. 1000×1000 |
 | `textures.png` | Features | One model, three textures side by side | square |
