@@ -4,7 +4,7 @@ Drop a picture into this folder with one of the names below and the site shows i
 
 | File | Page | Shows | Shape |
 |---|---|---|---|
-| `hero.png` | Home | Your character art: a player wearing Rainium cosmetics, cut out on a transparent background. It fills the left of the menu screen, like the character in a game's pause menu | 3:4 portrait, e.g. 1200×1600, PNG with transparency |
+| `hero.png` | Home | Only shown if the live 3D player can't load (no WebGL). A player wearing Rainium cosmetics, cut out on a transparent background | 3:4 portrait, e.g. 1200×1600, PNG with transparency |
 | `materials.png` | Features | A model split into its material parts in the layer list | wide, e.g. 1200×600 |
 | `textures.png` | Features | One model, three textures side by side | wide |
 | `glow.png` | Features | A halo glowing in a dark cave | wide |
