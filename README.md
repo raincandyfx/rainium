@@ -141,7 +141,16 @@ Yes, please! Copy [`en_us.json`](src/main/resources/assets/rainium/lang/en_us.js
 
 ## Disclaimer
 
-The Gold halo example is based on a character ornament from *Genshin Impact*. Rainium is not affiliated with, endorsed by or connected to HoYoverse or the original creators, and all rights to the original design belong to them. It's included only as an example of what the mod can display.
+The Gold halo example that comes with the mod, and the models worn in the character recordings on the website, are based on designs from other works:
+
+- **Gold halo** and **dark red wings**: *Genshin Impact* (HoYoverse)
+- **Floating pod**: *NieR:Automata* (Square Enix)
+- **Long red spear**: "[Lance of Longinus](https://skfb.ly/6Rxyq)" by Mr. The Rich, licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/); from *Neon Genesis Evangelion* (khara)
+- **Small doll**: a MySekai item from *Hatsune Miku: Colorful Stage!* (SEGA and Colorful Palette; Hatsune Miku by Crypton Future Media)
+
+Rainium is not affiliated with, endorsed by or connected to any of these companies or the original creators, and all rights to the original designs belong to them. They're shown only as examples of what the mod can display.
+
+Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
 
 ## License
 
