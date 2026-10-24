@@ -3,103 +3,511 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rainium Downloads</title>
-<meta name="description" content="Download Rainium for Minecraft 26.3.">
+<title>Rainium – cosmetics for Minecraft 26.3</title>
+<meta name="description" content="Wings, halos, tails, capes, anything you can model, worn on your player. A client-side Fabric mod for Minecraft 26.3 with an in-game editor.">
+<meta name="theme-color" content="#16153d">
+<meta property="og:title" content="Rainium">
+<meta property="og:description" content="Wings, halos, tails, capes, anything you can model, worn on your player. A client-side Fabric mod for Minecraft 26.3.">
+<meta property="og:image" content="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f7f9; --fg: #1b1e23; --muted: #5e6670; --card: #ffffff;
-    --line: #dde1e6; --accent: #2f6fde; --accent-fg: #ffffff; --tag: #eef1f5;
-    --warn-bg: #fff6e0; --warn-fg: #7a5600;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #121417; --fg: #e6e8eb; --muted: #9aa3ad; --card: #1b1e22;
-      --line: #2c3036; --accent: #5b8ff0; --accent-fg: #0d1117; --tag: #262a30;
-      --warn-bg: #3a2f12; --warn-fg: #f1d48a;
-    }
+    --night: #16153d;     /* background, from the icon's sky */
+    --deep: #1f1d52;      /* raised surfaces */
+    --rim: #34307a;       /* borders on night */
+    --cloud: #ece2f8;     /* main text, the cloud */
+    --lilac: #b4a3d9;     /* secondary text */
+    --rain: #42dfe6;      /* links, actions */
+    --streak: #c445ad;    /* the magenta in the ripples, used sparingly */
+    --display: "Bricolage Grotesque", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+    --measure: 66ch;
   }
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   body {
-    margin: 0; background: var(--bg); color: var(--fg);
-    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    margin: 0; background: var(--night); color: var(--cloud);
+    font: 17px/1.6 var(--body);
+    -webkit-font-smoothing: antialiased;
   }
-  main { max-width: 720px; margin: 0 auto; padding: 40px 16px 64px; }
-  header h1 { margin: 0; font-size: 2rem; letter-spacing: -0.01em; }
-  header p { margin: 4px 0 0; color: var(--muted); }
-  a { color: var(--accent); }
-  .card {
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-    padding: 20px; margin-top: 24px;
+  a { color: var(--rain); text-underline-offset: 3px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--rain); outline-offset: 3px; border-radius: 4px; }
+  code, kbd {
+    font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 0.86em;
+    background: var(--deep); border: 1px solid var(--rim); border-radius: 5px; padding: 1px 6px;
   }
-  .card h2 { margin: 0 0 4px; font-size: 1.25rem; }
-  .meta { color: var(--muted); font-size: 0.9rem; }
-  .tag {
-    display: inline-block; background: var(--tag); border-radius: 4px;
-    padding: 1px 7px; font-size: 0.8rem; margin-left: 6px; vertical-align: 2px;
+  kbd { border-bottom-width: 3px; color: var(--cloud); }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.1; margin: 0; }
+  h2 { font-size: clamp(1.9rem, 4.2vw, 2.6rem); font-weight: 800; letter-spacing: -0.02em; }
+  h3 { font-size: 1.15rem; font-weight: 700; }
+  p { margin: 0 0 0.9em; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+  .lede { color: var(--lilac); max-width: var(--measure); font-size: 1.08rem; margin-top: 12px; }
+
+  /* Top bar */
+  .bar {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--night) 88%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid color-mix(in srgb, var(--rim) 60%, transparent);
   }
+  .bar .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; color: var(--cloud); text-decoration: none;
+    font-family: var(--display); font-weight: 800; font-size: 1.2rem; }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  .bar nav { margin-left: auto; display: flex; gap: 22px; align-items: center; }
+  .bar nav a { color: var(--lilac); text-decoration: none; font-size: 0.95rem; }
+  .bar nav a:hover { color: var(--cloud); }
+  .bar nav a.get { color: var(--night); background: var(--rain); padding: 7px 14px; border-radius: 999px; font-weight: 700; }
+  @media (max-width: 720px) { .bar nav a.opt { display: none; } }
+
+  /* Hero */
+  .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--rim); }
+  .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hero .wrap {
+    position: relative; display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center;
+    padding-top: clamp(56px, 10vw, 120px); padding-bottom: clamp(56px, 10vw, 120px);
+    pointer-events: none;
+  }
+  .hero .wrap > * { pointer-events: auto; }
+  .hero h1 {
+    font-size: clamp(2.9rem, 8.5vw, 6rem); font-weight: 800; letter-spacing: -0.035em; line-height: 0.95;
+    max-width: 11ch; text-wrap: balance;
+  }
+  .hero .lede { font-size: clamp(1.05rem, 2vw, 1.25rem); color: var(--cloud); opacity: 0.9; max-width: 46ch; margin-top: 22px; }
+  .hero .icon {
+    width: clamp(160px, 22vw, 240px); aspect-ratio: 1; border-radius: 28%;
+    box-shadow: 0 0 0 1px var(--rim), 0 24px 60px -20px rgba(66, 223, 230, 0.35);
+  }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 30px; }
   .btn {
-    display: inline-block; margin-top: 14px; padding: 10px 18px; border-radius: 8px;
-    background: var(--accent); color: var(--accent-fg); text-decoration: none; font-weight: 600;
+    display: inline-flex; flex-direction: column; justify-content: center; gap: 1px;
+    padding: 12px 22px; border-radius: 14px; text-decoration: none; font-weight: 700; line-height: 1.2;
+    background: var(--rain); color: var(--night); font-size: 1.05rem;
   }
-  .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
-  .warn {
-    background: var(--warn-bg); color: var(--warn-fg); border-radius: 6px;
-    padding: 8px 12px; font-size: 0.9rem; margin-top: 10px;
+  .btn small { font-weight: 400; font-size: 0.8rem; opacity: 0.8; }
+  .btn:hover { background: #7aeef2; }
+  .btn.ghost { background: transparent; color: var(--cloud); box-shadow: inset 0 0 0 1px var(--rim); }
+  .btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--lilac); }
+  .note { color: var(--lilac); font-size: 0.9rem; margin-top: 18px; }
+  @media (max-width: 720px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .hero .icon { grid-row: 1; width: 96px; }
   }
-  details { margin-top: 14px; }
-  summary { cursor: pointer; color: var(--muted); }
-  .notes { margin-top: 8px; overflow-wrap: anywhere; }
-  .notes h3, .notes h4 { margin: 14px 0 4px; font-size: 1rem; }
-  .notes ul { padding-left: 20px; margin: 6px 0; }
-  .notes p { margin: 6px 0; }
-  code { background: var(--tag); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-  td { padding: 8px 4px; border-top: 1px solid var(--line); }
-  td:last-child { text-align: right; white-space: nowrap; }
-  label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 0.9rem; }
-  .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-  ol { padding-left: 20px; margin: 8px 0 0; }
-  footer { margin-top: 32px; color: var(--muted); font-size: 0.85rem; }
+
+  /* Sections */
+  section.block { padding: clamp(64px, 9vw, 112px) 0; }
+  section.block + section.block { border-top: 1px solid color-mix(in srgb, var(--rim) 55%, transparent); }
+  .head { margin-bottom: 40px; }
+
+  /* Features: plain text grid, no cards */
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 34px 48px; }
+  .features h3 { margin-bottom: 6px; }
+  .features h3::before {
+    content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+    border: 2px solid var(--rain); margin-right: 10px; vertical-align: 2px;
+  }
+  .features p { color: var(--lilac); margin: 0; }
+
+  /* Steps: a real sequence, so numbered */
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; counter-reset: s; max-width: 820px; }
+  .steps > li {
+    counter-increment: s; display: grid; grid-template-columns: 56px 1fr; gap: 0 18px;
+    padding: 22px 0; border-top: 1px solid var(--rim);
+  }
+  .steps > li:last-child { border-bottom: 1px solid var(--rim); }
+  .steps > li::before {
+    content: counter(s); grid-column: 1; grid-row: 1 / span 3; font-family: var(--display); font-weight: 800; font-size: 2.2rem;
+    line-height: 1; color: var(--rain);
+  }
+  .steps > li > * { grid-column: 2; }
+  .steps h3 { margin-bottom: 6px; }
+  .steps p { color: var(--lilac); margin: 0; max-width: var(--measure); }
+  .steps ul { color: var(--lilac); margin: 8px 0 0; padding-left: 20px; }
+  .tip { margin-top: 28px; color: var(--lilac); max-width: var(--measure); }
+
+  /* Particles */
+  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: start; }
+  @media (max-width: 860px) { .split { grid-template-columns: 1fr; gap: 32px; } }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; list-style: none; padding: 0; }
+  .chips li { border: 1px solid var(--rim); border-radius: 999px; padding: 4px 14px; font-size: 0.92rem; }
+  dl.opts { margin: 0; display: grid; grid-template-columns: 11rem 1fr; gap: 0; }
+  dl.opts dt, dl.opts dd { padding: 14px 0; border-top: 1px solid var(--rim); margin: 0; }
+  dl.opts dt { font-weight: 700; padding-right: 16px; }
+  dl.opts dd { color: var(--lilac); }
+  @media (max-width: 560px) {
+    dl.opts { grid-template-columns: 1fr; }
+    dl.opts dd { border-top: 0; padding-top: 0; }
+  }
+
+  /* Formats */
+  .formats { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0 0; }
+  .formats span {
+    font-family: var(--display); font-weight: 800; font-size: 1.5rem; letter-spacing: -0.01em;
+    padding: 6px 16px; border-radius: 10px; background: var(--deep); border: 1px solid var(--rim);
+  }
+  .prose { max-width: var(--measure); color: var(--lilac); }
+  .prose strong { color: var(--cloud); }
+  .prose ul { padding-left: 20px; }
+
+  /* Downloads */
+  .dl-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 28px; align-items: start; }
+  @media (max-width: 860px) { .dl-grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--deep); border: 1px solid var(--rim); border-radius: 18px; padding: 24px; }
+  .panel + .panel { margin-top: 20px; }
+  .panel h3 { font-size: 1.45rem; }
+  .panel .sub { color: var(--lilac); font-size: 0.92rem; margin: 4px 0 0; }
+  .panel .btn { margin-top: 18px; }
+  .panel.dev { border-style: dashed; }
+  .panel.dev .btn { background: transparent; color: var(--rain); box-shadow: inset 0 0 0 1px var(--rain); }
+  .panel.dev .btn:hover { background: color-mix(in srgb, var(--rain) 12%, transparent); }
+  .caution { color: var(--lilac); font-size: 0.92rem; margin-top: 10px; }
+  details.notes { margin-top: 18px; }
+  details.notes > summary, .versions summary { cursor: pointer; color: var(--lilac); }
+  details.notes > summary:hover, .versions summary:hover { color: var(--cloud); }
+  .md { margin-top: 10px; font-size: 0.96rem; overflow-wrap: anywhere; }
+  .md h4 { margin: 14px 0 4px; font-size: 1rem; }
+  .md ul { padding-left: 20px; margin: 6px 0; }
+  .md li { margin: 3px 0; }
+  .md p { margin: 6px 0; }
+  .needs { padding-left: 20px; margin: 10px 0 0; color: var(--lilac); }
+  .needs li { margin: 6px 0; }
+
+  .versions { margin-top: 48px; }
+  .versions .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .versions h3 { font-size: 1.3rem; }
+  .versions label { display: inline-flex; gap: 8px; align-items: center; color: var(--lilac); font-size: 0.95rem; cursor: pointer; }
+  .versions input { accent-color: var(--rain); width: 16px; height: 16px; }
+  .vlist { list-style: none; padding: 0; margin: 0; }
+  .vlist > li { border-top: 1px solid var(--rim); padding: 12px 0; }
+  .vlist .line { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+  .vlist .v { font-weight: 700; }
+  .vlist .when { color: var(--lilac); font-size: 0.9rem; margin-left: 10px; }
+  .tag { display: inline-block; font-size: 0.75rem; border: 1px solid var(--streak); color: #eaa6dc;
+    border-radius: 999px; padding: 0 8px; margin-left: 8px; vertical-align: 2px; }
+  .vlist details { margin-top: 4px; font-size: 0.92rem; }
+  .status { color: var(--lilac); }
+
+  /* FAQ */
+  .faq { max-width: 820px; }
+  .faq details { border-top: 1px solid var(--rim); }
+  .faq details:last-child { border-bottom: 1px solid var(--rim); }
+  .faq summary {
+    cursor: pointer; list-style: none; padding: 18px 36px 18px 0; position: relative;
+    font-family: var(--display); font-weight: 700; font-size: 1.12rem;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: "+"; position: absolute; right: 4px; top: 14px; font-size: 1.5rem; color: var(--rain);
+    transition: transform 0.2s;
+  }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq .a { color: var(--lilac); padding: 0 0 18px; max-width: var(--measure); }
+  .faq .a p:last-child { margin-bottom: 0; }
+
+  footer { border-top: 1px solid var(--rim); padding: 40px 0 56px; color: var(--lilac); font-size: 0.9rem; }
+  footer .cols { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
+  footer .fine { max-width: 72ch; margin-top: 24px; font-size: 0.84rem; opacity: 0.85; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>Rainium</h1>
-    <p>A mod for Minecraft 26.3. Currently in beta.</p>
-  </header>
 
-  <section id="status" class="card">Loading releases…</section>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="icon.png" alt="">Rainium</a>
+    <nav aria-label="Sections">
+      <a class="opt" href="#features">Features</a>
+      <a class="opt" href="#guide">Guide</a>
+      <a class="opt" href="#faq">FAQ</a>
+      <a class="opt" href="https://github.com/raincandyfx/rainium">GitHub</a>
+      <a class="get" href="#download">Download</a>
+    </nav>
+  </div>
+</header>
 
-  <section id="latest" class="card" hidden></section>
-  <section id="dev" class="card" hidden></section>
-
-  <section class="card">
-    <h2>Installing</h2>
-    <ol>
-      <li>Download the <code>.jar</code> above.</li>
-      <li>Put it in your Minecraft <code>mods</code> folder.</li>
-      <li>Launch the game. Rainium checks for updates once per launch and installs them when the game closes.</li>
-    </ol>
-    <p class="meta">Want dev builds automatically? In game: Settings &rsaquo; Updates &rsaquo; Include dev builds.</p>
-  </section>
-
-  <section id="older" class="card" hidden>
-    <div class="row">
-      <h2>All versions</h2>
-      <label><input type="checkbox" id="showDev"> Show dev builds</label>
+<main id="top">
+  <section class="hero">
+    <canvas id="rain" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div>
+        <h1>Wear anything you can model.</h1>
+        <p class="lede">Wings, halos, tails, capes and particles, worn on your player and set up entirely in an in-game editor. A client-side Fabric mod for Minecraft 26.3.</p>
+        <div class="actions">
+          <a class="btn" id="heroDl" href="https://github.com/raincandyfx/rainium/releases/latest">
+            <span id="heroDlLabel">Download Rainium</span>
+            <small id="heroDlSub">for Minecraft 26.3</small>
+          </a>
+          <a class="btn ghost" href="#guide">See how it works</a>
+        </div>
+        <p class="note">Free and open source. Rainium is in beta, so things may change between versions.</p>
+      </div>
+      <img class="icon" src="icon.png" alt="Rainium icon: a lavender cloud and moon over rain ripples">
     </div>
-    <table><tbody id="olderRows"></tbody></table>
   </section>
 
-  <footer>
-    Source and issues on <a href="https://github.com/raincandyfx/rainium">GitHub</a>.
-  </footer>
+  <section class="block" id="features">
+    <div class="wrap">
+      <div class="head">
+        <h2>Your look, only on your screen</h2>
+        <p class="lede">Rainium changes what you see and nothing else, so it works on any server and nothing needs installing there.</p>
+      </div>
+      <div class="features">
+        <div><h3>Wear any 3D model</h3><p>Wings on your back, a halo behind your head, a tail, ears or anything else. Import your own OBJ, glTF or GLB files in the game.</p></div>
+        <div><h3>Edit it live</h3><p>Press <kbd>K</kbd> and change textures, colours, glow, size, position and angle while your player updates in real time. Everything saves as you go, with undo.</p></div>
+        <div><h3>Natural movement</h3><p>Cosmetics trail behind you as you run and turn, and sway gently when you stand still. Make each one as bouncy or as still as you like.</p></div>
+        <div><h3>Particle emitters</h3><p>Sparkles, embers, hearts, trails and auras, using Minecraft's particles or your own pictures.</p></div>
+        <div><h3>Folders for multi-part models</h3><p>Switch a whole model on or off, resize it or move it in one go.</p></div>
+        <div><h3>Recolour with Hue</h3><p>Shift a texture's colours around the colour wheel without editing the image.</p></div>
+        <div><h3>Share your look</h3><p>Export a folder as a zip, and a friend can add it from their editor.</p></div>
+        <div><h3>Keeps itself up to date</h3><p>New versions download in the background and install when you close the game. You can turn this off.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="guide">
+    <div class="wrap">
+      <div class="head">
+        <h2>From model file to wearing it</h2>
+        <p class="lede">You don't need to touch a config file. Everything below happens in the editor.</p>
+      </div>
+      <ol class="steps">
+        <li>
+          <h3>Open the editor</h3>
+          <p>Press <kbd>K</kbd> in game. You can also use the <code>/rainium</code> command, or the Configure button in Mod Menu, and rebind the key in Controls.</p>
+        </li>
+        <li>
+          <h3>Try the example halo</h3>
+          <p>Rainium comes with a Gold halo that starts switched off. Click the square next to <strong>Gold halo</strong> in the layer list to show it.</p>
+        </li>
+        <li>
+          <h3>Add your own model</h3>
+          <p>Click <strong>Open rainium folder</strong>, drop in your <code>.obj</code>, <code>.gltf</code> or <code>.glb</code> and its texture, then pick it on the <strong>Add</strong> tab. Adjust size, angle and position on a live preview, and click <strong>Add as layer</strong>.</p>
+        </li>
+        <li>
+          <h3>Make it look right</h3>
+          <p>Select the layer and use the <strong>Edit</strong> tab:</p>
+          <ul>
+            <li><strong>Look:</strong> texture, style (solid, see-through, glow), hue and opacity.</li>
+            <li><strong>Placement:</strong> body, head, arms or legs; size, position and angle.</li>
+            <li><strong>Behaviour:</strong> a mirrored copy (model one wing, get two), swaying, hiding while gliding.</li>
+            <li><strong>Shown on:</strong> which players and armor stands it appears on.</li>
+          </ul>
+        </li>
+      </ol>
+      <p class="tip">Hover any setting's name for a short explanation, and click any number to type an exact value. <kbd>Ctrl</kbd>+<kbd>Z</kbd> and <kbd>Ctrl</kbd>+<kbd>Y</kbd> undo and redo.</p>
+    </div>
+  </section>
+
+  <section class="block" id="particles">
+    <div class="wrap split">
+      <div>
+        <h2>Particles, tuned by hand</h2>
+        <p class="lede">A layer can give off particles instead of being a model. Start from a preset on the Add tab, then adjust it on the Edit tab.</p>
+        <ul class="chips" aria-label="Particle presets">
+          <li>Sparkles</li><li>Embers</li><li>Hearts</li><li>Trail</li><li>Aura</li><li>Empty emitter</li>
+        </ul>
+      </div>
+      <dl class="opts">
+        <dt>Picture</dt><dd>One of Minecraft's particles (flame, sparkle, heart, note, smoke, petal and more) or any PNG of your own.</dd>
+        <dt>When and how many</dt><dd>Always, only while moving, only while standing still, or more the faster you move.</dd>
+        <dt>Where they appear</dt><dd>A point, a ball, a box or a ring around your body, head, arms or legs, at any size.</dd>
+        <dt>How they move</dt><dd>Direction, speed, spread, gravity, drag and spin, plus size over time and fading out.</dd>
+        <dt>Move with me</dt><dd>Particles either travel along with you or stay where they appeared, leaving a trail.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="block" id="models">
+    <div class="wrap split">
+      <div>
+        <h2>Models from any 3D program</h2>
+        <div class="formats" aria-label="Supported formats"><span>OBJ</span><span>glTF</span><span>GLB</span></div>
+      </div>
+      <div class="prose">
+        <p>Nearly every 3D program can export these, and Blender exports work with the default settings. A texture packed inside a <code>.glb</code> is picked up automatically, and a model with several parts becomes a folder.</p>
+        <p>To convert without opening the game, the repository has two converters in <a href="https://github.com/raincandyfx/rainium/tree/main/tools"><code>tools/</code></a>:</p>
+        <ul>
+          <li><strong>obj-converter.html</strong> runs in your browser. Your model never leaves your computer.</li>
+          <li><strong>mesh_convert.py</strong> is a command-line converter for all three formats, needing Python 3.8 or newer.</li>
+        </ul>
+        <p><strong>Sharing a look:</strong> open a folder in the layer list and click <strong>Export as zip</strong>. Your friend puts the zip in their <code>config/rainium</code> folder and adds it from <strong>Add › Shared sets</strong>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="download">
+    <div class="wrap">
+      <div class="head">
+        <h2>Download</h2>
+        <p class="lede">Rainium needs Minecraft 26.3 with Fabric. After the first install it updates itself.</p>
+      </div>
+      <div class="dl-grid">
+        <div>
+          <div class="panel" id="latest"><p class="status" id="status">Loading releases from GitHub…</p></div>
+          <div class="panel dev" id="dev" hidden></div>
+        </div>
+        <div class="panel">
+          <h3>Installing</h3>
+          <ol class="needs">
+            <li>Install <a href="https://fabricmc.net/use/">Fabric Loader</a> for Minecraft 26.3, and <a href="https://modrinth.com/mod/fabric-api">Fabric API</a>.</li>
+            <li>Put the Rainium <code>.jar</code> in your <code>.minecraft/mods</code> folder.</li>
+            <li>Launch the game and press <kbd>K</kbd>.</li>
+          </ol>
+          <p class="sub" style="margin-top:14px"><a href="https://modrinth.com/mod/modmenu">Mod Menu</a> is optional. With it, Rainium's Configure button opens the editor too.</p>
+        </div>
+      </div>
+
+      <div class="versions" id="older" hidden>
+        <div class="row">
+          <h3>All versions</h3>
+          <label><input type="checkbox" id="showDev"> Show dev builds</label>
+        </div>
+        <ul class="vlist" id="olderRows"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="faq">
+    <div class="wrap">
+      <div class="head"><h2>Questions</h2></div>
+      <div class="faq">
+        <details>
+          <summary>Can other players see my cosmetics?</summary>
+          <div class="a"><p>No. Rainium is client-side, so only you see what you set up. To share a look, send someone your files or an exported zip.</p></div>
+        </details>
+        <details>
+          <summary>Does it work on servers?</summary>
+          <div class="a"><p>Yes. It only runs on your side, so it works on any server and nothing needs to be installed there.</p></div>
+        </details>
+        <details>
+          <summary>Can I put my cosmetics on friends or on an armor stand?</summary>
+          <div class="a">
+            <p>On your screen, yes. In <strong>Settings › Visibility</strong>, <strong>Show on</strong> can include everyone, other players, or a list of player names, and <strong>Armor stands</strong> shows them on armor stands with a name tag you choose. Nobody else sees this.</p>
+            <p>Each layer and folder can also choose for itself under <strong>Shown on</strong>, for example wings just on you and a halo on an armor stand named "Display".</p>
+          </div>
+        </details>
+        <details>
+          <summary>How do updates work?</summary>
+          <div class="a">
+            <p>Once per launch, Rainium checks GitHub for a newer version made for your Minecraft version. It downloads and checks it, then installs it when you close the game. Your layers and settings are kept.</p>
+            <p>Only main releases (versions ending in .0, like 0.4.0) install automatically. Dev builds are early test versions: download them by hand, or switch on <strong>Include dev builds</strong> in <strong>Settings › Updates</strong>.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Does Rainium collect any data?</summary>
+          <div class="a">
+            <p>No. Its only network request is the optional update check, which means your game contacts GitHub, and GitHub can see your IP address. You can turn it off in <strong>Settings › Updates</strong>.</p>
+            <p>When the editor shows a folder path, it replaces your computer's account name with your in-game name, so screenshots are safe to share. Change or hide it in <strong>Settings › Privacy</strong>.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Where are my files?</summary>
+          <div class="a"><p>In <code>.minecraft/config/rainium/</code>. <strong>Open rainium folder</strong> in the editor takes you there. If a file you edited by hand has a problem, Rainium keeps showing your last working setup and explains the problem at the top of the editor.</p></div>
+        </details>
+        <details>
+          <summary>Can I translate it?</summary>
+          <div class="a"><p>Yes, please. Copy <a href="https://github.com/raincandyfx/rainium/blob/main/src/main/resources/assets/rainium/lang/en_us.json"><code>en_us.json</code></a> to your language's code (for example <code>de_de.json</code>), translate the text on the right of each line, and send it in an <a href="https://github.com/raincandyfx/rainium/issues">issue</a>. <code>%s</code> marks where a name or number goes.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
 </main>
 
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <p style="margin:0">Rainium is open source under the <a href="https://github.com/raincandyfx/rainium/blob/main/LICENSE">MIT License</a>.</p>
+      <nav aria-label="Project links">
+        <a href="https://github.com/raincandyfx/rainium">Source</a>
+        <a href="https://github.com/raincandyfx/rainium/issues">Report a problem</a>
+        <a href="https://github.com/raincandyfx/rainium/blob/main/CHANGELOG.md">Changelog</a>
+      </nav>
+    </div>
+    <p class="fine">The Gold halo example is based on a character ornament from Genshin Impact. Rainium is not affiliated with, endorsed by or connected to HoYoverse or the original creators, and all rights to the original design belong to them. Minecraft is a trademark of Mojang; Rainium is not an official Minecraft product.</p>
+  </div>
+</footer>
+
 <script>
+/* ---------- Rain ripples behind the hero ---------- */
+(function () {
+  const canvas = document.getElementById("rain");
+  const ctx = canvas.getContext("2d");
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const colors = ["66,223,230", "196,69,173", "180,163,217"];
+  let w = 0, h = 0, dpr = 1, drops = [], visible = true, last = 0, timer = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (still) drawStill();
+  }
+  function drop(x, y, big) {
+    drops.push({
+      x: x ?? Math.random() * w, y: y ?? Math.random() * h,
+      r: 0, max: (big ? 220 : 60 + Math.random() * 140),
+      c: colors[Math.random() < 0.62 ? 0 : Math.random() < 0.6 ? 1 : 2],
+      speed: big ? 90 : 34 + Math.random() * 26,
+    });
+  }
+  function ring(d, alpha) {
+    for (let k = 0; k < 3; k++) {
+      const rr = d.r - k * 14;
+      if (rr <= 0) continue;
+      ctx.beginPath();
+      ctx.ellipse(d.x, d.y, rr, rr * 0.42, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${d.c},${alpha * (1 - k * 0.3)})`;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+  }
+  function drawStill() {
+    ctx.clearRect(0, 0, w, h);
+    const seeds = [[0.12, 0.3, 120], [0.55, 0.78, 160], [0.86, 0.2, 90], [0.32, 0.9, 70], [0.72, 0.5, 110]];
+    seeds.forEach(([fx, fy, r], i) => ring({ x: fx * w, y: fy * h, r, c: colors[i % 3] }, 0.18));
+  }
+  function frame(t) {
+    if (!visible) { last = 0; return; }
+    const dt = last ? Math.min((t - last) / 1000, 0.05) : 0;
+    last = t;
+    timer -= dt;
+    if (timer <= 0) { drop(); timer = 0.35 + Math.random() * 0.6; }
+    ctx.clearRect(0, 0, w, h);
+    drops = drops.filter((d) => d.r < d.max);
+    for (const d of drops) {
+      d.r += d.speed * dt;
+      ring(d, 0.32 * (1 - d.r / d.max));
+    }
+    requestAnimationFrame(frame);
+  }
+
+  resize();
+  window.addEventListener("resize", resize);
+  if (still) return;
+  for (let i = 0; i < 5; i++) { drop(); drops[i].r = Math.random() * drops[i].max * 0.6; }
+  canvas.parentElement.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("a, button")) return;
+    const rect = canvas.getBoundingClientRect();
+    drop(e.clientX - rect.left, e.clientY - rect.top, true);
+  });
+  new IntersectionObserver(([entry]) => {
+    const was = visible; visible = entry.isIntersecting;
+    if (visible && !was) requestAnimationFrame(frame);
+  }).observe(canvas);
+  requestAnimationFrame(frame);
+})();
+
+/* ---------- Releases, read live from GitHub ---------- */
 const REPO = "raincandyfx/rainium";
+const RELEASES = `https://github.com/${REPO}/releases`;
 const JAR = /^rainium-([^+]+)\+([0-9][0-9.]*)\.jar$/;
 const $ = (id) => document.getElementById(id);
 
@@ -107,16 +515,15 @@ fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`)
   .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
   .then(render)
   .catch(() => {
-    $("status").innerHTML =
-      `Couldn't load releases right now. Download directly from ` +
-      `<a href="https://github.com/${REPO}/releases">GitHub Releases</a>.`;
+    $("status").innerHTML = `GitHub didn't answer just now, so the version list couldn't load. ` +
+      `<a href="${RELEASES}/latest">Download the latest version from GitHub</a> instead.`;
   });
 
 function render(releases) {
   const all = releases
     .filter((r) => !r.draft)
     .map((r) => {
-      const jar = r.assets.find((a) => JAR.test(a.name));
+      const jar = (r.assets || []).find((a) => JAR.test(a.name));
       if (!jar) return null;
       const [, version, mc] = jar.name.match(JAR);
       return { r, jar, version, mc, dev: r.prerelease, date: new Date(r.published_at) };
@@ -125,21 +532,23 @@ function render(releases) {
     .sort((a, b) => b.date - a.date);
 
   if (!all.length) {
-    $("status").innerHTML = `No downloads yet. Check <a href="https://github.com/${REPO}/releases">GitHub Releases</a>.`;
+    $("status").innerHTML = `There's nothing to download yet. Check <a href="${RELEASES}">GitHub Releases</a> later.`;
     return;
   }
-  $("status").hidden = true;
 
   const latest = all.find((x) => !x.dev);
   const newestDev = all.find((x) => x.dev);
 
   if (latest) {
-    $("latest").innerHTML = card(latest, "Latest release");
-    $("latest").hidden = false;
+    $("latest").innerHTML = panel(latest, false);
+    $("heroDl").href = latest.jar.browser_download_url;
+    $("heroDlLabel").textContent = `Download Rainium ${latest.version}`;
+    $("heroDlSub").textContent = `for Minecraft ${latest.mc}, ${fmtSize(latest.jar.size)}`;
+  } else {
+    $("latest").innerHTML = `<p class="status">No main release yet. Dev builds are listed below.</p>`;
   }
   if (newestDev && (!latest || newestDev.date > latest.date)) {
-    $("dev").innerHTML = card(newestDev, "Newest dev build",
-      `<div class="warn">Dev builds are work in progress and may be unstable.</div>`, true);
+    $("dev").innerHTML = panel(newestDev, true);
     $("dev").hidden = false;
   }
 
@@ -147,26 +556,26 @@ function render(releases) {
     const showDev = $("showDev").checked;
     $("olderRows").innerHTML = all
       .filter((x) => showDev || !x.dev)
-      .map((x) => `<tr>
-        <td><strong>${esc(x.version)}</strong>${x.dev ? '<span class="tag">dev</span>' : ""}
-          <span class="meta"> · MC ${esc(x.mc)} · ${fmtDate(x.date)}</span></td>
-        <td><a href="${x.jar.browser_download_url}">Download</a></td>
-      </tr>`).join("");
+      .map((x) => `<li>
+        <div class="line">
+          <span><span class="v">${esc(x.version)}</span>${x.dev ? '<span class="tag">dev build</span>' : ""}<span class="when">Minecraft ${esc(x.mc)}, ${fmtDate(x.date)}</span></span>
+          <a href="${x.jar.browser_download_url}">Download ${esc(x.version)}</a>
+        </div>
+        ${x.r.body ? `<details><summary>What changed</summary><div class="md">${md(x.r.body)}</div></details>` : ""}
+      </li>`).join("");
   };
   $("showDev").addEventListener("change", fill);
   fill();
   $("older").hidden = false;
 }
 
-function card(x, label, extra = "", secondary = false) {
+function panel(x, dev) {
   return `
-    <div class="meta">${label}</div>
-    <h2>Rainium ${esc(x.version)}<span class="tag">Minecraft ${esc(x.mc)}</span></h2>
-    <div class="meta">Released ${fmtDate(x.date)} · ${fmtSize(x.jar.size)}</div>
-    ${extra}
-    <a class="btn${secondary ? " secondary" : ""}" href="${x.jar.browser_download_url}">Download ${esc(x.jar.name)}</a>
-    ${x.r.body ? `<details${secondary ? "" : " open"}><summary>Release notes</summary>
-      <div class="notes">${md(x.r.body)}</div></details>` : ""}`;
+    <h3>Rainium ${esc(x.version)}${dev ? '<span class="tag">dev build</span>' : ""}</h3>
+    <p class="sub">${dev ? "Newest dev build" : "Latest release"} for Minecraft ${esc(x.mc)}, released ${fmtDate(x.date)}</p>
+    ${dev ? `<p class="caution">Dev builds are early test versions and may be unstable. The in-game updater skips them unless you switch on Include dev builds.</p>` : ""}
+    <a class="btn" href="${x.jar.browser_download_url}">Download ${esc(x.jar.name)}<small>${fmtSize(x.jar.size)}</small></a>
+    ${x.r.body ? `<details class="notes"${dev || !matchMedia("(min-width: 721px)").matches ? "" : " open"}><summary>What's new</summary><div class="md">${md(x.r.body)}</div></details>` : ""}`;
 }
 
 function esc(s) {
@@ -179,33 +588,26 @@ function fmtSize(b) {
   return b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
 }
 
-// Tiny Markdown subset for release notes: headings, bullet lists, paragraphs,
-// `code`, **bold**, and [links](https://...).
+// A small Markdown subset for release notes: headings, nested bullet lists,
+// paragraphs, quotes, `code`, **bold** and [links](https://...).
 function md(src) {
   const inline = (t) => esc(t)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
-  let out = "", inList = false, para = [];
-  const flushPara = () => { if (para.length) { out += `<p>${inline(para.join(" "))}</p>`; para = []; } };
-  const closeList = () => { if (inList) { out += "</ul>"; inList = false; } };
+  let out = "", depth = 0, para = [];
+  const flush = () => { if (para.length) { out += `<p>${inline(para.join(" "))}</p>`; para = []; } };
+  const listTo = (n) => { while (depth < n) { out += "<ul>"; depth++; } while (depth > n) { out += "</ul>"; depth--; } };
   for (const raw of src.replace(/\r/g, "").split("\n")) {
     const line = raw.trimEnd();
     let m;
-    if ((m = line.match(/^#{1,6}\s+(.*)/))) {
-      flushPara(); closeList();
-      out += `<h4>${inline(m[1])}</h4>`;
-    } else if ((m = line.match(/^\s*[-*]\s+(.*)/))) {
-      flushPara();
-      if (!inList) { out += "<ul>"; inList = true; }
-      out += `<li>${inline(m[1])}</li>`;
-    } else if (!line.trim()) {
-      flushPara(); closeList();
-    } else {
-      closeList(); para.push(line.trim());
-    }
+    if ((m = line.match(/^#{1,6}\s+(.*)/))) { flush(); listTo(0); out += `<h4>${inline(m[1])}</h4>`; }
+    else if ((m = line.match(/^(\s*)[-*]\s+(.*)/))) { flush(); listTo(m[1].length >= 2 ? 2 : 1); out += `<li>${inline(m[2])}</li>`; }
+    else if ((m = line.match(/^>\s?(.*)/))) { flush(); listTo(0); out += `<p><em>${inline(m[1])}</em></p>`; }
+    else if (!line.trim()) { flush(); listTo(0); }
+    else { listTo(0); para.push(line.trim()); }
   }
-  flushPara(); closeList();
+  flush(); listTo(0);
   return out;
 }
 </script>
