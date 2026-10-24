@@ -909,10 +909,11 @@ function md(src) {
 
 <script>
 /* ---------- Home: the player and halo, recorded in game ----------
-   hero/sway.mp4 (or .webm) is a 12.8 s loop at 30 fps: frames 5–132 of the in-game recording played 3× slower, with two
-   in-between frames made for each real one (optical flow) so it stays smooth; with the picture in the top half and its
+   hero/sway.mp4 (or .webm) is a 50.8 s loop at 30 fps: frames 5–132 of the in-game recording played about 6× slower,
+   forward then backward (ping-pong, easing to a stop at each end, so there is no jump from the last frame to the first),
+   with in-between frames made by optical flow so it stays smooth; with the picture in the top half and its
    transparency in the bottom half (so it works in every browser); WebGL puts them back together.
-   If video or WebGL isn't available, every 4th frame (hero/00–31.webp) cross-fades instead, at the same slowed speed. */
+   If video or WebGL isn't available, every 4th frame (hero/00–31.webp) cross-fades instead, also ping-pong at the slowed speed. */
 window.startHero = (function () {
   let started = false;
   const onHome = () => document.body.dataset.page === "home" && !document.hidden;
@@ -964,7 +965,8 @@ window.startHero = (function () {
   }
   function fallback(host, hero, still) {
     const back = host.querySelector(".b"), front = host.querySelector(".f");
-    const N = 32, STEP = 400;
+    const N = 32, STEP = 800;
+    const order = [...Array(N).keys(), ...Array.from({ length: N - 2 }, (_, k) => N - 2 - k)]; // 0…31…1
     const src = (i) => "hero/" + String(i).padStart(2, "0") + ".webp";
     const frames = [];
     for (let i = 0; i < N; i++) {
@@ -979,11 +981,12 @@ window.startHero = (function () {
     function tick(now) {
       requestAnimationFrame(tick);
       if (!onHome()) { t0 = 0; return; }
-      const next = (i + 1) % N;
-      if (!loaded(i) || !loaded(next)) return;
-      if (!t0) { t0 = now; back.src = frames[i].src; front.src = frames[next].src; }
+      const at = (k) => frames[order[k % order.length]];
+      const next = (i + 1) % order.length;
+      if (!loaded(order[i]) || !loaded(order[next])) return;
+      if (!t0) { t0 = now; back.src = at(i).src; front.src = at(next).src; }
       const u = (now - t0) / STEP;
-      if (u >= 1) { i = next; t0 = now; back.src = frames[i].src; front.src = frames[(i + 1) % N].src; front.style.opacity = 0; return; }
+      if (u >= 1) { i = next; t0 = now; back.src = at(i).src; front.src = at(i + 1).src; front.style.opacity = 0; return; }
       front.style.opacity = u;
     }
     requestAnimationFrame(tick);
