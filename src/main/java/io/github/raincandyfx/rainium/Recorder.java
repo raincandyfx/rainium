@@ -99,11 +99,11 @@ final class Recorder {
         return target;
     }
 
-    /** Starts recording numbered PNG frames into a new folder inside dir. */
+    /** Starts recording numbered PNG frames into a new folder inside dir, named with the time and frame rate. */
     static synchronized Path start(Path dir, int size, int framesPerSecond, long nowNanos, Consumer<String> onDone) throws IOException {
         if (capturing()) throw new IllegalStateException("already capturing");
         reset(size, framesPerSecond, onDone);
-        target = unique(dir, stamp(LocalDateTime.now()), "");
+        target = unique(dir, stamp(LocalDateTime.now()) + "_" + fps + "fps", "");   // the frame rate to import the frames at
         Files.createDirectories(target);
         startNanos = nowNanos;
         mode = Mode.RECORDING;

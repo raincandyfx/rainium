@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.4.4 (dev build)
+
+- Recording folders are named with their frame rate (for example `rainium_2026-10-24_11-40-00_120fps`), so you know what rate to import the frames at.
+
 ## 0.4.3 (dev build)
 
 - Recordings default to **120 fps** for the smoothest motion, with 60 and 30 still available in **Settings > Capture**. Higher frame rates take longer to record and use more disk space.
