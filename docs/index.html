@@ -173,7 +173,7 @@
 
   /* ============ HOME ============ */
   .home { position: absolute; inset: 0; overflow: hidden; }
-  .strip { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: clamp(200px, 23vw, 400px); background: var(--paper);
+  .strip { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: clamp(140px, 15vw, 270px); background: var(--paper);
     clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%); }
   /* RAINIUM fills the white band: the whole page height, as thick as the band is wide at the top, cut off by the band's slope.
      It's an SVG sized by fitName below; the real heading stays for screen readers and phones. */
@@ -182,7 +182,7 @@
   .strip text.echo { fill: none; stroke: #9aa3c2; stroke-width: 2px; vector-effect: non-scaling-stroke; }
   .vname { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-  .hero { position: absolute; z-index: 4; left: 9vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
+  .hero { position: absolute; z-index: 4; left: 3vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
   .hero .ph { width: 100%; height: 100%; aspect-ratio: auto; clip-path: polygon(14% 0, 100% 0, 78% 100%, 0 100%); outline-offset: -10px;
     background: repeating-linear-gradient(-50deg, rgba(255,255,255,0.1) 0 2px, transparent 2px 16px), rgba(255,255,255,0.12); }
   .hero .ph span { font-size: 1.15rem; }
@@ -225,14 +225,14 @@
   /* The pan off to the home page */
   .intro.panning { transform: translateX(-104%); transition: transform 0.8s cubic-bezier(.7,0,.2,1); pointer-events: none; }
 
-  .wallet { position: absolute; z-index: 5; left: clamp(120px, 13vw, 220px); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
+  .wallet { position: absolute; z-index: 5; left: clamp(84px, 8vw, 150px); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
     padding: 6px 18px 6px 12px; min-width: 170px; text-decoration: none; }
   .wallet b { display: block; font-weight: 600; font-stretch: 90%; font-size: 1.7rem; line-height: 1; letter-spacing: -0.01em; }
   .wallet span { font-style: italic; font-size: 0.72rem; font-weight: 600; }
   .wallet .new { position: absolute; right: -12px; top: -12px; background: var(--red); color: var(--paper); padding: 1px 8px; transform: rotate(8deg);
     font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 0.9rem; }
 
-  .menu { position: absolute; z-index: 5; left: 41vw; top: 51%; transform: translateY(-50%) rotate(-11deg); }
+  .menu { position: absolute; z-index: 5; left: 33vw; top: 51%; transform: translateY(-50%) rotate(-11deg); }
   .menu ol { list-style: none; margin: 0; padding: 0; }
   .menu li { margin-left: var(--x); margin-top: var(--y, 0); line-height: 0.8; }
   .menu a { display: inline-block; text-decoration: none; color: var(--menu); font-size: clamp(3rem, 9.4vh, 6.2rem); letter-spacing: -0.02em;
@@ -930,9 +930,8 @@ function md(src) {
 
 <script>
 /* ---------- Home: RAINIUM running up the white band ----------
-   The word is measured once the font is in. It runs the full height of the page, and is only as thick as the band is
-   at its narrowest (the bottom), so the slope never cuts into it. It keeps its own proportions, give or take a little
-   squeeze lengthways when the page is very tall or very short. */
+   The word is measured once the font is in, then drawn as thick as the band is wide at the top and the full height of
+   the page; the band's slope cuts into it towards the bottom. */
 (function fitName() {
   const svg = document.getElementById("sname");
   if (!svg) return;
@@ -946,18 +945,11 @@ function md(src) {
     ctx.font = `${cs.fontStyle} ${cs.fontWeight} 100px ${cs.fontFamily}`;
     const m = ctx.measureText("RAINIUM");
     const A = m.actualBoundingBoxAscent || 72, D = m.actualBoundingBoxDescent || 0;
-    const pad = W * 0.05;
-    const room = W * 0.62 - 2 * pad;                  // the band's width at the bottom (see .strip's clip-path)
-    let len = H - 2 * pad;                            // length up the page
-    let thick = len * (A + D) / box.width;            // thickness at the word's own proportions
-    if (thick > room) {                               // too thick for the band: make it as thick as the band allows,
-      thick = room;                                   // and only as long as that thickness suits (stretched lengthways
-      len = Math.min(len, thick * box.width / (A + D) * 1.12);  // by at most 12%), so it ends short of the top
-    }
+    const pad = W * 0.05, thick = W - 2 * pad, len = H - 2 * pad;
     // rotate(-90): the word's length runs up the page, its letter height across the band
     svg.setAttribute("viewBox", `${-A} ${-(box.x + box.width)} ${A + D} ${box.width}`);
     svg.setAttribute("preserveAspectRatio", "none");
-    svg.style.left = pad + "px"; svg.style.top = (H - pad - len) + "px";
+    svg.style.left = pad + "px"; svg.style.top = pad + "px";
     svg.style.width = thick + "px"; svg.style.height = len + "px";
   };
   fit();
