@@ -20,11 +20,14 @@ import java.util.zip.Deflater;
  *
  * The game side ({@code CaptureRenderer}) asks {@link #beginFrame} whether the frame it is drawing
  * should be kept, reads it back from the graphics card and hands the pixels to {@link #frame}.
- * A recording runs on its own clock: frame k of the clip shows the preview exactly k / fps seconds
- * after the start ({@link #previewNanos}), and the clock only moves on once a frame has been taken.
- * Every saved frame is one even step after the last, so the clip plays smoothly at its frame rate
- * even if drawing or saving can't keep up (the preview on screen then runs in slow motion). It
- * never runs ahead of real time. PNGs are written on background threads.
+ * A recording runs on its own clock: frame k of the clip shows the game exactly k / fps seconds
+ * after the start. While recording, the game's own timer follows this clock ({@link #gameStepMs},
+ * called from the game loop): each frame either moves game time on by exactly one step and is
+ * taken, or doesn't move it at all while saving catches up. Everything that animates with game
+ * time (the player model, emotes from other mods, sway, particles) therefore advances by the same
+ * even step between saved frames, so the clip plays smoothly at true speed even when drawing or
+ * saving is slower than real time (the game then runs in slow motion while recording). It never
+ * runs ahead of real time. PNGs are written on background threads.
  *
  * No Minecraft classes here, so the timing and file writing can be tested on their own.
  */
@@ -43,8 +46,9 @@ final class Recorder {
     /** Largest picture side in pixels: bigger sizes are scaled down to fit. */
     static final int MAX_SIDE = 4096;
 
-    private static final int THREADS = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
-    private static final int MAX_QUEUED = THREADS * 3 + 6;
+    private static final int THREADS = Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors() - 1));
+    /** Memory frames waiting to be saved may use (each frame is held as bytes and as converted pixels). */
+    private static final long QUEUE_BYTES = Math.min(Runtime.getRuntime().maxMemory() / 4, 1536L << 20);
     private static final ExecutorService pool = Executors.newFixedThreadPool(THREADS, r -> {
         Thread t = new Thread(r, "rainium-capture");
         t.setDaemon(true);
@@ -59,6 +63,9 @@ final class Recorder {
     private static int nextFrame;               // index of the next frame to take
     private static volatile int clockFrame;     // the frame the recording clock shows
     private static int waits;                   // frames the game drew while saving caught up
+    private static int pendingFrame = -1;       // frame the game clock was moved to, waiting to be drawn and taken
+    private static volatile boolean driven;     // the game's timer follows the recording clock
+    private static volatile long frameBytes = 1;   // memory one queued frame takes
     private static final AtomicInteger queued = new AtomicInteger(), written = new AtomicInteger(), failed = new AtomicInteger();
     private static volatile String error;
     private static volatile Consumer<String> done;   // called (on a background thread) with a message when saving finishes
@@ -71,6 +78,12 @@ final class Recorder {
     static int framesWaited() { return waits; }
     static int pending() { return queued.get(); }
     static Path target() { return target; }
+    /** Whether the game's timer follows the recording clock (false if that hook isn't available). */
+    static boolean driven() { return driven && mode == Mode.RECORDING; }
+
+    private static int maxQueued() {
+        return (int) Math.max(2, Math.min(THREADS * 3L + 6, QUEUE_BYTES / Math.max(1, frameBytes)));
+    }
 
     /** Length of the clip recorded so far, in seconds (0 when not recording). */
     static float seconds() { return mode == Mode.RECORDING ? clockFrame / (float) fps : 0f; }
@@ -116,6 +129,8 @@ final class Recorder {
         nextFrame = 0;
         clockFrame = 0;
         waits = 0;
+        pendingFrame = -1;
+        driven = false;
         written.set(0);
         failed.set(0);
         error = null;
@@ -126,6 +141,7 @@ final class Recorder {
     static synchronized void stop() {
         if (mode != Mode.RECORDING) return;
         mode = Mode.IDLE;
+        pendingFrame = -1;
         finishIfDone();
     }
 
@@ -145,9 +161,16 @@ final class Recorder {
             return ticket(0, 0);
         }
         if (mode != Mode.RECORDING) return -1;
+        if (driven) {   // the game loop already decided at the start of this frame
+            if (pendingFrame < 0) return -1;
+            int k = pendingFrame;
+            pendingFrame = -1;
+            queued.incrementAndGet();
+            return ticket(k, k);
+        }
         int k = nextFrame;
         if (nowNanos - startNanos < Math.round(k * 1e9 / fps)) return -1;   // ahead of real time: wait
-        if (queued.get() >= MAX_QUEUED) {                                    // saving has fallen behind: wait
+        if (queued.get() >= maxQueued()) {                                   // saving has fallen behind: wait
             waits++;
             return -1;
         }
@@ -155,6 +178,25 @@ final class Recorder {
         clockFrame = k;   // the preview drawn for this frame is at k / fps seconds
         queued.incrementAndGet();
         return ticket(k, k);
+    }
+
+    /**
+     * Called by the game's timer at the start of every frame. Returns how many milliseconds of game
+     * time this frame should advance: one recording step if this frame will be taken, 0 while
+     * waiting (ahead of real time, saving behind, or the last step not yet drawn), or NaN when not
+     * recording (the game then uses real time).
+     */
+    static synchronized double gameStepMs(long nowNanos) {
+        if (mode != Mode.RECORDING) return Double.NaN;
+        driven = true;
+        if (pendingFrame >= 0) return 0;                                     // last step not drawn yet: hold
+        int k = nextFrame;
+        if (nowNanos - startNanos < Math.round(k * 1e9 / fps)) return 0;     // ahead of real time
+        if (queued.get() >= maxQueued()) { waits++; return 0; }             // saving has fallen behind
+        nextFrame = k + 1;
+        clockFrame = k;
+        pendingFrame = k;
+        return k == 0 ? 0 : 1000.0 / fps;
     }
 
     private static long ticket(int from, int to) { return ((long) from << 32) | (to & 0xFFFFFFFFL); }
@@ -168,6 +210,7 @@ final class Recorder {
         final Path into = target;
         final boolean picture = !Files.isDirectory(into);
         final int from = (int) (ticket >>> 32), to = (int) ticket;
+        frameBytes = (long) width * height * 8;
         pool.execute(() -> {
             try {
                 int[] argb = straightArgb(width, height, rgba);

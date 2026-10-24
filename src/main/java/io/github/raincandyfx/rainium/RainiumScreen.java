@@ -1186,7 +1186,9 @@ public final class RainiumScreen extends Screen {
             try {
                 EntityRenderer<?, ?> renderer = mc.getEntityRenderDispatcher().getRenderer(player);
                 @SuppressWarnings({"unchecked", "rawtypes"})
-                EntityRenderState st = ((EntityRenderer) renderer).createRenderState(player, 1f);
+                // the game's partial tick, so tick-based animation (walking, emotes) moves smoothly between ticks
+                float pt = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+                EntityRenderState st = ((EntityRenderer) renderer).createRenderState(player, pt);
                 st.shadowPieces.clear();
                 st.outlineColor = 0;
                 float bbh = 1.8f;
@@ -1194,7 +1196,7 @@ public final class RainiumScreen extends Screen {
                 if (Recorder.mode() == Recorder.Mode.RECORDING && spin > 0)   // one turn every 12 s (slow) or 6 s (fast)
                     previewYaw = ((spinFrom + Recorder.seconds() * (spin == 1 ? 30f : 60f)) % 360f + 360f) % 360f;
                 if (st instanceof LivingEntityRenderState ls) {
-                    if (Recorder.mode() == Recorder.Mode.RECORDING) {   // idle animation and sway follow the recording's clock
+                    if (Recorder.mode() == Recorder.Mode.RECORDING && !Recorder.driven()) {   // without the game timer hook: idle animation and sway follow the recording's clock
                         if (Float.isNaN(recordAge0)) recordAge0 = ls.ageInTicks;
                         ls.ageInTicks = recordAge0 + Recorder.seconds() * 20f;
                     } else recordAge0 = Float.NaN;

@@ -2,6 +2,12 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.4.5 (dev build)
+
+- Recordings play at true speed with no choppiness, including emotes from mods like Emotecraft. While recording, the game's own clock follows the recording, so everything that animates (the player, emotes, sway, particles) moves exactly one frame's worth between saved frames. If your computer can't keep up, the game runs in slow motion while recording instead of the clip speeding up.
+- The preview moves smoothly between game ticks (walking and emotes no longer step 20 times a second).
+- Saving uses more processor cores, and limits how much memory waiting frames can use.
+
 ## 0.4.4 (dev build)
 
 - Recording folders are named with their frame rate (for example `rainium_2026-10-24_11-40-00_120fps`), so you know what rate to import the frames at.
