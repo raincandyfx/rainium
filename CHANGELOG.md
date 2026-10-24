@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.4.3 (dev build)
+
+- Recordings default to **120 fps** for the smoothest motion, with 60 and 30 still available in **Settings > Capture**. Higher frame rates take longer to record and use more disk space.
+
 ## 0.4.2 (dev build)
 
 - Smoother recordings: a recording now runs on its own clock, so every frame is exactly one step (1/30 or 1/60 of a second) after the last, with no repeated or skipped frames. If your computer can't draw and save fast enough, the preview runs in slow motion while recording, but the saved clip still plays smoothly at full speed.

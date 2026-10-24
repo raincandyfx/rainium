@@ -1127,7 +1127,12 @@ public final class RainiumScreen extends Screen {
             c.captureSize = o[Math.floorMod(i + d, 3)];
             save();
         });
-        y = cycle(g, mx, my, x, y, w, "capture_fps", Lang.t("value.capture_fps", c.captureFps), d -> { c.captureFps = c.captureFps == 60 ? 30 : 60; save(); });
+        y = cycle(g, mx, my, x, y, w, "capture_fps", Lang.t("value.capture_fps", c.captureFps), d -> {
+            int[] o = {30, 60, 120};
+            int i = c.captureFps >= 120 ? 2 : c.captureFps >= 60 ? 1 : 0;
+            c.captureFps = o[Math.floorMod(i + d, 3)];
+            save();
+        });
         y = cycle(g, mx, my, x, y, w, "capture_spin", Lang.t("value.capture_spin." + c.captureSpin), d -> { c.captureSpin = Math.floorMod(c.captureSpin + d, 3); save(); });
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.open_captures"), () -> {
             try { java.nio.file.Files.createDirectories(capturesDir()); } catch (Exception ignored) {}
