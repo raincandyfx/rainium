@@ -5,282 +5,421 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rainium – cosmetics for Minecraft 26.3</title>
 <meta name="description" content="Wings, halos, tails, capes, anything you can model, worn on your player. A client-side Fabric mod for Minecraft 26.3 with an in-game editor.">
-<meta name="theme-color" content="#16153d">
+<meta name="theme-color" content="#081243">
 <meta property="og:title" content="Rainium">
 <meta property="og:description" content="Wings, halos, tails, capes, anything you can model, worn on your player. A client-side Fabric mod for Minecraft 26.3.">
 <meta property="og:image" content="icon.png">
 <link rel="icon" href="icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,700;1,800;1,900&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --night: #16153d;     /* background, from the icon's sky */
-    --deep: #1f1d52;      /* raised surfaces */
-    --rim: #34307a;       /* borders on night */
-    --cloud: #ece2f8;     /* main text, the cloud */
-    --lilac: #b4a3d9;     /* secondary text */
-    --rain: #42dfe6;      /* links, actions */
-    --streak: #c445ad;    /* the magenta in the ripples, used sparingly */
-    --display: "Bricolage Grotesque", system-ui, sans-serif;
+    --abyss: #050a2c;     /* bottom of the sky */
+    --night: #0b1650;     /* top of the sky */
+    --sheet: #0d1d63;     /* panel body */
+    --rim: #2b47a8;       /* lines on blue */
+    --cloud: #eef1ff;     /* text, selection slab */
+    --mist: #a9b6e8;      /* secondary text */
+    --rain: #3fe3ee;      /* cyan: actions, selection shadow */
+    --streak: #d04cb4;    /* magenta from the icon, used sparingly */
+    --moon: #f3f0ff;
+    --menu: "Barlow Condensed", "Arial Narrow", sans-serif;
     --body: "Atkinson Hyperlegible Next", system-ui, sans-serif;
-    --measure: 66ch;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  html, body { height: 100%; }
   body {
-    margin: 0; background: var(--night); color: var(--cloud);
-    font: 17px/1.6 var(--body);
-    -webkit-font-smoothing: antialiased;
+    margin: 0; color: var(--cloud); font: 16.5px/1.6 var(--body); -webkit-font-smoothing: antialiased;
+    background: linear-gradient(170deg, var(--night) 0%, #091040 45%, var(--abyss) 100%);
+    background-color: var(--abyss);
+    overflow: hidden;
   }
   a { color: var(--rain); text-underline-offset: 3px; }
-  a:hover { text-decoration-thickness: 2px; }
-  :focus-visible { outline: 2px solid var(--rain); outline-offset: 3px; border-radius: 4px; }
+  :focus-visible { outline: 2px solid var(--rain); outline-offset: 3px; }
   code, kbd {
     font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 0.86em;
-    background: var(--deep); border: 1px solid var(--rim); border-radius: 5px; padding: 1px 6px;
+    background: rgba(5, 10, 44, 0.6); border: 1px solid var(--rim); border-radius: 3px; padding: 1px 5px;
   }
-  kbd { border-bottom-width: 3px; color: var(--cloud); }
-  h1, h2, h3 { font-family: var(--display); line-height: 1.1; margin: 0; }
-  h2 { font-size: clamp(1.9rem, 4.2vw, 2.6rem); font-weight: 800; letter-spacing: -0.02em; }
-  h3 { font-size: 1.15rem; font-weight: 700; }
-  p { margin: 0 0 0.9em; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
-  .lede { color: var(--lilac); max-width: var(--measure); font-size: 1.08rem; margin-top: 12px; }
+  kbd { border-bottom-width: 3px; }
 
-  /* Top bar */
-  .bar {
-    position: sticky; top: 0; z-index: 10;
-    background: color-mix(in srgb, var(--night) 88%, transparent);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid color-mix(in srgb, var(--rim) 60%, transparent);
+  /* ---------- Backdrop: sky, moon, water ---------- */
+  #sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+  .moon {
+    position: fixed; z-index: 0; pointer-events: none;
+    width: min(64vh, 46vw); aspect-ratio: 1; right: -9vw; top: 13vh; border-radius: 50%;
+    background:
+      radial-gradient(circle at 38% 40%, rgba(255,255,255,0) 0 18%, rgba(170,180,240,0.18) 19% 21%, rgba(255,255,255,0) 22%),
+      radial-gradient(circle at 64% 66%, rgba(170,180,240,0.22) 0 7%, rgba(255,255,255,0) 8%),
+      radial-gradient(circle at 30% 70%, rgba(170,180,240,0.16) 0 4%, rgba(255,255,255,0) 5%),
+      radial-gradient(circle at 40% 35%, #ffffff 0%, var(--moon) 55%, #c9c7f2 100%);
+    box-shadow: 0 0 80px 20px rgba(140, 170, 255, 0.25), 0 0 260px 60px rgba(63, 227, 238, 0.12);
+    opacity: 0.92;
   }
-  .bar .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
-  .brand { display: flex; align-items: center; gap: 10px; color: var(--cloud); text-decoration: none;
-    font-family: var(--display); font-weight: 800; font-size: 1.2rem; }
-  .brand img { width: 30px; height: 30px; border-radius: 8px; }
-  .bar nav { margin-left: auto; display: flex; gap: 22px; align-items: center; }
-  .bar nav a { color: var(--lilac); text-decoration: none; font-size: 0.95rem; }
-  .bar nav a:hover { color: var(--cloud); }
-  .bar nav a.get { color: var(--night); background: var(--rain); padding: 7px 14px; border-radius: 999px; font-weight: 700; }
-  @media (max-width: 720px) { .bar nav a.opt { display: none; } }
+  .water {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 26vh; z-index: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(63,227,238,0) 0%, rgba(30,60,170,0.25) 40%, rgba(5,10,44,0.85) 100%);
+    border-top: 1px solid rgba(63, 227, 238, 0.18);
+  }
 
-  /* Hero */
-  .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--rim); }
-  .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .hero .wrap {
-    position: relative; display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center;
-    padding-top: clamp(56px, 10vw, 120px); padding-bottom: clamp(56px, 10vw, 120px);
-    pointer-events: none;
+  /* ---------- HUD ---------- */
+  .hud { position: fixed; z-index: 3; font-family: var(--menu); }
+  .brand { left: 28px; top: 22px; display: flex; align-items: center; gap: 12px; color: var(--cloud); text-decoration: none; }
+  .brand img { width: 44px; height: 44px; transform: rotate(-6deg); border: 2px solid var(--cloud); box-shadow: 5px 5px 0 var(--rain); }
+  .brand b { font-style: italic; font-weight: 900; font-size: 2rem; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1; }
+  .brand small { display: block; font-style: italic; font-weight: 700; color: var(--rain); font-size: 0.95rem; letter-spacing: 0.04em; }
+
+  .clock {
+    right: 28px; top: 18px; display: grid; grid-template-columns: auto auto; align-items: center; gap: 0 14px;
+    transform: rotate(-4deg); text-align: right;
   }
-  .hero .wrap > * { pointer-events: auto; }
-  .hero h1 {
-    font-size: clamp(2.9rem, 8.5vw, 6rem); font-weight: 800; letter-spacing: -0.035em; line-height: 0.95;
-    max-width: 11ch; text-wrap: balance;
+  .clock .day { font-weight: 900; font-style: italic; font-size: 3.6rem; line-height: 0.85; grid-row: span 2; color: var(--cloud);
+    text-shadow: 4px 4px 0 rgba(63, 227, 238, 0.55); }
+  .clock .dm { font-weight: 800; font-style: italic; font-size: 1.15rem; text-transform: uppercase; line-height: 1; text-align: left; }
+  .clock .phase { display: flex; align-items: center; gap: 8px; font-weight: 700; font-style: italic; color: var(--mist); font-size: 1rem; line-height: 1; text-align: left; }
+  .clock svg { width: 18px; height: 18px; }
+
+  .keys { left: 28px; bottom: 20px; display: flex; gap: 18px; color: var(--mist); font-family: var(--body); font-size: 0.85rem; align-items: center; }
+  .keys kbd { font-size: 0.78rem; }
+  .links { right: 28px; bottom: 20px; display: flex; gap: 18px; font-family: var(--body); font-size: 0.88rem; }
+  .links a { color: var(--mist); text-decoration: none; }
+  .links a:hover { color: var(--cloud); text-decoration: underline; }
+
+  /* ---------- Menu ---------- */
+  .menu {
+    position: fixed; z-index: 2; left: 4vw; top: 50%;
+    transform: translateY(-46%) rotate(-9deg); transform-origin: left center;
   }
-  .hero .lede { font-size: clamp(1.05rem, 2vw, 1.25rem); color: var(--cloud); opacity: 0.9; max-width: 46ch; margin-top: 22px; }
-  .hero .icon {
-    width: clamp(160px, 22vw, 240px); aspect-ratio: 1; border-radius: 28%;
-    box-shadow: 0 0 0 1px var(--rim), 0 24px 60px -20px rgba(66, 223, 230, 0.35);
+  .menu ol { list-style: none; margin: 0; padding: 0; }
+  .menu li { margin: 0; }
+  .menu li:nth-child(1) { margin-left: 0; }
+  .menu li:nth-child(2) { margin-left: 0.9em; }
+  .menu li:nth-child(3) { margin-left: 1.5em; }
+  .menu li:nth-child(4) { margin-left: 1.9em; }
+  .menu li:nth-child(5) { margin-left: 2.1em; }
+  .menu li:nth-child(6) { margin-left: 2.0em; }
+  .menu li:nth-child(7) { margin-left: 1.7em; }
+  .menu a {
+    position: relative; isolation: isolate; display: inline-block;
+    font-family: var(--menu); font-style: italic; font-weight: 900; text-transform: uppercase;
+    font-size: clamp(2.4rem, 7.2vh, 4.6rem); line-height: 1.0; letter-spacing: 0.01em;
+    color: var(--cloud); text-decoration: none; padding: 0 0.32em 0 0.22em; opacity: 0.62;
+    transition: opacity 0.15s, color 0.15s, transform 0.18s;
   }
-  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 30px; }
+  .menu a::before, .menu a::after {
+    content: ""; position: absolute; z-index: -1; inset: 6% -10% 2% -6%;
+    clip-path: polygon(3% 0, 100% 12%, 95% 100%, 0 88%);
+    transform: scaleX(0); transform-origin: left center; transition: transform 0.2s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .menu a::before { background: var(--rain); translate: 9px 7px; }
+  .menu a::after { background: var(--cloud); }
+  .menu a:hover { opacity: 1; color: var(--rain); }
+  .menu a[aria-current="page"] { opacity: 1; color: var(--abyss); transform: translateX(14px) scale(1.06); }
+  .menu a[aria-current="page"]::before, .menu a[aria-current="page"]::after { transform: scaleX(1); }
+  .menu a[aria-current="page"]::before { transition-delay: 0.05s; }
+
+  /* ---------- Panels ---------- */
+  .panels {
+    position: fixed; z-index: 2; right: 4vw; top: 13vh; bottom: 9vh; width: min(660px, 52vw);
+  }
+  .panel {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    filter: drop-shadow(10px 10px 0 rgba(63, 227, 238, 0.35));
+  }
+  .js .panel { visibility: hidden; opacity: 0; }
+  .js .panel.on { visibility: visible; opacity: 1; animation: deal 0.32s cubic-bezier(.2,.9,.25,1) both; }
+  @keyframes deal {
+    from { opacity: 0; transform: translateX(60px) skewX(-8deg); }
+    to { opacity: 1; transform: none; }
+  }
+  .panel > header {
+    flex: none; align-self: flex-start; position: relative; margin-left: -18px;
+    background: var(--cloud); color: var(--abyss); padding: 6px 46px 4px 26px;
+    clip-path: polygon(0 0, 100% 0, 94% 100%, 3% 100%);
+  }
+  .panel h2 {
+    margin: 0; font-family: var(--menu); font-style: italic; font-weight: 900; text-transform: uppercase;
+    font-size: 2.3rem; line-height: 1; letter-spacing: 0.01em;
+  }
+  .panel .body {
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    background: linear-gradient(160deg, rgba(16, 36, 120, 0.94), rgba(9, 20, 82, 0.96));
+    border-left: 4px solid var(--rain);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 26px), calc(100% - 26px) 100%, 0 100%);
+    padding: 26px 30px 34px;
+    scrollbar-width: thin; scrollbar-color: var(--rim) transparent;
+  }
+  .back { display: none; }
+  .body h3 { font-family: var(--menu); font-style: italic; font-weight: 800; font-size: 1.45rem; line-height: 1.1; margin: 0 0 4px; }
+  .body p { margin: 0 0 0.85em; }
+  .lede { color: var(--mist); }
+  .muted { color: var(--mist); }
+
+  /* Download / home */
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; list-style: none; padding: 0; }
+  .badges li {
+    font-family: var(--menu); font-weight: 700; font-style: italic; font-size: 1rem; padding: 2px 12px;
+    border: 1px solid var(--rim); background: rgba(5, 10, 44, 0.5); transform: skewX(-10deg);
+  }
+  .badges li > span { display: inline-block; transform: skewX(10deg); }
+  .hero-line {
+    font-family: var(--menu); font-style: italic; font-weight: 900; text-transform: uppercase;
+    font-size: clamp(2.6rem, 5vw, 4.2rem); line-height: 0.9; margin: 0 0 14px; letter-spacing: 0.005em;
+  }
+  .hero-line span { display: block; }
+  .hero-line span + span { color: var(--rain); margin-left: 0.6em; }
+  .cta { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 24px 0 10px; }
   .btn {
-    display: inline-flex; flex-direction: column; justify-content: center; gap: 1px;
-    padding: 12px 22px; border-radius: 14px; text-decoration: none; font-weight: 700; line-height: 1.2;
-    background: var(--rain); color: var(--night); font-size: 1.05rem;
+    display: inline-flex; flex-direction: column; gap: 1px; text-decoration: none; position: relative; isolation: isolate;
+    color: var(--abyss); padding: 10px 30px 10px 22px; line-height: 1.15;
+    font-family: var(--menu); font-style: italic; font-weight: 900; font-size: 1.45rem; text-transform: uppercase;
   }
-  .btn small { font-weight: 400; font-size: 0.8rem; opacity: 0.8; }
-  .btn:hover { background: #7aeef2; }
-  .btn.ghost { background: transparent; color: var(--cloud); box-shadow: inset 0 0 0 1px var(--rim); }
-  .btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--lilac); }
-  .note { color: var(--lilac); font-size: 0.9rem; margin-top: 18px; }
-  @media (max-width: 720px) {
-    .hero .wrap { grid-template-columns: 1fr; }
-    .hero .icon { grid-row: 1; width: 96px; }
-  }
+  .btn::before, .btn::after { content: ""; position: absolute; inset: 0; z-index: -1; clip-path: polygon(0 0, 100% 6%, 96% 100%, 2% 94%); }
+  .btn::before { background: var(--rain); translate: 6px 6px; }
+  .btn::after { background: var(--cloud); }
+  .btn small { font-family: var(--body); font-style: normal; font-weight: 400; text-transform: none; font-size: 0.8rem; color: #25305f; }
+  .btn:hover::after { background: #ffffff; }
+  .btn:hover::before { translate: 9px 8px; }
+  .btn.alt { color: var(--cloud); }
+  .btn.alt::after { background: transparent; box-shadow: inset 0 0 0 2px var(--cloud); clip-path: none; transform: skewX(-8deg); }
+  .btn.alt::before { display: none; }
+  .btn.alt:hover { color: var(--rain); }
+  .needs { padding-left: 20px; margin: 6px 0 0; color: var(--mist); }
+  .needs li { margin: 5px 0; }
+  .divider { border: 0; height: 2px; margin: 26px 0 20px; background: linear-gradient(90deg, var(--rain), rgba(63,227,238,0)); }
+  .dev-note { border: 1px dashed var(--rim); padding: 14px 16px; margin-top: 22px; }
+  .dev-note p { margin: 4px 0 0; }
 
-  /* Sections */
-  section.block { padding: clamp(64px, 9vw, 112px) 0; }
-  section.block + section.block { border-top: 1px solid color-mix(in srgb, var(--rim) 55%, transparent); }
-  .head { margin-bottom: 40px; }
+  /* Features */
+  .feat { list-style: none; padding: 0; margin: 0; }
+  .feat li { display: grid; grid-template-columns: 22px 1fr; gap: 0 12px; padding: 14px 0; border-top: 1px solid var(--rim); }
+  .feat li:first-child { border-top: 0; padding-top: 0; }
+  .feat li::before { content: ""; width: 12px; height: 12px; margin-top: 8px; background: var(--rain); transform: rotate(45deg); grid-row: span 2; }
+  .feat p { color: var(--mist); margin: 0; }
 
-  /* Features: plain text grid, no cards */
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 34px 48px; }
-  .features h3 { margin-bottom: 6px; }
-  .features h3::before {
-    content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%;
-    border: 2px solid var(--rain); margin-right: 10px; vertical-align: 2px;
-  }
-  .features p { color: var(--lilac); margin: 0; }
-
-  /* Steps: a real sequence, so numbered */
-  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; counter-reset: s; max-width: 820px; }
-  .steps > li {
-    counter-increment: s; display: grid; grid-template-columns: 56px 1fr; gap: 0 18px;
-    padding: 22px 0; border-top: 1px solid var(--rim);
-  }
-  .steps > li:last-child { border-bottom: 1px solid var(--rim); }
+  /* Guide */
+  .steps { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+  .steps > li { counter-increment: s; display: grid; grid-template-columns: 54px 1fr; gap: 0 14px; padding: 16px 0; border-top: 1px solid var(--rim); }
+  .steps > li:first-child { border-top: 0; padding-top: 0; }
   .steps > li::before {
-    content: counter(s); grid-column: 1; grid-row: 1 / span 3; font-family: var(--display); font-weight: 800; font-size: 2.2rem;
-    line-height: 1; color: var(--rain);
+    content: counter(s); grid-column: 1; grid-row: 1 / span 3;
+    font-family: var(--menu); font-style: italic; font-weight: 900; font-size: 3rem; line-height: 0.85; color: var(--rain);
   }
   .steps > li > * { grid-column: 2; }
-  .steps h3 { margin-bottom: 6px; }
-  .steps p { color: var(--lilac); margin: 0; max-width: var(--measure); }
-  .steps ul { color: var(--lilac); margin: 8px 0 0; padding-left: 20px; }
-  .tip { margin-top: 28px; color: var(--lilac); max-width: var(--measure); }
+  .steps p { color: var(--mist); margin: 0; }
+  .steps ul { color: var(--mist); margin: 8px 0 0; padding-left: 18px; }
 
-  /* Particles */
-  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: start; }
-  @media (max-width: 860px) { .split { grid-template-columns: 1fr; gap: 32px; } }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; list-style: none; padding: 0; }
-  .chips li { border: 1px solid var(--rim); border-radius: 999px; padding: 4px 14px; font-size: 0.92rem; }
-  dl.opts { margin: 0; display: grid; grid-template-columns: 11rem 1fr; gap: 0; }
-  dl.opts dt, dl.opts dd { padding: 14px 0; border-top: 1px solid var(--rim); margin: 0; }
-  dl.opts dt { font-weight: 700; padding-right: 16px; }
-  dl.opts dd { color: var(--lilac); }
-  @media (max-width: 560px) {
-    dl.opts { grid-template-columns: 1fr; }
-    dl.opts dd { border-top: 0; padding-top: 0; }
+  /* Particles / models */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 4px 0 22px; }
+  .chips li { padding: 2px 14px; border: 1px solid var(--rain); color: var(--cloud); transform: skewX(-10deg); font-family: var(--menu); font-weight: 700; font-style: italic; font-size: 1.05rem; }
+  .chips li > span { display: inline-block; transform: skewX(10deg); }
+  dl.opts { margin: 0; }
+  dl.opts dt { font-family: var(--menu); font-style: italic; font-weight: 800; font-size: 1.2rem; margin-top: 14px; }
+  dl.opts dd { margin: 2px 0 0; color: var(--mist); padding-left: 14px; border-left: 2px solid var(--rim); }
+  .formats { display: flex; gap: 10px; margin: 4px 0 20px; }
+  .formats span { font-family: var(--menu); font-style: italic; font-weight: 900; font-size: 2.2rem; line-height: 1; padding: 6px 16px; background: var(--cloud); color: var(--abyss); clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%); }
+  .body ul.plain { padding-left: 20px; color: var(--mist); }
+  .body ul.plain li { margin: 5px 0; }
+  .body strong { color: var(--cloud); }
+
+  /* Updates */
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .bar label { display: inline-flex; gap: 8px; align-items: center; color: var(--mist); font-size: 0.92rem; cursor: pointer; }
+  .bar input { accent-color: var(--rain); width: 16px; height: 16px; }
+  .rel { padding: 18px 0; border-top: 1px solid var(--rim); }
+  .rel:first-child { border-top: 0; }
+  .rel .top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .rel h3 { font-size: 1.9rem; margin: 0; }
+  .rel .when { color: var(--mist); font-size: 0.9rem; }
+  .tag {
+    font-family: var(--menu); font-style: italic; font-weight: 800; font-size: 0.95rem; line-height: 1.3;
+    padding: 0 10px; background: var(--rain); color: var(--abyss); transform: skewX(-10deg); display: inline-block;
   }
-
-  /* Formats */
-  .formats { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0 0; }
-  .formats span {
-    font-family: var(--display); font-weight: 800; font-size: 1.5rem; letter-spacing: -0.01em;
-    padding: 6px 16px; border-radius: 10px; background: var(--deep); border: 1px solid var(--rim);
-  }
-  .prose { max-width: var(--measure); color: var(--lilac); }
-  .prose strong { color: var(--cloud); }
-  .prose ul { padding-left: 20px; }
-
-  /* Downloads */
-  .dl-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 28px; align-items: start; }
-  @media (max-width: 860px) { .dl-grid { grid-template-columns: 1fr; } }
-  .panel { background: var(--deep); border: 1px solid var(--rim); border-radius: 18px; padding: 24px; }
-  .panel + .panel { margin-top: 20px; }
-  .panel h3 { font-size: 1.45rem; }
-  .panel .sub { color: var(--lilac); font-size: 0.92rem; margin: 4px 0 0; }
-  .panel .btn { margin-top: 18px; }
-  .panel.dev { border-style: dashed; }
-  .panel.dev .btn { background: transparent; color: var(--rain); box-shadow: inset 0 0 0 1px var(--rain); }
-  .panel.dev .btn:hover { background: color-mix(in srgb, var(--rain) 12%, transparent); }
-  .caution { color: var(--lilac); font-size: 0.92rem; margin-top: 10px; }
-  details.notes { margin-top: 18px; }
-  details.notes > summary, .versions summary { cursor: pointer; color: var(--lilac); }
-  details.notes > summary:hover, .versions summary:hover { color: var(--cloud); }
-  .md { margin-top: 10px; font-size: 0.96rem; overflow-wrap: anywhere; }
-  .md h4 { margin: 14px 0 4px; font-size: 1rem; }
+  .tag.dev { background: transparent; color: #f2a9e4; box-shadow: inset 0 0 0 1px var(--streak); }
+  .rel .get { display: inline-block; margin-top: 10px; font-weight: 700; }
+  .md { font-size: 0.95rem; color: var(--mist); overflow-wrap: anywhere; }
+  .md h4 { margin: 12px 0 4px; font-size: 1rem; color: var(--cloud); }
   .md ul { padding-left: 20px; margin: 6px 0; }
   .md li { margin: 3px 0; }
   .md p { margin: 6px 0; }
-  .needs { padding-left: 20px; margin: 10px 0 0; color: var(--lilac); }
-  .needs li { margin: 6px 0; }
+  .md strong { color: var(--cloud); }
+  .status { color: var(--mist); }
 
-  .versions { margin-top: 48px; }
-  .versions .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
-  .versions h3 { font-size: 1.3rem; }
-  .versions label { display: inline-flex; gap: 8px; align-items: center; color: var(--lilac); font-size: 0.95rem; cursor: pointer; }
-  .versions input { accent-color: var(--rain); width: 16px; height: 16px; }
-  .vlist { list-style: none; padding: 0; margin: 0; }
-  .vlist > li { border-top: 1px solid var(--rim); padding: 12px 0; }
-  .vlist .line { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
-  .vlist .v { font-weight: 700; }
-  .vlist .when { color: var(--lilac); font-size: 0.9rem; margin-left: 10px; }
-  .tag { display: inline-block; font-size: 0.75rem; border: 1px solid var(--streak); color: #eaa6dc;
-    border-radius: 999px; padding: 0 8px; margin-left: 8px; vertical-align: 2px; }
-  .vlist details { margin-top: 4px; font-size: 0.92rem; }
-  .status { color: var(--lilac); }
-
-  /* FAQ */
-  .faq { max-width: 820px; }
+  /* Questions */
   .faq details { border-top: 1px solid var(--rim); }
-  .faq details:last-child { border-bottom: 1px solid var(--rim); }
-  .faq summary {
-    cursor: pointer; list-style: none; padding: 18px 36px 18px 0; position: relative;
-    font-family: var(--display); font-weight: 700; font-size: 1.12rem;
-  }
+  .faq details:first-child { border-top: 0; }
+  .faq summary { cursor: pointer; list-style: none; padding: 13px 34px 13px 0; position: relative; font-family: var(--menu); font-style: italic; font-weight: 800; font-size: 1.3rem; line-height: 1.15; }
   .faq summary::-webkit-details-marker { display: none; }
-  .faq summary::after {
-    content: "+"; position: absolute; right: 4px; top: 14px; font-size: 1.5rem; color: var(--rain);
-    transition: transform 0.2s;
-  }
-  .faq details[open] summary::after { transform: rotate(45deg); }
-  .faq .a { color: var(--lilac); padding: 0 0 18px; max-width: var(--measure); }
-  .faq .a p:last-child { margin-bottom: 0; }
+  .faq summary::after { content: ""; position: absolute; right: 6px; top: 50%; width: 11px; height: 11px; margin-top: -8px;
+    border-right: 3px solid var(--rain); border-bottom: 3px solid var(--rain); transform: rotate(45deg); transition: transform 0.18s; }
+  .faq details[open] summary::after { transform: rotate(225deg); margin-top: -2px; }
+  .faq .a { color: var(--mist); padding: 0 0 14px; }
+  .fine { font-size: 0.82rem; color: var(--mist); opacity: 0.85; margin-top: 26px; }
 
-  footer { border-top: 1px solid var(--rim); padding: 40px 0 56px; color: var(--lilac); font-size: 0.9rem; }
-  footer .cols { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-  footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
-  footer .fine { max-width: 72ch; margin-top: 24px; font-size: 0.84rem; opacity: 0.85; }
+  /* Update notice */
+  .toast {
+    position: fixed; z-index: 4; left: 28px; bottom: 58px; width: 270px;
+    background: var(--cloud); color: var(--abyss); padding: 12px 40px 12px 16px;
+    clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%);
+    animation: toastIn 0.4s 0.6s cubic-bezier(.2,.9,.25,1) both;
+  }
+  @keyframes toastIn { from { transform: translateX(-120%); } to { transform: none; } }
+  .toast b { display: block; font-family: var(--menu); font-style: italic; font-weight: 900; font-size: 1.3rem; text-transform: uppercase; line-height: 1.05; }
+  .toast span { font-size: 0.88rem; color: #25305f; }
+  .toast a { color: #0b3fae; font-weight: 700; font-size: 0.9rem; }
+  .toast button {
+    position: absolute; right: 8px; top: 8px; width: 28px; height: 28px; border: 0; background: transparent; cursor: pointer;
+    color: var(--abyss); font-size: 1.1rem; line-height: 1;
+  }
+
   [hidden] { display: none !important; }
+
+  /* ---------- Without JS: show everything stacked ---------- */
+  html:not(.js) body { overflow: auto; }
+  html:not(.js) .menu, html:not(.js) .panels, html:not(.js) .panel { position: static; transform: none; width: auto; }
+  html:not(.js) .panels { padding: 120px 16px 40px; max-width: 760px; margin: 0 auto; }
+  html:not(.js) .panel { margin-bottom: 40px; }
+  html:not(.js) .menu { display: none; }
+
+  /* ---------- Narrow screens: the menu is a screen of its own ---------- */
+  @media (max-width: 860px) {
+    body { overflow: auto; }
+    .brand { left: 16px; top: 14px; }
+    .brand img { width: 36px; height: 36px; }
+    .brand b { font-size: 1.6rem; }
+    .clock { right: 16px; top: 12px; }
+    .clock .day { font-size: 2.6rem; }
+    .clock .dm { font-size: 1rem; }
+    .keys { display: none; }
+    .links { left: 16px; right: auto; bottom: 18px; }
+    .moon { width: 74vw; right: -26vw; top: 11vh; }
+    .clock .phase span { display: none; }
+    .clock .phase { justify-content: flex-end; }
+    .menu { left: 16px; top: 52%; transform: translateY(-50%) rotate(-8deg); }
+    .menu a { font-size: clamp(2.3rem, 11vw, 3.4rem); }
+    .js body.reading .menu { visibility: hidden; }
+    .panels { inset: 0; width: auto; z-index: 5; pointer-events: none; }
+    .js .panel { inset: 0; background: var(--abyss); filter: none; padding-top: 14px; pointer-events: auto; }
+    .js .panel > header { margin-left: 0; margin-top: 6px; }
+    .panel h2 { font-size: 2rem; }
+    .panel .body { clip-path: none; padding: 20px 16px 40px; border-left-width: 3px; }
+    .back {
+      display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; margin: 0 0 10px 16px;
+      color: var(--cloud); text-decoration: none; font-family: var(--menu); font-style: italic; font-weight: 800; font-size: 1.2rem; text-transform: uppercase;
+    }
+    .back::before { content: ""; width: 10px; height: 10px; border-left: 3px solid var(--rain); border-bottom: 3px solid var(--rain); transform: rotate(45deg); }
+    .toast { right: 16px; left: 16px; width: auto; bottom: 56px; }
+  }
+  @media (max-height: 560px) and (min-width: 861px) {
+    .menu a { font-size: 1.9rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .js .panel.on, .toast { animation: none; }
+    .menu a, .menu a::before, .menu a::after { transition: none; }
+  }
 </style>
+<script>document.documentElement.classList.add("js");</script>
 </head>
 <body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="moon" aria-hidden="true"></div>
+<div class="water" aria-hidden="true"></div>
 
-<header class="bar">
-  <div class="wrap">
-    <a class="brand" href="#top"><img src="icon.png" alt="">Rainium</a>
-    <nav aria-label="Sections">
-      <a class="opt" href="#features">Features</a>
-      <a class="opt" href="#guide">Guide</a>
-      <a class="opt" href="#faq">FAQ</a>
-      <a class="opt" href="https://github.com/raincandyfx/rainium">GitHub</a>
-      <a class="get" href="#download">Download</a>
-    </nav>
-  </div>
-</header>
+<a class="hud brand" href="#download">
+  <img src="icon.png" alt="">
+  <span><b>Rainium</b><small id="hudVer">Minecraft 26.3</small></span>
+</a>
 
-<main id="top">
-  <section class="hero">
-    <canvas id="rain" aria-hidden="true"></canvas>
-    <div class="wrap">
-      <div>
-        <h1>Wear anything you can model.</h1>
-        <p class="lede">Wings, halos, tails, capes and particles, worn on your player and set up entirely in an in-game editor. A client-side Fabric mod for Minecraft 26.3.</p>
-        <div class="actions">
-          <a class="btn" id="heroDl" href="https://github.com/raincandyfx/rainium/releases/latest">
-            <span id="heroDlLabel">Download Rainium</span>
-            <small id="heroDlSub">for Minecraft 26.3</small>
-          </a>
-          <a class="btn ghost" href="#guide">See how it works</a>
-        </div>
-        <p class="note">Free and open source. Rainium is in beta, so things may change between versions.</p>
+<div class="hud clock" aria-label="Today and the moon tonight">
+  <span class="day" id="day"></span>
+  <span class="dm" id="dm"></span>
+  <span class="phase"><svg viewBox="-10 -10 20 20" aria-hidden="true"><circle r="9" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.5"/><path id="lit" fill="#eef1ff"/></svg><span id="phaseName"></span></span>
+</div>
+
+<nav class="menu" aria-label="Sections">
+  <ol>
+    <li><a href="#download">Download</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#guide">Guide</a></li>
+    <li><a href="#particles">Particles</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#updates">Updates</a></li>
+    <li><a href="#questions">Questions</a></li>
+  </ol>
+</nav>
+
+<div class="hud keys" aria-hidden="true">
+  <span><kbd>↑</kbd> <kbd>↓</kbd> Select</span>
+  <span><kbd>Esc</kbd> Back to Download</span>
+</div>
+<nav class="hud links" aria-label="Project links">
+  <a href="https://github.com/raincandyfx/rainium">Source</a>
+  <a href="https://github.com/raincandyfx/rainium/issues">Report a problem</a>
+  <a href="https://github.com/raincandyfx/rainium/blob/main/LICENSE">MIT License</a>
+</nav>
+
+<main class="panels">
+
+  <section class="panel" id="p-download" data-panel="download" aria-labelledby="h-download">
+    <a class="back" href="#">Menu</a>
+    <header><h2 id="h-download">Download</h2></header>
+    <div class="body">
+      <ul class="badges" aria-label="At a glance">
+        <li><span id="badgeVer">Beta</span></li>
+        <li><span>Free and open source</span></li>
+        <li><span>Fabric, Minecraft 26.3</span></li>
+        <li><span>Client-side</span></li>
+      </ul>
+      <p class="hero-line"><span>Wear anything</span><span>you can model.</span></p>
+      <p class="lede">Wings, halos, tails, capes and particles, worn on your player and set up entirely in an in-game editor. Only you see them, so Rainium works on any server.</p>
+      <div class="cta">
+        <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest">
+          <span id="mainDlLabel">Download</span>
+          <small id="mainDlSub">for Minecraft 26.3</small>
+        </a>
+        <a class="btn alt" href="#updates">See what's new</a>
       </div>
-      <img class="icon" src="icon.png" alt="Rainium icon: a lavender cloud and moon over rain ripples">
+      <p class="status" id="status" aria-live="polite"></p>
+      <div class="dev-note" id="devNote" hidden></div>
+
+      <hr class="divider">
+      <h3>Installing</h3>
+      <ol class="needs">
+        <li>Install <a href="https://fabricmc.net/use/">Fabric Loader</a> for Minecraft 26.3, and <a href="https://modrinth.com/mod/fabric-api">Fabric API</a>.</li>
+        <li>Put the Rainium <code>.jar</code> in your <code>.minecraft/mods</code> folder.</li>
+        <li>Launch the game and press <kbd>K</kbd>.</li>
+      </ol>
+      <p class="muted" style="margin-top:12px"><a href="https://modrinth.com/mod/modmenu">Mod Menu</a> is optional. With it, Rainium's Configure button opens the editor too. After the first install, Rainium updates itself.</p>
     </div>
   </section>
 
-  <section class="block" id="features">
-    <div class="wrap">
-      <div class="head">
-        <h2>Your look, only on your screen</h2>
-        <p class="lede">Rainium changes what you see and nothing else, so it works on any server and nothing needs installing there.</p>
-      </div>
-      <div class="features">
-        <div><h3>Wear any 3D model</h3><p>Wings on your back, a halo behind your head, a tail, ears or anything else. Import your own OBJ, glTF or GLB files in the game.</p></div>
-        <div><h3>Edit it live</h3><p>Press <kbd>K</kbd> and change textures, colours, glow, size, position and angle while your player updates in real time. Everything saves as you go, with undo.</p></div>
-        <div><h3>Natural movement</h3><p>Cosmetics trail behind you as you run and turn, and sway gently when you stand still. Make each one as bouncy or as still as you like.</p></div>
-        <div><h3>Particle emitters</h3><p>Sparkles, embers, hearts, trails and auras, using Minecraft's particles or your own pictures.</p></div>
-        <div><h3>Folders for multi-part models</h3><p>Switch a whole model on or off, resize it or move it in one go.</p></div>
-        <div><h3>Recolour with Hue</h3><p>Shift a texture's colours around the colour wheel without editing the image.</p></div>
-        <div><h3>Share your look</h3><p>Export a folder as a zip, and a friend can add it from their editor.</p></div>
-        <div><h3>Keeps itself up to date</h3><p>New versions download in the background and install when you close the game. You can turn this off.</p></div>
-      </div>
+  <section class="panel" id="p-features" data-panel="features" aria-labelledby="h-features">
+    <a class="back" href="#">Menu</a>
+    <header><h2 id="h-features">Features</h2></header>
+    <div class="body">
+      <p class="lede">Rainium changes what you see and nothing else, so it works on any server and nothing needs installing there.</p>
+      <ul class="feat">
+        <li><h3>Wear any 3D model</h3><p>Wings on your back, a halo behind your head, a tail, ears or anything else. Import your own OBJ, glTF or GLB files in the game.</p></li>
+        <li><h3>Edit it live</h3><p>Press <kbd>K</kbd> and change textures, colours, glow, size, position and angle while your player updates in real time. Everything saves as you go, with undo.</p></li>
+        <li><h3>Natural movement</h3><p>Cosmetics trail behind you as you run and turn, and sway gently when you stand still. Make each one as bouncy or as still as you like.</p></li>
+        <li><h3>Particle emitters</h3><p>Sparkles, embers, hearts, trails and auras, using Minecraft's particles or your own pictures.</p></li>
+        <li><h3>Folders for multi-part models</h3><p>Switch a whole model on or off, resize it or move it in one go.</p></li>
+        <li><h3>Recolour with Hue</h3><p>Shift a texture's colours around the colour wheel without editing the image.</p></li>
+        <li><h3>Share your look</h3><p>Export a folder as a zip, and a friend can add it from their editor.</p></li>
+        <li><h3>Keeps itself up to date</h3><p>New versions download in the background and install when you close the game. You can turn this off.</p></li>
+      </ul>
     </div>
   </section>
 
-  <section class="block" id="guide">
-    <div class="wrap">
-      <div class="head">
-        <h2>From model file to wearing it</h2>
-        <p class="lede">You don't need to touch a config file. Everything below happens in the editor.</p>
-      </div>
+  <section class="panel" id="p-guide" data-panel="guide" aria-labelledby="h-guide">
+    <a class="back" href="#">Menu</a>
+    <header><h2 id="h-guide">Guide</h2></header>
+    <div class="body">
+      <p class="lede">You don't need to touch a config file. All of this happens in the editor.</p>
       <ol class="steps">
         <li>
           <h3>Open the editor</h3>
-          <p>Press <kbd>K</kbd> in game. You can also use the <code>/rainium</code> command, or the Configure button in Mod Menu, and rebind the key in Controls.</p>
+          <p>Press <kbd>K</kbd> in game. You can also use the <code>/rainium</code> command or the Configure button in Mod Menu, and rebind the key in Controls.</p>
         </li>
         <li>
           <h3>Try the example halo</h3>
@@ -301,207 +440,232 @@
           </ul>
         </li>
       </ol>
-      <p class="tip">Hover any setting's name for a short explanation, and click any number to type an exact value. <kbd>Ctrl</kbd>+<kbd>Z</kbd> and <kbd>Ctrl</kbd>+<kbd>Y</kbd> undo and redo.</p>
+      <p class="muted" style="margin-top:18px">Hover any setting's name for a short explanation, and click any number to type an exact value. <kbd>Ctrl</kbd>+<kbd>Z</kbd> and <kbd>Ctrl</kbd>+<kbd>Y</kbd> undo and redo.</p>
     </div>
   </section>
 
-  <section class="block" id="particles">
-    <div class="wrap split">
-      <div>
-        <h2>Particles, tuned by hand</h2>
-        <p class="lede">A layer can give off particles instead of being a model. Start from a preset on the Add tab, then adjust it on the Edit tab.</p>
-        <ul class="chips" aria-label="Particle presets">
-          <li>Sparkles</li><li>Embers</li><li>Hearts</li><li>Trail</li><li>Aura</li><li>Empty emitter</li>
-        </ul>
-      </div>
+  <section class="panel" id="p-particles" data-panel="particles" aria-labelledby="h-particles">
+    <a class="back" href="#">Menu</a>
+    <header><h2 id="h-particles">Particles</h2></header>
+    <div class="body">
+      <p class="lede">A layer can give off particles instead of being a model. Start from a preset on the Add tab, then adjust it on the Edit tab.</p>
+      <ul class="chips" aria-label="Presets">
+        <li><span>Sparkles</span></li><li><span>Embers</span></li><li><span>Hearts</span></li><li><span>Trail</span></li><li><span>Aura</span></li><li><span>Empty emitter</span></li>
+      </ul>
       <dl class="opts">
-        <dt>Picture</dt><dd>One of Minecraft's particles (flame, sparkle, heart, note, smoke, petal and more) or any PNG of your own.</dd>
-        <dt>When and how many</dt><dd>Always, only while moving, only while standing still, or more the faster you move.</dd>
+        <dt>Picture</dt><dd>One of Minecraft's particles (flame, sparkle, heart, note, smoke, petal and more) or any PNG of your own. Style, hue and opacity work like on models.</dd>
+        <dt>When and how many</dt><dd>Always, only while moving, only while standing still, or more the faster you move; how many per second and how long each lasts.</dd>
         <dt>Where they appear</dt><dd>A point, a ball, a box or a ring around your body, head, arms or legs, at any size.</dd>
-        <dt>How they move</dt><dd>Direction, speed, spread, gravity, drag and spin, plus size over time and fading out.</dd>
+        <dt>How they move</dt><dd>Direction, speed, spread, gravity (negative floats up), drag and spin, plus size over time and fading out.</dd>
         <dt>Move with me</dt><dd>Particles either travel along with you or stay where they appeared, leaving a trail.</dd>
       </dl>
     </div>
   </section>
 
-  <section class="block" id="models">
-    <div class="wrap split">
-      <div>
-        <h2>Models from any 3D program</h2>
-        <div class="formats" aria-label="Supported formats"><span>OBJ</span><span>glTF</span><span>GLB</span></div>
-      </div>
-      <div class="prose">
-        <p>Nearly every 3D program can export these, and Blender exports work with the default settings. A texture packed inside a <code>.glb</code> is picked up automatically, and a model with several parts becomes a folder.</p>
-        <p>To convert without opening the game, the repository has two converters in <a href="https://github.com/raincandyfx/rainium/tree/main/tools"><code>tools/</code></a>:</p>
-        <ul>
-          <li><strong>obj-converter.html</strong> runs in your browser. Your model never leaves your computer.</li>
-          <li><strong>mesh_convert.py</strong> is a command-line converter for all three formats, needing Python 3.8 or newer.</li>
-        </ul>
-        <p><strong>Sharing a look:</strong> open a folder in the layer list and click <strong>Export as zip</strong>. Your friend puts the zip in their <code>config/rainium</code> folder and adds it from <strong>Add › Shared sets</strong>.</p>
-      </div>
+  <section class="panel" id="p-models" data-panel="models" aria-labelledby="h-models">
+    <a class="back" href="#">Menu</a>
+    <header><h2 id="h-models">Models</h2></header>
+    <div class="body">
+      <div class="formats" aria-label="Supported formats"><span>OBJ</span><span>glTF</span><span>GLB</span></div>
+      <p>Nearly every 3D program can export these, and Blender exports work with the default settings. A texture packed inside a <code>.glb</code> is picked up automatically, and a model with several parts becomes a folder.</p>
+      <h3 style="margin-top:22px">Converters</h3>
+      <p class="muted">To convert without opening the game, the repository has two converters in <a href="https://github.com/raincandyfx/rainium/tree/main/tools"><code>tools/</code></a>:</p>
+      <ul class="plain">
+        <li><strong>obj-converter.html</strong> runs in your browser. Your model never leaves your computer.</li>
+        <li><strong>mesh_convert.py</strong> is a command-line converter for all three formats, needing Python 3.8 or newer.</li>
+      </ul>
+      <h3 style="margin-top:22px">Sharing a look</h3>
+      <p class="muted">Open a folder in the layer list and click <strong>Export as zip</strong>. The zip lands in <code>config/rainium/exports</code> with the models and textures it uses. Your friend puts it in their <code>config/rainium</code> folder and adds it from <strong>Add › Shared sets</strong>. Your <strong>Shown on</strong> choices stay with you, not in the zip.</p>
     </div>
   </section>
 
-  <section class="block" id="download">
-    <div class="wrap">
-      <div class="head">
-        <h2>Download</h2>
-        <p class="lede">Rainium needs Minecraft 26.3 with Fabric. After the first install it updates itself.</p>
+  <section class="panel" id="p-updates" data-panel="updates" aria-labelledby="h-updates">
+    <a class="back" href="#">Menu</a>
+    <header><h2 id="h-updates">Updates</h2></header>
+    <div class="body">
+      <div class="bar">
+        <p class="muted" style="margin:0">Main releases install automatically. Dev builds are early test versions.</p>
+        <label><input type="checkbox" id="showDev"> Show dev builds</label>
       </div>
-      <div class="dl-grid">
-        <div>
-          <div class="panel" id="latest"><p class="status" id="status">Loading releases from GitHub…</p></div>
-          <div class="panel dev" id="dev" hidden></div>
-        </div>
-        <div class="panel">
-          <h3>Installing</h3>
-          <ol class="needs">
-            <li>Install <a href="https://fabricmc.net/use/">Fabric Loader</a> for Minecraft 26.3, and <a href="https://modrinth.com/mod/fabric-api">Fabric API</a>.</li>
-            <li>Put the Rainium <code>.jar</code> in your <code>.minecraft/mods</code> folder.</li>
-            <li>Launch the game and press <kbd>K</kbd>.</li>
-          </ol>
-          <p class="sub" style="margin-top:14px"><a href="https://modrinth.com/mod/modmenu">Mod Menu</a> is optional. With it, Rainium's Configure button opens the editor too.</p>
-        </div>
-      </div>
-
-      <div class="versions" id="older" hidden>
-        <div class="row">
-          <h3>All versions</h3>
-          <label><input type="checkbox" id="showDev"> Show dev builds</label>
-        </div>
-        <ul class="vlist" id="olderRows"></ul>
-      </div>
+      <div id="relList"><p class="status" id="relStatus">Loading versions from GitHub…</p></div>
     </div>
   </section>
 
-  <section class="block" id="faq">
-    <div class="wrap">
-      <div class="head"><h2>Questions</h2></div>
-      <div class="faq">
-        <details>
-          <summary>Can other players see my cosmetics?</summary>
-          <div class="a"><p>No. Rainium is client-side, so only you see what you set up. To share a look, send someone your files or an exported zip.</p></div>
-        </details>
-        <details>
-          <summary>Does it work on servers?</summary>
-          <div class="a"><p>Yes. It only runs on your side, so it works on any server and nothing needs to be installed there.</p></div>
-        </details>
-        <details>
-          <summary>Can I put my cosmetics on friends or on an armor stand?</summary>
-          <div class="a">
-            <p>On your screen, yes. In <strong>Settings › Visibility</strong>, <strong>Show on</strong> can include everyone, other players, or a list of player names, and <strong>Armor stands</strong> shows them on armor stands with a name tag you choose. Nobody else sees this.</p>
-            <p>Each layer and folder can also choose for itself under <strong>Shown on</strong>, for example wings just on you and a halo on an armor stand named "Display".</p>
-          </div>
-        </details>
-        <details>
-          <summary>How do updates work?</summary>
-          <div class="a">
-            <p>Once per launch, Rainium checks GitHub for a newer version made for your Minecraft version. It downloads and checks it, then installs it when you close the game. Your layers and settings are kept.</p>
-            <p>Only main releases (versions ending in .0, like 0.4.0) install automatically. Dev builds are early test versions: download them by hand, or switch on <strong>Include dev builds</strong> in <strong>Settings › Updates</strong>.</p>
-          </div>
-        </details>
-        <details>
-          <summary>Does Rainium collect any data?</summary>
-          <div class="a">
-            <p>No. Its only network request is the optional update check, which means your game contacts GitHub, and GitHub can see your IP address. You can turn it off in <strong>Settings › Updates</strong>.</p>
-            <p>When the editor shows a folder path, it replaces your computer's account name with your in-game name, so screenshots are safe to share. Change or hide it in <strong>Settings › Privacy</strong>.</p>
-          </div>
-        </details>
-        <details>
-          <summary>Where are my files?</summary>
-          <div class="a"><p>In <code>.minecraft/config/rainium/</code>. <strong>Open rainium folder</strong> in the editor takes you there. If a file you edited by hand has a problem, Rainium keeps showing your last working setup and explains the problem at the top of the editor.</p></div>
-        </details>
-        <details>
-          <summary>Can I translate it?</summary>
-          <div class="a"><p>Yes, please. Copy <a href="https://github.com/raincandyfx/rainium/blob/main/src/main/resources/assets/rainium/lang/en_us.json"><code>en_us.json</code></a> to your language's code (for example <code>de_de.json</code>), translate the text on the right of each line, and send it in an <a href="https://github.com/raincandyfx/rainium/issues">issue</a>. <code>%s</code> marks where a name or number goes.</p></div>
-        </details>
-      </div>
+  <section class="panel" id="p-questions" data-panel="questions" aria-labelledby="h-questions">
+    <a class="back" href="#">Menu</a>
+    <header><h2 id="h-questions">Questions</h2></header>
+    <div class="body faq">
+      <details>
+        <summary>Can other players see my cosmetics?</summary>
+        <div class="a"><p>No. Rainium is client-side, so only you see what you set up. To share a look, send someone your files or an exported zip.</p></div>
+      </details>
+      <details>
+        <summary>Does it work on servers?</summary>
+        <div class="a"><p>Yes. It only runs on your side, so it works on any server and nothing needs to be installed there.</p></div>
+      </details>
+      <details>
+        <summary>Can I put my cosmetics on friends or on an armor stand?</summary>
+        <div class="a">
+          <p>On your screen, yes. In <strong>Settings › Visibility</strong>, <strong>Show on</strong> can include everyone, other players, or a list of player names, and <strong>Armor stands</strong> shows them on armor stands with a name tag you choose. Nobody else sees this.</p>
+          <p>Each layer and folder can also choose for itself under <strong>Shown on</strong>, for example wings just on you and a halo on an armor stand named "Display".</p>
+        </div>
+      </details>
+      <details>
+        <summary>How do updates work?</summary>
+        <div class="a">
+          <p>Once per launch, Rainium checks GitHub for a newer version made for your Minecraft version. It downloads and checks it, then installs it when you close the game. Your layers and settings are kept.</p>
+          <p>Only main releases (versions ending in .0, like 0.4.0) install automatically. To get dev builds too, switch on <strong>Include dev builds</strong> in <strong>Settings › Updates</strong>.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Does Rainium collect any data?</summary>
+        <div class="a">
+          <p>No. Its only network request is the optional update check, which means your game contacts GitHub, and GitHub can see your IP address. You can turn it off in <strong>Settings › Updates</strong>.</p>
+          <p>When the editor shows a folder path, it replaces your computer's account name with your in-game name, so screenshots are safe to share. Change or hide it in <strong>Settings › Privacy</strong>.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Where are my files?</summary>
+        <div class="a"><p>In <code>.minecraft/config/rainium/</code>. <strong>Open rainium folder</strong> in the editor takes you there. If a file you edited by hand has a problem, Rainium keeps showing your last working setup and explains the problem at the top of the editor.</p></div>
+      </details>
+      <details>
+        <summary>Can I translate it?</summary>
+        <div class="a"><p>Yes, please. Copy <a href="https://github.com/raincandyfx/rainium/blob/main/src/main/resources/assets/rainium/lang/en_us.json"><code>en_us.json</code></a> to your language's code (for example <code>de_de.json</code>), translate the text on the right of each line, and send it in an <a href="https://github.com/raincandyfx/rainium/issues">issue</a>. <code>%s</code> marks where a name or number goes.</p></div>
+      </details>
+      <p class="fine">The Gold halo example is based on a character ornament from Genshin Impact. Rainium is not affiliated with, endorsed by or connected to HoYoverse or the original creators, and all rights to the original design belong to them. Minecraft is a trademark of Mojang; Rainium is not an official Minecraft product. Rainium is open source under the MIT License.</p>
     </div>
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <div class="cols">
-      <p style="margin:0">Rainium is open source under the <a href="https://github.com/raincandyfx/rainium/blob/main/LICENSE">MIT License</a>.</p>
-      <nav aria-label="Project links">
-        <a href="https://github.com/raincandyfx/rainium">Source</a>
-        <a href="https://github.com/raincandyfx/rainium/issues">Report a problem</a>
-        <a href="https://github.com/raincandyfx/rainium/blob/main/CHANGELOG.md">Changelog</a>
-      </nav>
-    </div>
-    <p class="fine">The Gold halo example is based on a character ornament from Genshin Impact. Rainium is not affiliated with, endorsed by or connected to HoYoverse or the original creators, and all rights to the original design belong to them. Minecraft is a trademark of Mojang; Rainium is not an official Minecraft product.</p>
-  </div>
-</footer>
+<aside class="toast" id="toast" hidden aria-live="polite">
+  <b id="toastTitle">Rainium updated</b>
+  <span id="toastText"></span><br>
+  <a href="#updates" id="toastLink">See what's new</a>
+  <button type="button" id="toastClose" aria-label="Dismiss">✕</button>
+</aside>
 
 <script>
-/* ---------- Rain ripples behind the hero ---------- */
-(function () {
-  const canvas = document.getElementById("rain");
-  const ctx = canvas.getContext("2d");
-  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const colors = ["66,223,230", "196,69,173", "180,163,217"];
-  let w = 0, h = 0, dpr = 1, drops = [], visible = true, last = 0, timer = 0;
+const $ = (id) => document.getElementById(id);
+const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
 
+/* ---------- Menu and panels ---------- */
+const ORDER = ["download", "features", "guide", "particles", "models", "updates", "questions"];
+const links = [...document.querySelectorAll(".menu a")];
+const narrow = window.matchMedia("(max-width: 860px)");
+
+function show() {
+  let key = location.hash.slice(1);
+  if (!ORDER.includes(key)) key = "";
+  const open = key || (narrow.matches ? "" : "download");
+  document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("on", p.dataset.panel === open));
+  links.forEach((a) => {
+    if (a.hash === "#" + (open || "download") && (open || !narrow.matches)) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
+  document.body.classList.toggle("reading", !!open && narrow.matches);
+  if (open) {
+    const body = document.querySelector(`.panel[data-panel="${open}"] .body`);
+    body.scrollTop = 0;
+  }
+}
+window.addEventListener("hashchange", show);
+narrow.addEventListener("change", show);
+show();
+
+function go(key) {
+  if (location.hash !== "#" + key) location.hash = key;
+  const a = links.find((l) => l.hash === "#" + key);
+  if (a && !narrow.matches) a.focus({ preventScroll: true });
+}
+document.addEventListener("keydown", (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const t = e.target;
+  if (t.closest && t.closest("input, textarea, select, .body")) {
+    if (e.key !== "Escape") return;
+  }
+  const cur = ORDER.indexOf(location.hash.slice(1));
+  const i = cur < 0 ? 0 : cur;
+  if (e.key === "ArrowDown") { e.preventDefault(); go(ORDER[(i + 1) % ORDER.length]); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); go(ORDER[(i - 1 + ORDER.length) % ORDER.length]); }
+  else if (e.key === "Escape") { e.preventDefault(); if (narrow.matches) location.hash = ""; else go("download"); }
+});
+
+/* ---------- Date and tonight's moon ---------- */
+(function () {
+  const now = new Date();
+  $("day").textContent = now.getDate();
+  $("dm").textContent = now.toLocaleDateString("en", { weekday: "short" }) + " " + now.toLocaleDateString("en", { month: "short" });
+  const syn = 29.530588853;
+  const ref = Date.UTC(2000, 0, 6, 18, 14) / 86400000;
+  let p = ((now.getTime() / 86400000 - ref) % syn) / syn;
+  if (p < 0) p += 1;
+  const names = ["New moon", "Waxing crescent", "First quarter", "Waxing gibbous", "Full moon", "Waning gibbous", "Last quarter", "Waning crescent"];
+  $("phaseName").textContent = names[Math.round(p * 8) % 8];
+  const r = 9, rx = Math.abs(r * Math.cos(2 * Math.PI * p));
+  const waxing = p < 0.5, q = waxing ? p : p - 0.5;
+  const sweep = q < 0.25 ? 0 : 1;
+  const d = `M0,${-r} A${r},${r} 0 0 1 0,${r} A${rx},${r} 0 0 ${sweep} 0,${-r} Z`;
+  const lit = $("lit");
+  lit.setAttribute("d", d);
+  if (!waxing) lit.setAttribute("transform", "scale(-1,1)");
+})();
+
+/* ---------- Rain over water ---------- */
+(function () {
+  const canvas = $("sky"), ctx = canvas.getContext("2d");
+  let w, h, dpr, drops = [], rings = [], last = 0, hidden = false;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    w = canvas.clientWidth; h = canvas.clientHeight;
-    canvas.width = w * dpr; canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    w = innerWidth; h = innerHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round((w * h) / 16000);
+    drops = Array.from({ length: n }, () => newDrop(true));
     if (still) drawStill();
   }
-  function drop(x, y, big) {
-    drops.push({
-      x: x ?? Math.random() * w, y: y ?? Math.random() * h,
-      r: 0, max: (big ? 220 : 60 + Math.random() * 140),
-      c: colors[Math.random() < 0.62 ? 0 : Math.random() < 0.6 ? 1 : 2],
-      speed: big ? 90 : 34 + Math.random() * 26,
-    });
+  function newDrop(anywhere) {
+    return { x: Math.random() * (w + 200) - 100, y: anywhere ? Math.random() * h : -40 - Math.random() * 200,
+      len: 14 + Math.random() * 26, v: 620 + Math.random() * 520, a: 0.12 + Math.random() * 0.22,
+      stop: h * (0.76 + Math.random() * 0.24) };
   }
-  function ring(d, alpha) {
-    for (let k = 0; k < 3; k++) {
-      const rr = d.r - k * 14;
-      if (rr <= 0) continue;
-      ctx.beginPath();
-      ctx.ellipse(d.x, d.y, rr, rr * 0.42, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${d.c},${alpha * (1 - k * 0.3)})`;
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-    }
+  function ring(x, y, r, a, c) {
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.22, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(${c},${a})`; ctx.lineWidth = 1.2; ctx.stroke();
   }
   function drawStill() {
     ctx.clearRect(0, 0, w, h);
-    const seeds = [[0.12, 0.3, 120], [0.55, 0.78, 160], [0.86, 0.2, 90], [0.32, 0.9, 70], [0.72, 0.5, 110]];
-    seeds.forEach(([fx, fy, r], i) => ring({ x: fx * w, y: fy * h, r, c: colors[i % 3] }, 0.18));
+    ctx.strokeStyle = "rgba(169,182,232,0.18)"; ctx.lineWidth = 1;
+    for (const d of drops) { ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - d.len * 0.22, d.y + d.len); ctx.stroke(); }
+    [[0.2, 0.88, 60], [0.55, 0.94, 90], [0.82, 0.86, 45]].forEach(([fx, fy, r]) => ring(fx * w, fy * h, r, 0.25, "63,227,238"));
   }
   function frame(t) {
-    if (!visible) { last = 0; return; }
-    const dt = last ? Math.min((t - last) / 1000, 0.05) : 0;
-    last = t;
-    timer -= dt;
-    if (timer <= 0) { drop(); timer = 0.35 + Math.random() * 0.6; }
+    if (hidden) { last = 0; return; }
+    const dt = last ? Math.min((t - last) / 1000, 0.05) : 0; last = t;
     ctx.clearRect(0, 0, w, h);
-    drops = drops.filter((d) => d.r < d.max);
+    ctx.lineWidth = 1;
     for (const d of drops) {
-      d.r += d.speed * dt;
-      ring(d, 0.32 * (1 - d.r / d.max));
+      d.y += d.v * dt; d.x -= d.v * dt * 0.22;
+      if (d.y > d.stop) {
+        if (Math.random() < 0.5) rings.push({ x: d.x, y: d.stop, r: 1, max: 18 + Math.random() * 46, c: Math.random() < 0.8 ? "63,227,238" : "208,76,180" });
+        Object.assign(d, newDrop(false));
+      }
+      ctx.strokeStyle = `rgba(190,200,245,${d.a})`;
+      ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + d.len * 0.22, d.y - d.len); ctx.stroke();
     }
+    rings = rings.filter((g) => g.r < g.max);
+    for (const g of rings) { g.r += 38 * dt; ring(g.x, g.y, g.r, 0.45 * (1 - g.r / g.max), g.c); }
     requestAnimationFrame(frame);
   }
-
   resize();
-  window.addEventListener("resize", resize);
+  addEventListener("resize", resize);
   if (still) return;
-  for (let i = 0; i < 5; i++) { drop(); drops[i].r = Math.random() * drops[i].max * 0.6; }
-  canvas.parentElement.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("a, button")) return;
-    const rect = canvas.getBoundingClientRect();
-    drop(e.clientX - rect.left, e.clientY - rect.top, true);
+  document.addEventListener("visibilitychange", () => {
+    const was = hidden; hidden = document.hidden;
+    if (was && !hidden) requestAnimationFrame(frame);
   });
-  new IntersectionObserver(([entry]) => {
-    const was = visible; visible = entry.isIntersecting;
-    if (visible && !was) requestAnimationFrame(frame);
-  }).observe(canvas);
   requestAnimationFrame(frame);
 })();
 
@@ -509,84 +673,81 @@
 const REPO = "raincandyfx/rainium";
 const RELEASES = `https://github.com/${REPO}/releases`;
 const JAR = /^rainium-([^+]+)\+([0-9][0-9.]*)\.jar$/;
-const $ = (id) => document.getElementById(id);
+let ALL = [];
 
 fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`)
   .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
   .then(render)
   .catch(() => {
-    $("status").innerHTML = `GitHub didn't answer just now, so the version list couldn't load. ` +
-      `<a href="${RELEASES}/latest">Download the latest version from GitHub</a> instead.`;
+    $("status").innerHTML = `The version list couldn't load from GitHub just now. The button above still gets the latest version.`;
+    $("relStatus").innerHTML = `The version list couldn't load from GitHub just now. See every version on <a href="${RELEASES}">GitHub Releases</a>.`;
   });
 
 function render(releases) {
-  const all = releases
-    .filter((r) => !r.draft)
-    .map((r) => {
-      const jar = (r.assets || []).find((a) => JAR.test(a.name));
-      if (!jar) return null;
-      const [, version, mc] = jar.name.match(JAR);
-      return { r, jar, version, mc, dev: r.prerelease, date: new Date(r.published_at) };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.date - a.date);
+  ALL = releases.filter((r) => !r.draft).map((r) => {
+    const jar = (r.assets || []).find((a) => JAR.test(a.name));
+    if (!jar) return null;
+    const [, version, mc] = jar.name.match(JAR);
+    return { r, jar, version, mc, dev: r.prerelease, date: new Date(r.published_at) };
+  }).filter(Boolean).sort((a, b) => b.date - a.date);
 
-  if (!all.length) {
-    $("status").innerHTML = `There's nothing to download yet. Check <a href="${RELEASES}">GitHub Releases</a> later.`;
+  if (!ALL.length) {
+    $("relStatus").innerHTML = `There's nothing to download yet. Check <a href="${RELEASES}">GitHub Releases</a> later.`;
     return;
   }
-
-  const latest = all.find((x) => !x.dev);
-  const newestDev = all.find((x) => x.dev);
+  const latest = ALL.find((x) => !x.dev);
+  const newestDev = ALL.find((x) => x.dev);
 
   if (latest) {
-    $("latest").innerHTML = panel(latest, false);
-    $("heroDl").href = latest.jar.browser_download_url;
-    $("heroDlLabel").textContent = `Download Rainium ${latest.version}`;
-    $("heroDlSub").textContent = `for Minecraft ${latest.mc}, ${fmtSize(latest.jar.size)}`;
-  } else {
-    $("latest").innerHTML = `<p class="status">No main release yet. Dev builds are listed below.</p>`;
+    $("mainDl").href = latest.jar.browser_download_url;
+    $("mainDlLabel").textContent = `Download ${latest.version}`;
+    $("mainDlSub").textContent = `${latest.jar.name}, ${fmtSize(latest.jar.size)}`;
+    $("hudVer").textContent = `v${latest.version} for Minecraft ${latest.mc}`;
+    $("badgeVer").textContent = `v${latest.version} beta`;
+    toast(latest);
   }
   if (newestDev && (!latest || newestDev.date > latest.date)) {
-    $("dev").innerHTML = panel(newestDev, true);
-    $("dev").hidden = false;
+    $("devNote").innerHTML = `<h3>Newest dev build: ${esc(newestDev.version)}</h3>
+      <p class="muted">An early test version from ${fmtDate(newestDev.date)}. It may be unstable, and the in-game updater skips it unless you switch on Include dev builds.</p>
+      <p><a href="${newestDev.jar.browser_download_url}">Download ${esc(newestDev.jar.name)}</a> (${fmtSize(newestDev.jar.size)})</p>`;
+    $("devNote").hidden = false;
   }
-
-  const fill = () => {
-    const showDev = $("showDev").checked;
-    $("olderRows").innerHTML = all
-      .filter((x) => showDev || !x.dev)
-      .map((x) => `<li>
-        <div class="line">
-          <span><span class="v">${esc(x.version)}</span>${x.dev ? '<span class="tag">dev build</span>' : ""}<span class="when">Minecraft ${esc(x.mc)}, ${fmtDate(x.date)}</span></span>
-          <a href="${x.jar.browser_download_url}">Download ${esc(x.version)}</a>
-        </div>
-        ${x.r.body ? `<details><summary>What changed</summary><div class="md">${md(x.r.body)}</div></details>` : ""}
-      </li>`).join("");
-  };
-  $("showDev").addEventListener("change", fill);
   fill();
-  $("older").hidden = false;
+  $("showDev").addEventListener("change", fill);
 }
 
-function panel(x, dev) {
-  return `
-    <h3>Rainium ${esc(x.version)}${dev ? '<span class="tag">dev build</span>' : ""}</h3>
-    <p class="sub">${dev ? "Newest dev build" : "Latest release"} for Minecraft ${esc(x.mc)}, released ${fmtDate(x.date)}</p>
-    ${dev ? `<p class="caution">Dev builds are early test versions and may be unstable. The in-game updater skips them unless you switch on Include dev builds.</p>` : ""}
-    <a class="btn" href="${x.jar.browser_download_url}">Download ${esc(x.jar.name)}<small>${fmtSize(x.jar.size)}</small></a>
-    ${x.r.body ? `<details class="notes"${dev || !matchMedia("(min-width: 721px)").matches ? "" : " open"}><summary>What's new</summary><div class="md">${md(x.r.body)}</div></details>` : ""}`;
+function fill() {
+  const showDev = $("showDev").checked;
+  const latest = ALL.find((x) => !x.dev);
+  $("relList").innerHTML = ALL.filter((x) => showDev || !x.dev).map((x) => `
+    <article class="rel">
+      <div class="top">
+        <h3>${esc(x.version)}</h3>
+        ${x === latest ? '<span class="tag">Latest</span>' : ""}
+        ${x.dev ? '<span class="tag dev">Dev build</span>' : ""}
+        <span class="when">Minecraft ${esc(x.mc)}, ${fmtDate(x.date)}</span>
+      </div>
+      ${x.r.body ? `<div class="md">${md(x.r.body)}</div>` : ""}
+      <a class="get" href="${x.jar.browser_download_url}">Download ${esc(x.jar.name)}</a> <span class="when">${fmtSize(x.jar.size)}</span>
+    </article>`).join("");
+}
+
+function toast(latest) {
+  const age = (Date.now() - latest.date) / 86400000;
+  if (age > 14 || store.get("rainium-seen") === latest.version) return;
+  $("toastTitle").textContent = "Rainium updated";
+  $("toastText").textContent = `Version ${latest.version} is out.`;
+  $("toast").hidden = false;
+  const close = () => { $("toast").hidden = true; store.set("rainium-seen", latest.version); };
+  $("toastClose").addEventListener("click", close);
+  $("toastLink").addEventListener("click", close);
 }
 
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
-function fmtDate(d) {
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
-function fmtSize(b) {
-  return b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
-}
+function fmtDate(d) { return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }); }
+function fmtSize(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
 
 // A small Markdown subset for release notes: headings, nested bullet lists,
 // paragraphs, quotes, `code`, **bold** and [links](https://...).
