@@ -187,6 +187,8 @@
   .hero .ph.has img { object-fit: contain; object-position: center bottom; }
   /* Live 3D player (skinview3d). When it loads, it replaces the picture slot. */
   .hero-model { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; }
+  .hero-model canvas { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; aspect-ratio: 598 / 960; transform: translate(-50%, -50%); }
+  .hero-model.video img { display: none; }
   .hero-model img { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; transform: translate(-50%, -50%); }
   .hero-model .f { opacity: 0; }
   .hero.has-model .hero-model { opacity: 1; }
@@ -940,44 +942,93 @@ function md(src) {
 </script>
 
 <script>
-/* ---------- Home: the player and halo, rendered in game, as a looping image sequence ----------
-   33 frames from docs/hero/, blended into one another so the idle sway runs smoothly. */
+/* ---------- Home: the player and halo, recorded in game ----------
+   hero/sway.mp4 (or .webm) is a seamless 4 s loop at 30 fps, with the picture in the top half and its
+   transparency in the bottom half (so it works in every browser); WebGL puts them back together.
+   If video or WebGL isn't available, the 33 still frames in hero/ cross-fade instead. */
 window.startHero = (function () {
   let started = false;
-  return function startHero() {
-    if (started) return;
-    started = true;
-    const host = document.getElementById("heroModel"), hero = document.getElementById("hero");
+  const onHome = () => document.body.dataset.page === "home" && !document.hidden;
+  function videoPlayer(host, hero, still) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 598; canvas.height = 960;
+    const gl = canvas.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false });
+    if (!gl) return false;
+    const vs = "attribute vec2 p; varying vec2 uv; void main(){ uv = vec2(p.x * 0.5 + 0.5, 0.5 - p.y * 0.5); gl_Position = vec4(p, 0.0, 1.0); }";
+    const fs = "precision mediump float; varying vec2 uv; uniform sampler2D t; void main(){ vec3 c = texture2D(t, vec2(uv.x, uv.y * 0.5)).rgb; float a = texture2D(t, vec2(uv.x, 0.5 + uv.y * 0.5)).r; gl_FragColor = vec4(c * a, a); }";
+    const sh = (type, src) => { const x = gl.createShader(type); gl.shaderSource(x, src); gl.compileShader(x); return x; };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p");
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.clearColor(0, 0, 0, 0);
+
+    const video = document.createElement("video");
+    video.muted = true; video.loop = true; video.playsInline = true; video.preload = "auto";
+    video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
+    video.src = video.canPlayType('video/mp4; codecs="avc1.640028"') ? "hero/sway.mp4" : "hero/sway.webm";
+    let shown = false;
+    const draw = () => {
+      if (video.readyState < 2) return;
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (!shown) { shown = true; host.classList.add("video"); hero.classList.add("has-model"); }
+    };
+    const loop = () => { draw(); schedule(); };
+    const schedule = () => (video.requestVideoFrameCallback ? video.requestVideoFrameCallback(loop) : requestAnimationFrame(loop));
+    video.addEventListener("loadeddata", () => { draw(); if (!still) schedule(); }, { once: true });
+    video.addEventListener("error", () => { canvas.remove(); host.classList.remove("video"); fallback(host, hero, still); }, { once: true });
+    const sync = () => { if (still) return; onHome() ? video.play().catch(() => {}) : video.pause(); };
+    new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ["data-page"] });
+    document.addEventListener("visibilitychange", sync);
+    host.prepend(canvas);
+    if (!still) sync();
+    return true;
+  }
+  function fallback(host, hero, still) {
     const back = host.querySelector(".b"), front = host.querySelector(".f");
-    const N = 33, STEP = 240;                       // about 8 seconds per loop, like the capture
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const N = 33, STEP = 240;
     const src = (i) => "hero/" + String(i).padStart(2, "0") + ".webp";
     const frames = [];
-    let ready = 0;
     for (let i = 0; i < N; i++) {
       const im = new Image();
-      im.onload = () => { ready++; if (i === 0) { back.src = im.src; hero.classList.add("has-model"); } };
+      im.onload = () => { if (i === 0) { back.src = im.src; hero.classList.add("has-model"); } };
       im.src = src(i);
       frames.push(im);
     }
     if (still) return;
-    let i = 0, t0 = 0, last = 0;
+    let i = 0, t0 = 0;
     const loaded = (k) => frames[k].complete && frames[k].naturalWidth > 0;
     function tick(now) {
       requestAnimationFrame(tick);
-      if (document.body.dataset.page !== "home" || document.hidden) { t0 = 0; return; }
+      if (!onHome()) { t0 = 0; return; }
       const next = (i + 1) % N;
       if (!loaded(i) || !loaded(next)) return;
       if (!t0) { t0 = now; back.src = frames[i].src; front.src = frames[next].src; }
       const u = (now - t0) / STEP;
-      if (u >= 1) {
-        i = next; t0 = now;
-        back.src = frames[i].src; front.src = frames[(i + 1) % N].src; front.style.opacity = 0;
-        return;
-      }
+      if (u >= 1) { i = next; t0 = now; back.src = frames[i].src; front.src = frames[(i + 1) % N].src; front.style.opacity = 0; return; }
       front.style.opacity = u;
     }
     requestAnimationFrame(tick);
+  }
+  return function startHero() {
+    if (started) return;
+    started = true;
+    const host = document.getElementById("heroModel"), hero = document.getElementById("hero");
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let ok = false;
+    try { ok = videoPlayer(host, hero, still); } catch (e) { ok = false; }
+    if (!ok) fallback(host, hero, still);
   };
 })();
 // With no intro to wait for, start straight away
