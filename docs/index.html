@@ -964,15 +964,16 @@ function md(src) {
    w/h: the clip's size (as printed by make_loop.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
    A visitor gets a random one; the arrows step through the rest. */
 const CLIPS = [
-  { id: "halo", w: 770, h: 1078, f: 1056, k: 1.031, t: 5.5, label: "A player wearing the Gold halo" },
+  { id: "halo", w: 770, h: 1078, f: 1056, k: 0.722, t: 5.5, label: "A player wearing the Gold halo" },
   { id: "wings", w: 662, h: 1142, f: 1127, k: 1.07, t: 6.4, label: "A player with dark red wings" },
   { id: "pod", w: 786, h: 1064, f: 1051, k: 0.896, t: 5.8, label: "A player with a floating robot pod" },
-  { id: "spear", w: 992, h: 1054, f: 944, k: 1.261, t: 3.2, label: "A player holding a long red spear" },
+  { id: "spear", w: 992, h: 1054, f: 944, k: 0.883, t: 3.2, label: "A player holding a long red spear" },
   { id: "doll", w: 1000, h: 1140, f: 1085, k: 0.868, t: 10.3, label: "A player with a small doll sitting on their head" },
 ];
 // f: the row the feet stand on (in the clip's pixels); every character's feet are lined up on the same line.
 // k: sizes each clip so the distance from the feet to the top of the head is the same for every character
-// (so heads line up too, even when the legs are bent).
+// (so heads line up too, even when the legs are bent); halo and spear are then taken down to 0.7 of that.
+// The doll is the reference: from the top of its plush to its feet it is as tall as the menu (Features to Questions).
 // s: playback speed (1 = as recorded, the default). t: loop length in seconds (default 8), for pacing the still-picture fallback.
 window.startHero = (function () {
   let started = false;
@@ -983,9 +984,13 @@ window.startHero = (function () {
 
   // Size and place the current clip: one scale for all of them, feet on the same line.
   const FEET = 0.9; // where the feet stand, as a share of the area's height
+  const DOLL_TALL = 1005; // the doll clip from the top of the plush to the feet, in its pixels
   function layout() {
     const c = CLIPS[cur], W = hero.clientWidth, H = hero.clientHeight;
-    const s = Math.min(innerHeight * 0.66, H * 0.94) / 960 * 0.81 * (c.k || 1);
+    const items = document.querySelectorAll(".menu li");
+    const span = items.length ? items[items.length - 1].getBoundingClientRect().bottom - items[0].getBoundingClientRect().top : H * 0.6;
+    const doll = CLIPS.find((d) => d.id === "doll");
+    const s = span / (DOLL_TALL * (doll ? doll.k : 1)) * (c.k || 1);
     const w = c.w * s, h = c.h * s, left = W * (c.x ?? 0.5) - w / 2, top = H * FEET - (c.f ?? c.h) * s;
     for (const el of [canvas, back, front]) {
       if (!el) continue;
