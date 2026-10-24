@@ -973,6 +973,7 @@ const CLIPS = [
   { id: "spear", w: 1104, h: 1058, k: 0.85, label: "A player holding a long red spear" },
   { id: "doll", w: 1266, h: 1450, k: 0.62, label: "A player with a small doll sitting on their head" },
 ];
+const SPEED = 0.25;   // playback speed of the character clips (1 = as recorded)
 window.startHero = (function () {
   let started = false;
   const onHome = () => document.body.dataset.page === "home" && !document.hidden;
@@ -1018,6 +1019,9 @@ window.startHero = (function () {
     video = document.createElement("video");
     video.muted = true; video.loop = true; video.playsInline = true; video.preload = "auto";
     video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
+    // The recordings look faster than the game, so they play at a quarter speed for now (each frame is held 4× longer)
+    video.defaultPlaybackRate = SPEED; video.playbackRate = SPEED;
+    video.addEventListener("loadedmetadata", () => { video.playbackRate = SPEED; });
     const draw = () => {
       if (video.readyState < 2) return;
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
@@ -1044,7 +1048,7 @@ window.startHero = (function () {
 
   // Still pictures, cross-faded in a loop
   function stills(c) {
-    const N = 32, STEP = 250, token = {};
+    const N = 32, STEP = 250 / SPEED, token = {};
     fb = token;
     const order = [...Array(N).keys()]; // the clips loop, so the stills do too
     const frames = [];
