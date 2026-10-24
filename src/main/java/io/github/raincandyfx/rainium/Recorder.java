@@ -25,9 +25,10 @@ import java.util.zip.Deflater;
  * called from the game loop): each frame either moves game time on by exactly one step and is
  * taken, or doesn't move it at all while saving catches up. Everything that animates with game
  * time (the player model, emotes from other mods, sway, particles) therefore advances by the same
- * even step between saved frames, so the clip plays smoothly at true speed even when drawing or
- * saving is slower than real time (the game then runs in slow motion while recording). It never
- * runs ahead of real time. PNGs are written on background threads.
+ * even step between saved frames, so the clip plays smoothly at true speed whatever the client's
+ * frame rate. Recording has no link to real time: every frame the game draws is the next frame of
+ * the clip (the game runs faster or slower than normal while recording), and the only wait is for
+ * saving to catch up. PNGs are written on background threads.
  *
  * No Minecraft classes here, so the timing and file writing can be tested on their own.
  */
@@ -169,7 +170,6 @@ final class Recorder {
             return ticket(k, k);
         }
         int k = nextFrame;
-        if (nowNanos - startNanos < Math.round(k * 1e9 / fps)) return -1;   // ahead of real time: wait
         if (queued.get() >= maxQueued()) {                                   // saving has fallen behind: wait
             waits++;
             return -1;
@@ -183,7 +183,7 @@ final class Recorder {
     /**
      * Called by the game's timer at the start of every frame. Returns how many milliseconds of game
      * time this frame should advance: one recording step if this frame will be taken, 0 while
-     * waiting (ahead of real time, saving behind, or the last step not yet drawn), or NaN when not
+     * waiting (saving behind, or the last step not yet drawn), or NaN when not
      * recording (the game then uses real time).
      */
     static synchronized double gameStepMs(long nowNanos) {
@@ -191,7 +191,6 @@ final class Recorder {
         driven = true;
         if (pendingFrame >= 0) return 0;                                     // last step not drawn yet: hold
         int k = nextFrame;
-        if (nowNanos - startNanos < Math.round(k * 1e9 / fps)) return 0;     // ahead of real time
         if (queued.get() >= maxQueued()) { waits++; return 0; }             // saving has fallen behind
         nextFrame = k + 1;
         clockFrame = k;

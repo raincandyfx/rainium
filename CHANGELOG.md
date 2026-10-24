@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.4.6 (dev build)
+
+- Recordings have no link to real time or your frame rate: every frame the game draws is the next frame of the clip, one exact step after the last, with no waiting to match real time and no jumping to catch up. The only pause is while saving catches up.
+
 ## 0.4.5 (dev build)
 
 - Recordings play at true speed with no choppiness, including emotes from mods like Emotecraft. While recording, the game's own clock follows the recording, so everything that animates (the player, emotes, sway, particles) moves exactly one frame's worth between saved frames. If your computer can't keep up, the game runs in slow motion while recording instead of the clip speeding up.
