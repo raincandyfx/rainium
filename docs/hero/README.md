@@ -2,7 +2,7 @@
 
 The home page shows one of these at random; the arrows under the character step through the rest, round and round.
 
-Each folder here is one character, recorded in game with Rainium's recorder. `spear` and `doll` are 30 fps recordings played as recorded; `halo`, `wings` and `pod` are older 120 fps ones that play at a quarter speed (`s: 0.25` in `CLIPS`) until they're re-recorded:
+Each folder here is one character, recorded in game with Rainium's recorder. All but `pod` are 30 fps recordings played as recorded; `pod` is an older 120 fps one that plays at a quarter speed (`s: 0.25` in `CLIPS`) until it's re-recorded:
 
 | Folder | Recording |
 |---|---|

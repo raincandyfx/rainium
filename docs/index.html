@@ -967,14 +967,14 @@ function md(src) {
    w/h: the clip's size (as printed by make_loop.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
    A visitor gets a random one; the arrows step through the rest. */
 const CLIPS = [
-  { id: "halo", w: 832, h: 1162, k: 0.75, s: 0.25, label: "A player wearing the Gold halo" },
-  { id: "wings", w: 748, h: 1326, k: 0.75, s: 0.25, label: "A player with dark red wings" },
+  { id: "halo", w: 770, h: 1078, k: 0.81, t: 5.5, label: "A player wearing the Gold halo" },
+  { id: "wings", w: 662, h: 1142, k: 0.87, t: 6.4, label: "A player with dark red wings" },
   { id: "pod", w: 910, h: 1226, k: 0.68, y: 0.48, s: 0.25, label: "A player with a floating robot pod" },
   { id: "spear", w: 992, h: 1054, k: 0.85, t: 3.2, label: "A player holding a long red spear" },
   { id: "doll", w: 1000, h: 1140, k: 0.79, t: 10.3, label: "A player with a small doll sitting on their head" },
 ];
-// s: playback speed (1 = as recorded, the default). The older 120 fps recordings look too fast, so they play at a
-// quarter speed until they're re-recorded. t: loop length in seconds (default 8), for pacing the still-picture fallback.
+// s: playback speed (1 = as recorded, the default). The pod is still an older 120 fps recording that looks too
+// fast, so it plays at a quarter speed until it's re-recorded. t: loop length in seconds (default 8), for pacing the still-picture fallback.
 window.startHero = (function () {
   let started = false;
   const onHome = () => document.body.dataset.page === "home" && !document.hidden;
