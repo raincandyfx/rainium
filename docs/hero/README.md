@@ -9,6 +9,8 @@ Each folder here is one character, recorded in game with Rainium's recorder (0.4
 | `halo/` | Gold halo |
 | `wings/` | Dark red wings (mirrored so the wings sit on the left) |
 | `pod/` | Floating robot pod |
+| `spear/` | Long red spear |
+| `doll/` | Small doll sitting on the head |
 
 ## Adding one
 
