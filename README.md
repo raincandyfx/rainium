@@ -20,6 +20,9 @@
 - **Wear any 3D model.** Put wings on your back, a halo behind your head, a tail, ears or anything else. Import your own OBJ, glTF or GLB models right in the game.
 - **Edit it live.** Press <kbd>K</kbd> and change textures, colours, glow, size, position and angle while watching your player update in real time. Everything saves automatically, and Undo is always there.
 - **Natural movement.** Cosmetics trail behind you as you run and turn, and sway gently when you stand still. You can make each one as bouncy or as still as you like.
+- **Wear it anywhere.** Attach each part to your body, head, arms or legs. Parts on your limbs swing with them, and a mirrored copy puts one on each side.
+- **Particles.** Sparkles, embers, hearts, trails and auras, or your own particles from any PNG.
+- **Pictures and recordings.** Save a transparent picture of your look, or record it as a smooth clip for videos.
 - **Group parts into folders.** A model made of several parts stays together: switch it on or off, resize it or move it in one go.
 - **Recolour with Hue.** Shift a texture's colours around the colour wheel without editing the image.
 - **Share your look.** Export a folder as a zip, and a friend can add it from the editor.
@@ -47,7 +50,7 @@
 
 **Make it look right.** Select a layer on the left, then use the **Edit** tab:
 - **Look:** texture, style (solid, see-through, glow), hue and opacity.
-- **Placement:** what it's attached to (body, head, or body without leaning), size, position and angle.
+- **Placement:** what it's attached to (body, head, body without leaning, or an arm or leg), size, position and angle.
 - **Behaviour:** a mirrored copy (model one wing, get two), swaying with movement, hiding while gliding.
 - **Shown on:** which players and armor stands this layer appears on.
 
