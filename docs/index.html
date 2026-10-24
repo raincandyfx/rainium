@@ -185,7 +185,7 @@
   .hero .ph span { font-size: 1.15rem; }
   .hero .ph.has { clip-path: none; }
   .hero .ph.has img { object-fit: contain; object-position: center bottom; }
-  /* Live 3D player (skinview3d). When it loads, it replaces the picture slot. */
+  /* The character recorded in game. When it loads, it replaces the picture slot. */
   .hero-model { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; }
   .hero-model canvas { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; aspect-ratio: 598 / 960; transform: translate(-50%, -50%); }
   .hero-model.video img { display: none; }
@@ -194,29 +194,16 @@
   .hero.has-model .hero-model { opacity: 1; }
   .hero.has-model .ph { display: none; }
 
-  /* ============ INTRO: a close-up of the player on white, waiting for a click or key ============ */
-  .intro { position: fixed; inset: 0; z-index: 50; display: none; cursor: pointer; outline: none; background: var(--paper); color: var(--ink); overflow: hidden; }
-  .intro-on .intro, .intro.panning { display: block; }
+  /* ============ INTRO: a blank white page with a prompt, until the visitor clicks or presses a key ============ */
+  .intro { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; cursor: pointer; outline: none; background: var(--paper); color: var(--ink); overflow: hidden; }
+  .intro-on .intro, .intro.panning { display: grid; }
   .intro-on .page, .intro-on .topbar, .intro-on .prompts { visibility: hidden; opacity: 0; }
   .intro-on .pick .r { visibility: hidden !important; }
-  .intro-model { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s; }
-  .intro-model.ready { opacity: 1; }
-  .intro-model canvas { display: block; width: 100% !important; height: 100% !important; }
-  .intro-hint { position: absolute; left: var(--gutter); bottom: 6vh; margin: 0; font-style: italic; font-weight: 900; font-stretch: 75%;
-    font-size: 1.4rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0; animation: hintIn 0.8s 2.2s both, hintPulse 2.4s 3s ease-in-out infinite; }
+  .intro-hint { margin: 0; font-style: italic; font-weight: 900; font-stretch: 75%; font-size: clamp(1.2rem, 2.4vw, 1.6rem); text-transform: uppercase; letter-spacing: 0.06em;
+    opacity: 0; animation: hintIn 0.6s 0.4s both, hintPulse 2.4s 1s ease-in-out infinite; }
   @keyframes hintIn { to { opacity: 0.85; } }
   @keyframes hintPulse { 50% { opacity: 0.4; } }
-  .intro.go .intro-hint { animation: none; opacity: 0; transition: opacity 0.15s; }
-  /* Sparkles at the outstretched hand, placed by script */
-  .sparkle { position: absolute; left: 0; top: 0; width: var(--sz, 64px); height: var(--sz, 64px); margin: calc(var(--sz, 64px) / -2) 0 0 calc(var(--sz, 64px) / -2);
-    background: var(--c, #ffd76a); clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%);
-    transform: scale(0); pointer-events: none; filter: drop-shadow(0 0 6px rgba(255, 215, 106, 0.8)); }
-  .sparkle.pop { animation: sparkle 0.5s cubic-bezier(.2,.9,.3,1.4) both; }
-  @keyframes sparkle { 0% { transform: scale(0) rotate(-40deg); } 60% { transform: scale(1.15) rotate(8deg); } 100% { transform: scale(1) rotate(0); } }
-  /* The flash: the whole screen goes white while the skin changes */
-  .flash { position: absolute; inset: 0; background: var(--paper); opacity: 0; pointer-events: none; transition: opacity 0.14s ease-in; }
-  .flash.on { opacity: 1; }
-  .flash.off { opacity: 0; transition: opacity 0.4s ease-out; }
+  .intro.panning .intro-hint { animation: none; opacity: 0; transition: opacity 0.15s; }
   /* The pan off to the home page */
   .intro.panning { transform: translateX(-104%); transition: transform 0.8s cubic-bezier(.7,0,.2,1); pointer-events: none; }
 
@@ -439,12 +426,11 @@
     .menu a { font-size: clamp(2.6rem, 13vw, 3.6rem); }
     .menu li { margin-left: calc(var(--x) * 0.6); }
     .hero { position: relative; left: auto; top: auto; bottom: auto; width: 100%; height: 70vh; order: 4; }
-    .intro-hint { font-size: 1.15rem; }
   }
   @media (max-width: 560px) { .tiles, .steps { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) {
     .wipe.run i, .page.on .slam, .box p.show, .box::after, .pick.sel::after, .pick.sel .r, .pick.sel::before,
-    .sparkle.pop, .intro-hint { animation: none; }
+    .intro-hint { animation: none; }
     .intro.panning { transition: none; }
     .intro-hint { opacity: 0.85; }
     .menu a { transition: none; }
@@ -452,19 +438,11 @@
 </style>
 <script>
   document.documentElement.classList.add("js");
-  // The intro shows on a fresh visit to the home page (once per tab), when WebGL is available
+  // The intro shows on a fresh visit to the home page (once per tab)
   try {
-    if ((!location.hash || location.hash === "#") && !sessionStorage.getItem("rainium-intro") && window.WebGLRenderingContext)
+    if ((!location.hash || location.hash === "#") && !sessionStorage.getItem("rainium-intro"))
       document.documentElement.classList.add("intro-on");
   } catch (e) {}
-</script>
-<script type="importmap">
-{ "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.module.js",
-    "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.156.1/examples/jsm/",
-    "skinview-utils": "https://cdn.jsdelivr.net/npm/skinview-utils@0.7.1/build/index.js",
-    "skinview3d": "https://cdn.jsdelivr.net/npm/skinview3d@3.4.1/libs/skinview3d.js"
-} }
 </script>
 </head>
 <body data-page="home">
@@ -659,18 +637,14 @@
       <div class="box-wrap">
         <span class="who">Rainium</span>
         <div class="box" aria-live="polite"><p id="answer" class="show">No. Only you see your cosmetics. To share a look, send a friend an exported zip.</p></div>
-        <p class="legal">MIT License. <a href="https://github.com/raincandyfx/rainium">Source</a> and <a href="https://github.com/raincandyfx/rainium/issues">issues</a>. Water by <a href="https://github.com/paper-design/shaders">Paper Shaders</a>; 3D players by <a href="https://github.com/bs-community/skinview3d">skinview3d</a> and <a href="https://threejs.org">three.js</a>. The Gold halo example is based on a Genshin Impact ornament; Rainium is not affiliated with HoYoverse. Not an official Minecraft product.</p>
+        <p class="legal">MIT License. <a href="https://github.com/raincandyfx/rainium">Source</a> and <a href="https://github.com/raincandyfx/rainium/issues">issues</a>. Water by <a href="https://github.com/paper-design/shaders">Paper Shaders</a>. The Gold halo example is based on a Genshin Impact ornament; Rainium is not affiliated with HoYoverse. Not an official Minecraft product.</p>
       </div>
     </div>
   </div>
 </section>
 
 <div class="intro" id="intro" role="button" tabindex="0" aria-label="Enter the Rainium site">
-  <div class="intro-model" id="introModel"></div>
-  <i class="sparkle" aria-hidden="true" style="--sz: clamp(80px, 13vh, 150px)"></i>
-  <i class="sparkle" aria-hidden="true" style="--sz: clamp(44px, 7vh, 80px); --c: #48e6ff"></i>
-  <div class="flash" id="flash" aria-hidden="true"></div>
-  <p class="intro-hint" aria-hidden="true">Click or press any key</p>
+  <p class="intro-hint">Click or press any key</p>
 </div>
 
 <div class="wipe" id="wipe" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -789,8 +763,6 @@ document.addEventListener("keydown", (e) => {
 });
 addEventListener("hashchange", go);
 go();
-// If the 3D libraries can't load, don't leave visitors on the intro screen
-setTimeout(() => { if (!window.__introReady) { document.documentElement.classList.remove("intro-on"); window.startHero && window.startHero(); } }, 9000);
 
 /* ---------- Questions: pick a line, read the answer ---------- */
 choices.forEach((b, i) => {
@@ -1027,181 +999,29 @@ window.startHero = (function () {
 })();
 // With no intro to wait for, start straight away
 if (!document.documentElement.classList.contains("intro-on")) window.startHero();
-</script>
-<script>
-  // If the 3D libraries fail to download, open the site straight away instead of waiting on the intro
-  window.__libFail = () => { document.documentElement.classList.remove("intro-on"); window.startHero(); };
-</script>
-<script type="module">
-/* ---------- Players: skinview3d (MIT) on three.js, wearing Rainium's own Gold halo files ---------- */
-let THREE, sv;
-try { [THREE, sv] = await Promise.all([import("three"), import("skinview3d")]); }
-catch (e) { window.__libFail(); throw e; }
 
-const $ = (id) => document.getElementById(id);
-const html = document.documentElement;
-const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const SKIN_BEFORE = "skins/skin-1.png";   // shown on the intro screen
-const SKIN_AFTER = "skins/skin-2.png";    // after the click, and on the home page
-let introViewer = null;
-
-// A viewer on a canvas with a transparent background
-function makeViewer(host, zoom) {
-  const canvas = document.createElement("canvas");
-  canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false });
-  host.append(canvas);
-  const v = new sv.SkinViewer({ canvas, width: host.clientWidth || 300, height: host.clientHeight || 500, zoom });
-  v.controls.enabled = false;           // the models can't be dragged, turned or zoomed
-  const ro = new ResizeObserver(() => { if (host.clientWidth) v.setSize(host.clientWidth, host.clientHeight); });
-  ro.observe(host);
-  v.__ro = ro;
-  return v;
-}
-function dispose(v) { if (!v) return; v.__ro.disconnect(); v.dispose(); v.canvas.remove(); }
-
-// Plain stand-in skins until real ones are added to docs/skins/
-function standInSkin(main, trim) {
-  const c = document.createElement("canvas"); c.width = c.height = 64;
-  const g = c.getContext("2d");
-  const base = [[0, 0, 32, 16], [0, 16, 16, 16], [16, 16, 24, 16], [40, 16, 16, 16], [16, 48, 16, 16], [32, 48, 16, 16]];
-  g.fillStyle = main; base.forEach(([x, y, w, h]) => g.fillRect(x, y, w, h));
-  g.fillStyle = trim; g.fillRect(8, 8, 8, 8); g.fillRect(20, 20, 8, 12);
-  g.fillStyle = main; g.fillRect(9, 11, 2, 2); g.fillRect(13, 11, 2, 2);
-  return c;
-}
-async function loadSkin(v, url, fallback) {
-  try { await v.loadSkin(url); } catch (e) { await v.loadSkin(fallback); }
-}
-const before = () => standInSkin("#0d1b5e", "#c9d8ff");
-const after = () => standInSkin("#eef1ff", "#48e6ff");
-
-/* ---------- Intro: one model, waiting; any click or key plays the change, then the site opens ---------- */
-function closeIntro() {
-  html.classList.remove("intro-on");
-  try { sessionStorage.setItem("rainium-intro", "1"); } catch (e) {}
-  dispose(introViewer); introViewer = null;
-  window.startHero();
-}
-// Camera "shots" for the intro, described by where the head sits on screen:
-// x, y = head centre as a fraction of the screen; size = head height as a fraction of screen height;
-// tilt = roll of the whole player (negative = clockwise); turn = how far the player turns (radians);
-// arm = how far the right arm is raised (0 = down, 1 = straight out to the side).
-const SHOTS = {
-  wait: { x: 0.84, y: 0.36, size: 0.40, tilt: -0.30, turn: -0.12, arm: 0 },   // 1: close on the tilted head
-  reach: { x: 0.74, y: 0.42, size: 0.36, tilt: 0, turn: -0.28, arm: 1 },     // 3: upright, arm out to the left
-};
-const lerp = (a, b, t) => a + (b - a) * t;
-const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-const easeBack = (t) => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
-function mix(a, b, t, tArm) {
-  return { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), size: lerp(a.size, b.size, t), tilt: lerp(a.tilt, b.tilt, t), turn: lerp(a.turn, b.turn, t), arm: lerp(a.arm, b.arm, tArm) };
-}
-
-// Place the camera and pose the player for a shot. The player is shifted so its head is the scene origin,
-// which makes the tilt and turn pivot around the head.
-function applyShot(v, shot) {
-  const w = v.canvas.clientWidth || innerWidth, h = v.canvas.clientHeight || innerHeight;
-  const fov = (v.camera.fov * Math.PI) / 180;
-  // On tall screens, size the head against the width instead, and centre it more
-  const tall = h > w;
-  if (tall) shot = { ...shot, x: 0.5 + (shot.x - 0.5) * 0.35, y: shot.y + 0.04, size: shot.size * (w / h) * 1.35 };
-  const dist = 9 / (shot.size * 2 * Math.tan(fov / 2));
-  const viewH = 2 * dist * Math.tan(fov / 2), viewW = viewH * (w / h);
-  const cx = -(shot.x - 0.5) * viewW, cy = (shot.y - 0.5) * viewH;
-  v.camera.position.set(cx, cy, dist);
-  v.controls.target.set(cx, cy, 0);
-  v.camera.lookAt(cx, cy, 0);
-  v.playerObject.position.set(0, -12, 0);   // head at the origin, so tilt and turn pivot around it
-  v.playerWrapper.rotation.set(0, shot.turn, shot.tilt);
-  v.playerObject.skin.rightArm.rotation.set(0, 0, -shot.arm * Math.PI / 2);
-}
-
-function runIntroSequence(v, intro) {
-  const flash = $("flash"), sparkles = [...intro.querySelectorAll(".sparkle")];
-  const hand = new THREE.Object3D();
-  hand.position.set(-1, -10, 0);              // the end of the right arm
-  v.playerObject.skin.rightArm.add(hand);
-  const at = (ms, fn) => setTimeout(fn, ms);
-  const MOVE = 750;
-
-  // 1 to 3: straighten up, turn a little, reach out
-  v.animation = null;
-  const t0 = performance.now();
-  let raf = 0;
-  const tick = (now) => {
-    const t = Math.min(1, (now - t0) / MOVE);
-    applyShot(v, mix(SHOTS.wait, SHOTS.reach, ease(t), easeBack(Math.min(1, Math.max(0, (t - 0.15) / 0.85)))));
-    // keep the sparkles on the hand
-    v.scene.updateMatrixWorld(true);
-    const p = hand.getWorldPosition(new THREE.Vector3()).project(v.camera);
-    const px = (p.x * 0.5 + 0.5) * intro.clientWidth, py = (-p.y * 0.5 + 0.5) * intro.clientHeight;
-    const u = intro.clientHeight / 100;
-    sparkles[0].style.left = px + 2 * u + "px"; sparkles[0].style.top = py - 11 * u + "px";
-    sparkles[1].style.left = px + 10 * u + "px"; sparkles[1].style.top = py - 4 * u + "px";
-    window.__hand = [Math.round(px), Math.round(py)];
-    raf = requestAnimationFrame(tick);
-  };
-  raf = requestAnimationFrame(tick);
-
-  // 3: sparkles, then the flash, and skin 2 underneath it
-  at(MOVE + 50, () => sparkles[0].classList.add("pop"));
-  at(MOVE + 190, () => sparkles[1].classList.add("pop"));
-  at(MOVE + 620, () => flash.classList.add("on"));
-  at(MOVE + 780, async () => {
-    sparkles.forEach((sp) => (sp.style.visibility = "hidden"));
-    await loadSkin(v, SKIN_AFTER, after());
-    flash.classList.add("off"); flash.classList.remove("on");
-  });
-  // 4: hold on skin 2, then pan off to the home page
-  at(MOVE + 1650, () => {
-    html.classList.remove("intro-on");
-    intro.classList.add("panning");
-    window.startHero();
-  });
-  at(MOVE + 2550, () => { cancelAnimationFrame(raf); closeIntro(); intro.classList.remove("panning"); });
-}
-
-async function runIntro() {
-  const intro = $("intro");
-  introViewer = makeViewer($("introModel"), 1);
-  introViewer.animation = still ? null : new sv.IdleAnimation();
-  await loadSkin(introViewer, SKIN_BEFORE, before());
-  // Hold shot 1 while waiting (re-applied each frame so resizing keeps the framing)
-  let waiting = true;
-  const hold = () => { if (!waiting || !introViewer) return; applyShot(introViewer, SHOTS.wait); requestAnimationFrame(hold); };
-  hold();
-  $("introModel").classList.add("ready");
-  window.__introReady = true;
+/* ---------- Intro: any click or key slides the white page away to reveal the home page ---------- */
+(function () {
+  const html = document.documentElement, intro = document.getElementById("intro");
+  if (!html.classList.contains("intro-on")) return;
   intro.focus({ preventScroll: true });
-
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let started = false;
   const go = (e) => {
     if (e) { e.preventDefault(); e.stopImmediatePropagation(); }
     if (started) return;
     started = true;
-    waiting = false;
     removeEventListener("keydown", go, true);
-    intro.classList.add("go");
-    if (still) {
-      // Reduced motion: no moves, just the new skin, then straight to the site
-      applyShot(introViewer, SHOTS.reach);
-      loadSkin(introViewer, SKIN_AFTER, after()).then(() => setTimeout(closeIntro, 400));
-      return;
-    }
-    runIntroSequence(introViewer, intro);
+    try { sessionStorage.setItem("rainium-intro", "1"); } catch (err) {}
+    html.classList.remove("intro-on");
+    window.startHero();
+    if (still) return;
+    intro.classList.add("panning");
+    setTimeout(() => intro.classList.remove("panning"), 850);
   };
   intro.addEventListener("pointerdown", go);
   addEventListener("keydown", go, true);
-}
-
-try {
-  if (html.classList.contains("intro-on")) await runIntro();
-} catch (e) {
-  // No WebGL, or the libraries didn't load: open the site with the picture slot instead
-  html.classList.remove("intro-on");
-  dispose(introViewer);
-  window.startHero();
-}
+})();
 </script>
 </body>
 </html>

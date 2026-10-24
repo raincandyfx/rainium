@@ -1,10 +1,8 @@
 # Site skins
 
-The intro screen shows a live 3D player (skinview3d). The home page plays the in-game render in `docs/hero/` instead.
+Not used right now: the intro is a blank white page with a prompt. These were the intro's 3D player skins (skinview3d), kept for when the animated intro comes back.
 
-| File | Used for |
+| File | Was used for |
 |---|---|
-| `skin-1.png` | The player on the intro screen, before anyone clicks |
+| `skin-1.png` | The intro player before the click |
 | `skin-2.png` | The intro player after the click |
-
-Use standard 64×64 Minecraft skin PNGs; slim (Alex-style) arms are detected automatically. Until these files exist, the site shows plain stand-in skins.
