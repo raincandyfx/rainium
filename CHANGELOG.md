@@ -2,6 +2,24 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.4.0
+
+Everything from the 0.3.1 to 0.3.8 dev builds:
+
+- **Particle emitters**: a new kind of layer that gives off particles, using Minecraft's particle pictures or your own PNGs. Start from Sparkles, Embers, Hearts, Trail, Aura or an empty emitter on the Add tab, then adjust:
+  - when they appear (always, while moving, while standing still, or more the faster you move) and how many;
+  - where (point, ball, box or ring) and their size over time;
+  - direction, speed, spread, gravity, drag, spin and fading;
+  - whether they move with you or leave a trail.
+- **glTF and GLB import** alongside OBJ, with the same live preview. A texture packed inside a `.glb` is used automatically.
+- **Arm and leg attachment points** (left and right arm, left and right leg). Layers on them swing with your limbs, and **Mirrored copy** puts a copy on the other side.
+- **Choose who sees each layer**: under **Shown on**, each layer and folder can appear on just you, everyone, other players, listed players or nobody, and on armor stands with the name tags you choose. **Default** follows the folder, then Settings > Visibility, which also gained **Listed players** and **Armor stands**. All of this only changes what you see.
+- Exported zips leave out who layers are shown on, so shared sets use the receiver's own settings.
+- The Add tab shows a small picture of each preset and model.
+- Error messages can be copied (**Copy** on the error banner, **Copy error** in Settings and the import view).
+- Player name lists can be separated by commas or spaces.
+- Fixed particle layers failing on Windows when using a Minecraft particle picture.
+
 ## 0.3.8 (dev build)
 
 - Exported zips no longer include who each layer is shown on (including any player or armor stand names). Adding a shared set uses your own Visibility settings.
