@@ -47,17 +47,19 @@ final class ParticleFx {
                        SubmitNodeCollector collector, int order, RenderType type, int color, int light, int overlay) {
         PoseStack.Pose pose = layerPose.last();
         LayerConfig.Particles s = l.particles;
-        long now = System.nanoTime();
+        long now = preview ? Recorder.previewNanos() : System.nanoTime();   // recordings step the preview on their own clock
         synchronized (emitters) {
-            if (now - lastPrune > 5_000_000_000L) {   // forget emitters that haven't been drawn for a while
-                for (Iterator<ParticleSim.Emitter> it = emitters.values().iterator(); it.hasNext(); ) if (now - it.next().lastNanos > 10_000_000_000L) it.remove();
-                lastPrune = now;
+            long real = System.nanoTime();
+            if (real - lastPrune > 5_000_000_000L) {   // forget emitters that haven't been drawn for a while
+                for (Iterator<ParticleSim.Emitter> it = emitters.values().iterator(); it.hasNext(); ) if (real - it.next().seenNanos > 10_000_000_000L) it.remove();
+                lastPrune = real;
             }
         }
         ParticleSim.Emitter e;
         synchronized (emitters) { e = emitters.computeIfAbsent(key, k -> new ParticleSim.Emitter()); }
         float dt = e.lastNanos == 0 ? 0f : Math.min(0.1f, (now - e.lastNanos) / 1e9f);
         e.lastNanos = now;
+        e.seenNanos = System.nanoTime();
 
         // movement speed of the entity, smoothed
         if (dt > 0 && !Double.isNaN(e.lastX)) {

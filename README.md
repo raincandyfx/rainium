@@ -91,7 +91,7 @@ The preview in the editor has two buttons in its top corner:
 - **Picture** saves a PNG of your player and cosmetics with a transparent background.
 - **● Rec** records the preview until you click **Stop**, as numbered PNG frames with a transparent background (`frame_00001.png`, `frame_00002.png` ...).
 
-Both land in `config/rainium/captures` (**Settings > Capture > Open captures folder**). What you see is what you get: set up the angle and zoom first. In **Settings > Capture** you can choose the size (the preview's size on screen, 2× or 4×), the frame rate (30 or 60) and a slow or fast spin while recording.
+Both land in `config/rainium/captures` (**Settings > Capture > Open captures folder**). What you see is what you get: set up the angle and zoom first. In **Settings > Capture** you can choose the size (the preview's size on screen, 2× or 4×), the frame rate (30 or 60) and a slow or fast spin while recording. Recordings always play back smoothly at the chosen frame rate: if your computer can't keep up, the preview runs in slow motion while recording instead of skipping frames.
 
 Video editors such as DaVinci Resolve, Premiere, After Effects, CapCut and Blender import a folder of frames as one clip with transparency (choose "image sequence" and the same frame rate). To turn the frames into a single video file with transparency, [ffmpeg](https://ffmpeg.org) can do it from inside the folder:
 

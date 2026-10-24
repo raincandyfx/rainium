@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.4.2 (dev build)
+
+- Smoother recordings: a recording now runs on its own clock, so every frame is exactly one step (1/30 or 1/60 of a second) after the last, with no repeated or skipped frames. If your computer can't draw and save fast enough, the preview runs in slow motion while recording, but the saved clip still plays smoothly at full speed.
+
 ## 0.4.1 (dev build)
 
 - **Pictures and recordings**: the preview has **Picture** and **● Rec** buttons. Pictures are PNGs with a transparent background; recordings are numbered transparent PNG frames that video editors import as one clip. Both are saved in `config/rainium/captures`.

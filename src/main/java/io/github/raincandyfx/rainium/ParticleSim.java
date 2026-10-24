@@ -31,6 +31,7 @@ final class ParticleSim {
         int count;
         double carry;                       // fractional particles not yet spawned
         long lastNanos;
+        long seenNanos;   // real time it was last drawn (for forgetting unused emitters)
         double lastX = Double.NaN, lastY, lastZ;
         float speed;                        // smoothed movement speed of the entity (blocks/s)
         final Random rnd = new Random();

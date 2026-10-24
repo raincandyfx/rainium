@@ -74,7 +74,7 @@ public final class RainiumScreen extends Screen {
     // pictures and recordings
     private static volatile String captureDone;   // set when saving finishes: file/folder name, or "!error"
     private static boolean captureWasRecording;
-    private float spinFrom;
+    private float spinFrom, recordAge0 = Float.NaN;
     private boolean dragging;
 
     // import state (Add tab)
@@ -1187,8 +1187,12 @@ public final class RainiumScreen extends Screen {
                 float bbh = 1.8f;
                 int spin = assets.editable().captureSpin;
                 if (Recorder.mode() == Recorder.Mode.RECORDING && spin > 0)   // one turn every 12 s (slow) or 6 s (fast)
-                    previewYaw = ((spinFrom + Recorder.seconds(System.nanoTime()) * (spin == 1 ? 30f : 60f)) % 360f + 360f) % 360f;
+                    previewYaw = ((spinFrom + Recorder.seconds() * (spin == 1 ? 30f : 60f)) % 360f + 360f) % 360f;
                 if (st instanceof LivingEntityRenderState ls) {
+                    if (Recorder.mode() == Recorder.Mode.RECORDING) {   // idle animation and sway follow the recording's clock
+                        if (Float.isNaN(recordAge0)) recordAge0 = ls.ageInTicks;
+                        ls.ageInTicks = recordAge0 + Recorder.seconds() * 20f;
+                    } else recordAge0 = Float.NaN;
                     ls.bodyRot = 180f + previewYaw;
                     ls.yRot = 0f;
                     ls.xRot = 0f;
@@ -1240,17 +1244,13 @@ public final class RainiumScreen extends Screen {
     private void captureChips(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
         int cy = y + 4, right = x + w - 4;
         if (Recorder.mode() == Recorder.Mode.RECORDING) {
-            float sec = Recorder.seconds(System.nanoTime());
+            float sec = Recorder.seconds();
             String t = Lang.t("preview.stop", String.format(Locale.ROOT, "%d:%02d", (int) sec / 60, (int) sec % 60));
             int cw = font.width(Component.literal(t)) + 10, cx = right - cw;
             boolean hov = in(mx, my, cx, cy, cw, 12);
             g.fill(cx, cy, cx + cw, cy + 12, hov ? 0xFFB0304E : 0xE0901E3C);
             g.text(font, t, cx + 5, cy + 2, TEXT, false);
             hits.add(new Hit(cx, cy, cw, 12, Recorder::stop, null));
-            if (Recorder.framesDropped() > 0) {
-                String d = fit(Lang.t("preview.dropping"), w - cw - 16);
-                g.text(font, d, cx - 6 - font.width(Component.literal(d)), cy + 2, WARN, false);
-            }
             return;
         }
         if (Recorder.capturing()) return;   // a picture is being taken this frame
