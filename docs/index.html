@@ -197,7 +197,7 @@
   .hero-model.video img { display: none; }
   .hero-model:not(.video) canvas { display: none; }
   /* Gallery arrows: step through the recorded characters, round and round */
-  .hero-nav { position: absolute; z-index: 6; top: 87%; width: 44px; height: 58px; margin-top: -29px; padding: 0; border: 0; background: none;
+  .hero-nav { position: absolute; z-index: 6; top: 91%; width: 44px; height: 58px; margin-top: -29px; padding: 0; border: 0; background: none;
     cursor: pointer; pointer-events: auto; transition: transform 0.15s; }
   .hero-nav.prev { left: 27%; } .hero-nav.next { right: 33%; }
   .hero-nav::before, .hero-nav::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 0 50%, 100% 100%, 68% 50%); }
@@ -931,7 +931,7 @@ function md(src) {
 <script>
 /* ---------- Home: RAINIUM running up the white band ----------
    The word is measured once the font is in, then drawn as thick as the band is wide at the top and the full height of
-   the page; the band's slope cuts into it towards the bottom. */
+   the page, leaning halfway towards the band's slope; the slope cuts into it towards the bottom. */
 (function fitName() {
   const svg = document.getElementById("sname");
   if (!svg) return;
@@ -951,6 +951,9 @@ function md(src) {
     svg.setAttribute("preserveAspectRatio", "none");
     svg.style.left = pad + "px"; svg.style.top = pad + "px";
     svg.style.width = thick + "px"; svg.style.height = len + "px";
+    // lean it halfway between upright and the band's slope (the slope runs from 100% wide at the top to 62% at the bottom)
+    const lean = Math.atan(0.38 * W / H) / 2;
+    svg.style.transformOrigin = "50% 50%"; svg.style.transform = `rotate(${lean}rad)`;
   };
   fit();
   addEventListener("resize", fit);
@@ -968,6 +971,7 @@ function md(src) {
    A visitor gets a random one; the arrows step through the rest. */
 const CLIPS = [
   { id: "sway", w: 682, h: 960, label: "A player wearing the Gold halo, swaying gently" },
+  { id: "ronova", w: 704, h: 1322, label: "A player with dark red wings, standing idle", k: 0.82, x: 0.47, y: 0.5 },
 ];
 window.startHero = (function () {
   let started = false;
