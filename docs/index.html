@@ -187,13 +187,12 @@
   .hero .ph.has img { object-fit: contain; object-position: center bottom; }
   /* Live 3D player (skinview3d). When it loads, it replaces the picture slot. */
   .hero-model { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; }
-  .hero-model canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; }
-  .hero-model canvas:active { cursor: grabbing; }
+  .hero-model canvas { display: block; width: 100% !important; height: 100% !important; }
   .hero.has-model .hero-model { opacity: 1; }
   .hero.has-model .ph { display: none; }
 
   /* ============ INTRO: one player model, waiting for a click or key ============ */
-  .intro { position: fixed; inset: 0; z-index: 50; display: none; cursor: pointer; outline: none; }
+  .intro { position: fixed; inset: 0; z-index: 50; display: none; cursor: pointer; outline: none; background: var(--paper); color: var(--ink); }
   .intro-on .intro { display: block; }
   .intro-on .page, .intro-on .topbar, .intro-on .prompts { visibility: hidden; opacity: 0; }
   .intro-on .pick .r { visibility: hidden !important; }
@@ -201,19 +200,19 @@
   .intro-model.ready { opacity: 1; }
   .intro-model canvas { display: block; width: 100% !important; height: 100% !important; }
   .intro-hint { position: absolute; left: 0; right: 0; bottom: 7vh; margin: 0; text-align: center; font-style: italic; font-weight: 900; font-stretch: 75%;
-    font-size: 1.4rem; text-transform: uppercase; letter-spacing: 0.06em; text-shadow: 2px 2px 0 var(--ink); opacity: 0; animation: hintIn 0.8s 2.2s both, hintPulse 2.4s 3s ease-in-out infinite; }
+    font-size: 1.4rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0; animation: hintIn 0.8s 2.2s both, hintPulse 2.4s 3s ease-in-out infinite; }
   @keyframes hintIn { to { opacity: 0.85; } }
   @keyframes hintPulse { 50% { opacity: 0.4; } }
   /* The interaction effect around the model (a placeholder until the real animation is designed) */
   .burst { position: absolute; left: 50%; top: 47%; width: 0; height: 0; pointer-events: none; }
-  .burst i { position: absolute; left: 0; top: 0; width: 60vh; height: 60vh; margin: -30vh 0 0 -30vh; border-radius: 50%; border: 3px solid var(--paper); opacity: 0; }
+  .burst i { position: absolute; left: 0; top: 0; width: 60vh; height: 60vh; margin: -30vh 0 0 -30vh; border-radius: 50%; border: 3px solid var(--ink); opacity: 0; }
   .burst i:nth-child(2) { border-color: var(--cyan); }
   .burst i:nth-child(3) { border-color: var(--pink); border-width: 6px; }
   .intro.go .burst i { animation: ring 0.75s cubic-bezier(.2,.8,.3,1) both; }
   .intro.go .burst i:nth-child(2) { animation-delay: 0.08s; }
   .intro.go .burst i:nth-child(3) { animation-delay: 0.16s; }
   @keyframes ring { from { transform: scale(0.15); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
-  .flash { position: absolute; inset: 0; background: var(--paper); opacity: 0; pointer-events: none; }
+  .flash { position: absolute; inset: 0; background: var(--cyan); opacity: 0; pointer-events: none; }
   .intro.go .flash { animation: flash 0.5s 0.18s ease-out both; }
   @keyframes flash { 30% { opacity: 0.75; } to { opacity: 0; } }
   .intro.go .intro-hint { animation: none; opacity: 0; transition: opacity 0.15s; }
@@ -487,7 +486,7 @@
     <p class="tagline-m" hidden>Wear any model in Minecraft.</p>
 
     <div class="hero" id="hero">
-      <div class="hero-model" id="heroModel" aria-label="3D player wearing the Gold halo. Drag to turn." role="img"></div>
+      <div class="hero-model" id="heroModel" aria-label="3D player wearing the Gold halo" role="img"></div>
       <figure class="ph" data-img="img/hero.png"><span>Your character art: a player wearing Rainium cosmetics, cut out on a transparent background</span><code>docs/img/hero.png</code></figure>
     </div>
     <i class="shard s1" aria-hidden="true"></i><i class="shard s2" aria-hidden="true"></i><i class="shard s3" aria-hidden="true"></i><i class="shard s4" aria-hidden="true"></i>
@@ -955,8 +954,7 @@ function makeViewer(host, zoom) {
   canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false });
   host.append(canvas);
   const v = new sv.SkinViewer({ canvas, width: host.clientWidth || 300, height: host.clientHeight || 500, zoom });
-  v.controls.enableZoom = false;
-  v.controls.enablePan = false;
+  v.controls.enabled = false;           // the models can't be dragged, turned or zoomed
   const ro = new ResizeObserver(() => { if (host.clientWidth) v.setSize(host.clientWidth, host.clientHeight); });
   ro.observe(host);
   v.__ro = ro;
@@ -1021,7 +1019,7 @@ async function goldHalo() {
 /* ---------- Home: player with the second skin and the Gold halo ---------- */
 async function startHero() {
   if (heroViewer) return;
-  heroViewer = makeViewer($("heroModel"), 0.72);
+  heroViewer = makeViewer($("heroModel"), 0.52);
   heroViewer.animation = new sv.IdleAnimation();
   heroViewer.playerWrapper.rotation.y = 0.45;
   await loadSkin(heroViewer, SKIN_AFTER, after());
@@ -1043,11 +1041,10 @@ async function runIntro() {
   const intro = $("intro");
   introViewer = makeViewer($("introModel"), 0.78);
   introViewer.animation = new sv.IdleAnimation();
-  introViewer.autoRotate = !still;
-  introViewer.autoRotateSpeed = 1.4;
   await loadSkin(introViewer, SKIN_BEFORE, before());
   $("introModel").classList.add("ready");
   window.__introReady = true;
+  goldHalo().catch(() => {});            // load the halo now, so the home page has it ready
   intro.focus({ preventScroll: true });
 
   let started = false;
@@ -1057,12 +1054,8 @@ async function runIntro() {
     started = true;
     removeEventListener("keydown", go, true);
     intro.classList.add("go");
-    // The change: the new skin and the halo appear at the peak of the burst
-    setTimeout(async () => {
-      if (!introViewer) return;
-      await loadSkin(introViewer, SKIN_AFTER, after());
-      try { introViewer.playerObject.skin.add(await goldHalo()); } catch (err) {}
-    }, still ? 0 : 260);
+    // The change: the new skin appears at the peak of the burst (the halo waits for the home page)
+    setTimeout(() => { if (introViewer) loadSkin(introViewer, SKIN_AFTER, after()); }, still ? 0 : 260);
     // Then the page wipe, revealing the site underneath
     if (still) { setTimeout(closeIntro, 500); return; }
     setTimeout(() => {
