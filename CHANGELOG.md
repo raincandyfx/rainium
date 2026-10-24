@@ -2,6 +2,15 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.5.0
+
+Everything from the 0.4.1 to 0.4.6 dev builds:
+
+- **Pictures and recordings** of the editor preview, with a transparent background. **Picture** saves a PNG; **● Rec** records numbered PNG frames that video editors import as one clip (or that ffmpeg can turn into a transparent WebM). Both go to `config/rainium/captures`, and each recording's folder name ends with its frame rate, like `_120fps`.
+- **Smooth, true-speed recordings.** While recording, the game's clock follows the recording: every frame the game draws becomes the next frame of the clip, exactly one step after the last, whatever your frame rate. The player, emotes from mods like Emotecraft, sway and particles all play at their real speed with no choppiness. The game runs faster or slower than normal until you stop.
+- **Settings > Capture**: size (the preview's size on screen, 2× or 4×), frame rate (120 by default, or 60 or 30), spin while recording (off, slow or fast), and a button to open the captures folder.
+- The preview moves smoothly between game ticks, so walking and emotes no longer step 20 times a second.
+
 ## 0.4.6 (dev build)
 
 - Recordings have no link to real time or your frame rate: every frame the game draws is the next frame of the clip, one exact step after the last, with no waiting to match real time and no jumping to catch up. The only pause is while saving catches up.
