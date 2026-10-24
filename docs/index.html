@@ -176,8 +176,8 @@
   .strip { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: clamp(200px, 23vw, 400px); background: var(--paper);
     clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%); }
   /* RAINIUM fills the white band: the whole page height, as thick as the band is wide at the top, cut off by the band's slope.
-     It's an SVG stretched to fit (see fitName below); the real heading stays for screen readers and phones. */
-  .strip svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+     It's an SVG sized by fitName below; the real heading stays for screen readers and phones. */
+  .strip svg { position: absolute; left: 0; top: 0; display: block; overflow: visible; }
   .strip text { font-family: "Archivo", system-ui, sans-serif; font-style: italic; font-weight: 900; font-stretch: 62%; font-size: 100px; fill: var(--ink); }
   .strip text.echo { fill: none; stroke: #9aa3c2; stroke-width: 2px; vector-effect: non-scaling-stroke; }
   .vname { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -929,24 +929,39 @@ function md(src) {
 </script>
 
 <script>
-/* ---------- Home: RAINIUM stretched to fill the white band ----------
-   The word is measured once the font is in, then the SVG's viewBox is set to its exact outline, so with
-   preserveAspectRatio="none" it fills the band edge to edge; the band's clip-path cuts it along the slope. */
+/* ---------- Home: RAINIUM running up the white band ----------
+   The word is measured once the font is in. It runs the full height of the page, and is only as thick as the band is
+   at its narrowest (the bottom), so the slope never cuts into it. It keeps its own proportions, give or take a little
+   squeeze lengthways when the page is very tall or very short. */
 (function fitName() {
   const svg = document.getElementById("sname");
   if (!svg) return;
+  const strip = svg.parentElement;
   const fit = () => {
     const text = svg.querySelector("text:not(.echo)");
     const box = text.getBBox();
-    if (!box.width) return;
+    const W = strip.clientWidth, H = strip.clientHeight;
+    if (!box.width || !W) return;
     const cs = getComputedStyle(text), ctx = document.createElement("canvas").getContext("2d");
     ctx.font = `${cs.fontStyle} ${cs.fontWeight} 100px ${cs.fontFamily}`;
     const m = ctx.measureText("RAINIUM");
     const A = m.actualBoundingBoxAscent || 72, D = m.actualBoundingBoxDescent || 0;
+    const pad = W * 0.05;
+    const room = W * 0.62 - 2 * pad;                  // the band's width at the bottom (see .strip's clip-path)
+    let len = H - 2 * pad;                            // length up the page
+    let thick = len * (A + D) / box.width;            // thickness at the word's own proportions
+    if (thick > room) {                               // too thick for the band: make it as thick as the band allows,
+      thick = room;                                   // and only as long as that thickness suits (stretched lengthways
+      len = Math.min(len, thick * box.width / (A + D) * 1.12);  // by at most 12%), so it ends short of the top
+    }
     // rotate(-90): the word's length runs up the page, its letter height across the band
     svg.setAttribute("viewBox", `${-A} ${-(box.x + box.width)} ${A + D} ${box.width}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.style.left = pad + "px"; svg.style.top = (H - pad - len) + "px";
+    svg.style.width = thick + "px"; svg.style.height = len + "px";
   };
   fit();
+  addEventListener("resize", fit);
   if (document.fonts) document.fonts.ready.then(fit);
 })();
 </script>
