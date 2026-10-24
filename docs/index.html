@@ -179,7 +179,7 @@
     font-size: clamp(8rem, 23vh, 15rem); color: var(--ink); line-height: 0.78; pointer-events: none; }
   .vname .echo { position: absolute; inset: 0; transform: translate(0.08em, -0.06em); color: transparent; -webkit-text-stroke: 2px #9aa3c2; z-index: -1; }
 
-  .hero { position: absolute; z-index: 1; left: 9vw; top: 0; bottom: 0; width: 40vw; }
+  .hero { position: absolute; z-index: 4; left: 1vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
   .hero .ph { width: 100%; height: 100%; aspect-ratio: auto; clip-path: polygon(14% 0, 100% 0, 78% 100%, 0 100%); outline-offset: -10px;
     background: repeating-linear-gradient(-50deg, rgba(255,255,255,0.1) 0 2px, transparent 2px 16px), rgba(255,255,255,0.12); }
   .hero .ph span { font-size: 1.15rem; }
@@ -219,13 +219,8 @@
   .flash.off { opacity: 0; transition: opacity 0.4s ease-out; }
   /* The pan off to the home page */
   .intro.panning { transform: translateX(-104%); transition: transform 0.8s cubic-bezier(.7,0,.2,1); pointer-events: none; }
-  .shard { position: absolute; z-index: 3; pointer-events: none; }
-  .shard.s1 { left: 34vw; top: 24vh; width: 34px; height: 18px; background: var(--pink); clip-path: polygon(0 40%, 100% 0, 70% 100%); }
-  .shard.s2 { left: 29vw; top: 70vh; width: 52px; height: 26px; background: var(--paper); clip-path: polygon(0 0, 100% 50%, 20% 100%); }
-  .shard.s3 { left: 14vw; top: 46vh; width: 40px; height: 22px; background: #7a4dff; clip-path: polygon(0 100%, 60% 0, 100% 70%); }
-  .shard.s4 { left: 38vw; top: 82vh; width: 26px; height: 26px; background: var(--pink); clip-path: polygon(50% 0, 100% 100%, 0 70%); }
 
-  .wallet { position: absolute; z-index: 4; left: clamp(70px, 7vw, 120px); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
+  .wallet { position: absolute; z-index: 5; left: clamp(70px, 7vw, 120px); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
     padding: 6px 18px 6px 12px; min-width: 170px; text-decoration: none; }
   .wallet b { display: block; font-weight: 600; font-stretch: 90%; font-size: 1.7rem; line-height: 1; letter-spacing: -0.01em; }
   .wallet span { font-style: italic; font-size: 0.72rem; font-weight: 600; }
@@ -435,7 +430,7 @@
     .bigver { font-size: 26vw; }
 
     .home { position: relative; inset: auto; min-height: 100%; display: flex; flex-direction: column; padding: 112px 16px 32px; }
-    .strip, .shard, .chips, .command { display: none; }
+    .strip, .chips, .command { display: none; }
     .vname { position: relative; left: auto; bottom: auto; writing-mode: horizontal-tb; transform: none; font-size: 24vw; color: var(--paper); text-shadow: 5px 5px 0 var(--ink); order: 1; }
     .vname .echo { display: none; }
     .wallet { left: 16px; top: 20px; }
@@ -493,7 +488,6 @@
       <div class="hero-model" id="heroModel" role="img" aria-label="A player wearing the Gold halo, swaying gently"><img class="b" alt=""><img class="f" alt=""></div>
       <figure class="ph" data-img="img/hero.png"><span>Your character art: a player wearing Rainium cosmetics, cut out on a transparent background</span><code>docs/img/hero.png</code></figure>
     </div>
-    <i class="shard s1" aria-hidden="true"></i><i class="shard s2" aria-hidden="true"></i><i class="shard s3" aria-hidden="true"></i><i class="shard s4" aria-hidden="true"></i>
 
     <a class="wallet" href="#updates"><b id="walletVer">0.4.0</b><span>latest version</span><i class="new" id="walletNew" hidden>New!</i></a>
 
