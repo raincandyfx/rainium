@@ -183,7 +183,7 @@
   .vname { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   .hero { position: absolute; z-index: 4; left: -2vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
-  .hero .ph { width: 100%; height: 100%; aspect-ratio: auto; clip-path: polygon(14% 0, 100% 0, 78% 100%, 0 100%); outline-offset: -10px;
+  .hero .ph { position: absolute; left: 30%; right: 12%; top: 14%; bottom: 16%; width: auto; height: auto; aspect-ratio: auto; clip-path: polygon(14% 0, 100% 0, 78% 100%, 0 100%); outline-offset: -10px;
     background: repeating-linear-gradient(-50deg, rgba(255,255,255,0.1) 0 2px, transparent 2px 16px), rgba(255,255,255,0.12); }
   .hero .ph span { font-size: 1.15rem; }
   .hero .ph.has { clip-path: none; }
@@ -485,7 +485,7 @@
       <div class="hero-model" id="heroModel" role="img" aria-label="A player wearing Rainium cosmetics"><div class="stage"><img class="b" alt=""><img class="f" alt=""></div></div>
       <button class="hero-nav prev" id="heroPrev" type="button" aria-label="Previous character" hidden></button>
       <button class="hero-nav next" id="heroNext" type="button" aria-label="Next character" hidden></button>
-      <figure class="ph" data-img="img/hero.png"><span>Your character art: a player wearing Rainium cosmetics, cut out on a transparent background</span><code>docs/img/hero.png</code></figure>
+      <figure class="ph" data-img="img/hero.png"><span>Character recording</span><code>docs/hero/</code></figure>
     </div>
 
     <a class="wallet" href="#updates"><b id="walletVer">0.4.0</b><span>latest version</span><i class="new" id="walletNew" hidden>New!</i></a>
@@ -966,9 +966,9 @@ function md(src) {
    If video or WebGL isn't available, 00–31.webp cross-fade instead, also ping-pong.
    w/h: the clip's size (as printed by make_clip.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
    A visitor gets a random one; the arrows step through the rest. */
+// Empty for now: new recordings are being made in game. Until then the picture placeholder shows.
+// Example entry: { id: "sway", w: 682, h: 960, label: "A player wearing the Gold halo, swaying gently" },
 const CLIPS = [
-  { id: "sway", w: 682, h: 960, label: "A player wearing the Gold halo, swaying gently" },
-  { id: "ronova", w: 704, h: 1322, label: "A player with dark red wings, standing idle", k: 0.82, x: 0.47, y: 0.5 },
 ];
 window.startHero = (function () {
   let started = false;
@@ -1099,7 +1099,7 @@ window.startHero = (function () {
   }
 
   return function startHero() {
-    if (started) return;
+    if (started || !CLIPS.length) return;
     started = true;
     host = document.getElementById("heroModel"); hero = document.getElementById("hero");
     stage = host.querySelector(".stage"); back = host.querySelector(".b"); front = host.querySelector(".f");
