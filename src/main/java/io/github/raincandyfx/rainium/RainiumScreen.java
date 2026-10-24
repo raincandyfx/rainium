@@ -71,6 +71,10 @@ public final class RainiumScreen extends Screen {
 
     // preview camera: yaw 0 = facing you, 180 = back view
     private float previewYaw = 160f, previewPitch = -8f, previewZoom = 1f;
+    // pictures and recordings
+    private static volatile String captureDone;   // set when saving finishes: file/folder name, or "!error"
+    private static boolean captureWasRecording;
+    private float spinFrom;
     private boolean dragging;
 
     // import state (Add tab)
@@ -135,6 +139,8 @@ public final class RainiumScreen extends Screen {
 
     private void close() {
         commitEdit();
+        Recorder.stop();
+        Recorder.cancel();
         Minecraft.getInstance().gui.setScreen(parent);
     }
 
@@ -152,6 +158,13 @@ public final class RainiumScreen extends Screen {
         super.extractRenderState(g, mx, my, pt);
         hits.clear();
         tipCandidate = null;
+        String cap = captureDone;
+        if (cap != null) {
+            captureDone = null;
+            if (cap.startsWith("!")) say(Lang.t("msg.capture_failed", cap.substring(1)), DANGER);
+            else if (captureWasRecording) say(Lang.t("msg.recording_saved", Recorder.framesWritten(), "captures/" + cap + "/"), ACCENT);
+            else say(Lang.t("msg.picture_saved", "captures/" + cap), ACCENT);
+        }
         if (!updateAnnounced && Updater.state() == Updater.State.READY) {
             updateAnnounced = true;
             say(Lang.t("update.ready", Updater.detail()), ACCENT);
@@ -1107,6 +1120,20 @@ public final class RainiumScreen extends Screen {
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.reload_disk"), () -> { assets.reload(); refreshFiles(true); say(Lang.t(assets.lastError() == null ? "msg.reloaded" : "msg.reloaded_problem"), assets.lastError() == null ? MUTED : DANGER); });
         y = wrapped(g, x, y + 2, w, Privacy.redact(assets.dir().toString()), FAINT);
 
+        y = section(g, x, y + 4, w, "capture");
+        y = cycle(g, mx, my, x, y, w, "capture_size", Lang.t("value.capture_size." + c.captureSize), d -> {
+            int[] o = {1, 2, 4};
+            int i = c.captureSize >= 4 ? 2 : c.captureSize >= 2 ? 1 : 0;
+            c.captureSize = o[Math.floorMod(i + d, 3)];
+            save();
+        });
+        y = cycle(g, mx, my, x, y, w, "capture_fps", Lang.t("value.capture_fps", c.captureFps), d -> { c.captureFps = c.captureFps == 60 ? 30 : 60; save(); });
+        y = cycle(g, mx, my, x, y, w, "capture_spin", Lang.t("value.capture_spin." + c.captureSpin), d -> { c.captureSpin = Math.floorMod(c.captureSpin + d, 3); save(); });
+        y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.open_captures"), () -> {
+            try { java.nio.file.Files.createDirectories(capturesDir()); } catch (Exception ignored) {}
+            assets.openFolder(capturesDir());
+        });
+
         y = section(g, x, y + 4, w, "privacy");
         String pm = Lang.t("value.privacy." + c.privacyMode.name().toLowerCase(Locale.ROOT));
         y = cycle(g, mx, my, x, y, w, "name_in_paths", pm, d -> { c.privacyMode = cyc(Privacy.Mode.values(), c.privacyMode, d); Privacy.mode = c.privacyMode; save(); });
@@ -1158,6 +1185,9 @@ public final class RainiumScreen extends Screen {
                 st.shadowPieces.clear();
                 st.outlineColor = 0;
                 float bbh = 1.8f;
+                int spin = assets.editable().captureSpin;
+                if (Recorder.mode() == Recorder.Mode.RECORDING && spin > 0)   // one turn every 12 s (slow) or 6 s (fast)
+                    previewYaw = ((spinFrom + Recorder.seconds(System.nanoTime()) * (spin == 1 ? 30f : 60f)) % 360f + 360f) % 360f;
                 if (st instanceof LivingEntityRenderState ls) {
                     ls.bodyRot = 180f + previewYaw;
                     ls.yRot = 0f;
@@ -1172,11 +1202,14 @@ public final class RainiumScreen extends Screen {
                 Quaternionf cam = new Quaternionf().rotateX(previewPitch * 0.017453292f);
                 Quaternionf rot = new Quaternionf().rotateZ((float) Math.PI).mul(cam);
                 Vector3f offset = new Vector3f(0f, bbh / 2f + 0.0625f, 0f);
-                g.entity(st, size, offset, rot, cam, x, y, x + w, y + h - 18);
+                Recorder.Submit sub = Recorder.submit;
+                if (sub != null && Recorder.capturing()) sub.submit(g, st, size, offset, rot, cam, x, y, x + w, y + h - 18, Recorder.sizeFactor());
+                else g.entity(st, size, offset, rot, cam, x, y, x + w, y + h - 18);
             } catch (Throwable t) {
                 g.text(font, Lang.t("preview.unavailable"), x + 6, y + 6, DANGER, false);
             }
         }
+        if (player != null && Recorder.submit != null) captureChips(g, mx, my, x, y, w);
         // camera chips
         String[] views = {Lang.t("preview.front"), Lang.t("preview.side"), Lang.t("preview.back")};
         float[] yaws = {0f, 90f, 180f};
@@ -1200,6 +1233,67 @@ public final class RainiumScreen extends Screen {
             final float ty = yaws[i];
             hits.add(new Hit(cx, cy, vw, 12, () -> { previewYaw = ty; previewPitch = -8f; }, null));
             cx += vw + GAP;
+        }
+    }
+
+    /** Picture / Rec buttons in the preview's top-right corner; while recording, Stop with the time. */
+    private void captureChips(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
+        int cy = y + 4, right = x + w - 4;
+        if (Recorder.mode() == Recorder.Mode.RECORDING) {
+            float sec = Recorder.seconds(System.nanoTime());
+            String t = Lang.t("preview.stop", String.format(Locale.ROOT, "%d:%02d", (int) sec / 60, (int) sec % 60));
+            int cw = font.width(Component.literal(t)) + 10, cx = right - cw;
+            boolean hov = in(mx, my, cx, cy, cw, 12);
+            g.fill(cx, cy, cx + cw, cy + 12, hov ? 0xFFB0304E : 0xE0901E3C);
+            g.text(font, t, cx + 5, cy + 2, TEXT, false);
+            hits.add(new Hit(cx, cy, cw, 12, Recorder::stop, null));
+            if (Recorder.framesDropped() > 0) {
+                String d = fit(Lang.t("preview.dropping"), w - cw - 16);
+                g.text(font, d, cx - 6 - font.width(Component.literal(d)), cy + 2, WARN, false);
+            }
+            return;
+        }
+        if (Recorder.capturing()) return;   // a picture is being taken this frame
+        if (Recorder.pending() > 0) {       // still saving a recording
+            String sv = Lang.t("preview.saving", Recorder.framesWritten());
+            g.text(font, sv, right - font.width(Component.literal(sv)), cy + 2, MUTED, false);
+            return;
+        }
+        String[] labels = {Lang.t("preview.picture"), Lang.t("preview.record")};
+        String[] tips = {"picture", "record"};
+        Runnable[] acts = {this::takePicture, this::startRecording};
+        int cx = right;
+        for (int i = labels.length - 1; i >= 0; i--) {
+            int cw = font.width(Component.literal(labels[i])) + 10;
+            cx -= cw;
+            boolean hov = in(mx, my, cx, cy, cw, 12);
+            g.fill(cx, cy, cx + cw, cy + 12, hov ? FIELD_HOVER : 0x99081038);
+            g.text(font, labels[i], cx + 5, cy + 2, i == 1 ? DANGER : TEXT, false);
+            tip(mx, my, cx, cy, cw, 12, tips[i]);
+            hits.add(new Hit(cx, cy, cw, 12, acts[i], null));
+            cx -= GAP;
+        }
+    }
+
+    private java.nio.file.Path capturesDir() { return assets.dir().resolve("captures"); }
+
+    private void takePicture() {
+        try {
+            captureWasRecording = false;
+            Recorder.picture(capturesDir(), assets.editable().captureSize, m -> captureDone = m);
+        } catch (Exception e) {
+            say(Lang.t("msg.capture_failed", String.valueOf(e.getMessage())), DANGER);
+        }
+    }
+
+    private void startRecording() {
+        try {
+            captureWasRecording = true;
+            spinFrom = previewYaw;
+            LayerConfig c = assets.editable();
+            Recorder.start(capturesDir(), c.captureSize, c.captureFps, System.nanoTime(), m -> captureDone = m);
+        } catch (Exception e) {
+            say(Lang.t("msg.capture_failed", String.valueOf(e.getMessage())), DANGER);
         }
     }
 

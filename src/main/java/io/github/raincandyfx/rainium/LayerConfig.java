@@ -226,6 +226,9 @@ final class LayerConfig {
     String privacyName = "";
     boolean autoUpdate = true;                         // check GitHub for updates once per launch
     boolean devUpdates = false;                        // also install dev builds (x.y.1+ pre-releases)
+    int captureSize = 2;                               // pictures/recordings: times the screen's resolution (1, 2 or 4)
+    int captureFps = 30;                               // recording frame rate (30 or 60)
+    int captureSpin = 0;                               // turn the preview while recording: 0 off, 1 slow, 2 fast
     final Physics physics = new Physics();
     final List<Layer> layers = new ArrayList<>();
     final Map<String, Folder> folders = new java.util.LinkedHashMap<>();
@@ -333,6 +336,11 @@ final class LayerConfig {
         if (m.get("armor_stands") instanceof Map<?, ?> am) {
             if (am.get("enabled") instanceof Boolean b) c.armorStands = b;
             if (am.get("name") instanceof String n) c.armorStandName = n;
+        }
+        if (m.get("capture") instanceof Map<?, ?> cm) {
+            if (cm.get("size") instanceof Number n) c.captureSize = n.intValue() >= 4 ? 4 : n.intValue() >= 2 ? 2 : 1;
+            if (cm.get("fps") instanceof Number n) c.captureFps = n.intValue() >= 60 ? 60 : 30;
+            if (cm.get("spin") instanceof Number n) c.captureSpin = Math.max(0, Math.min(2, n.intValue()));
         }
         if (m.get("updates") instanceof Map<?, ?> um) {
             if (um.get("automatic") instanceof Boolean b) c.autoUpdate = b;
@@ -509,6 +517,11 @@ final class LayerConfig {
         up.put("automatic", autoUpdate);
         up.put("dev_builds", devUpdates);
         m.put("updates", up);
+        Map<String, Object> cap = new java.util.LinkedHashMap<>();
+        cap.put("size", captureSize);
+        cap.put("fps", captureFps);
+        cap.put("spin", captureSpin);
+        m.put("capture", cap);
         Map<String, Object> p = new java.util.LinkedHashMap<>();
         p.put("stiffness", physics.stiffness); p.put("damping", physics.damping);
         p.put("lag", physics.lag); p.put("max_lag", physics.maxLag);

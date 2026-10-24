@@ -531,7 +531,10 @@ final class Assets {
     }
 
     /** Open the folder in the system file manager (JDK only; works on Windows, macOS and Linux desktops). */
-    void openFolder() {
+    void openFolder() { openFolder(dir); }
+
+    /** Open a folder in the system file manager. */
+    void openFolder(Path dir) {
         String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
         String[] cmd = os.contains("win") ? new String[]{"explorer", dir.toString()}
             : os.contains("mac") ? new String[]{"open", dir.toString()}

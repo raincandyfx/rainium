@@ -16,6 +16,9 @@ IN-GAME EDITOR: press K (rebindable under Controls > Rainium), run /rainium, or 
                 (checked once per launch from the mod's GitHub releases), and privacy:
                 folder paths shown in the editor replace your computer's account name with
                 your in-game name (default), a custom name, or ~. Log files always use ~.
+  Preview:      drag to turn it, scroll to zoom. "Picture" saves a transparent PNG and "Rec"
+                records numbered transparent PNG frames, both into captures/ (size, frame
+                rate and spin are under Settings > Capture).
   Click a layer's or folder's name to rename it; click any number (size, position, angle,
   opacity, motion...) to type an exact value. Enter saves, Esc cancels. Undo/Redo are in
   the top bar (also Ctrl+Z / Ctrl+Y). Hover a setting's name for a short explanation.

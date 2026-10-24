@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.4.1 (dev build)
+
+- **Pictures and recordings**: the preview has **Picture** and **● Rec** buttons. Pictures are PNGs with a transparent background; recordings are numbered transparent PNG frames that video editors import as one clip. Both are saved in `config/rainium/captures`.
+- **Settings > Capture**: size (screen, 2× or 4×), frame rate (30 or 60 fps), spin while recording (off, slow or fast), and a button to open the captures folder.
+
 ## 0.4.0
 
 Everything from the 0.3.1 to 0.3.8 dev builds:

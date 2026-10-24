@@ -25,6 +25,11 @@ public final class RainiumClient implements ClientModInitializer {
     public void onInitializeClient() {
         ASSETS.init();
         Updater.checkAsync(ASSETS.editable().autoUpdate, ASSETS.editable().devUpdates);
+        try {
+            CaptureRenderer.register();
+        } catch (Throwable t) {   // pictures and recordings are optional; never stop the mod loading
+            Assets.LOG.warn("[rainium] pictures and recordings are unavailable: " + t);
+        }
 
         LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, ctx) -> {
             if (renderer instanceof AvatarRenderer<?> avatar) {

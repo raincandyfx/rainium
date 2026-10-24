@@ -84,6 +84,21 @@ Besides models, a layer can be a **particle emitter**. On the **Add** tab, start
 
 You can add a preset again at any time from the **Add** tab, and **Reset to preset** puts a part back the way it came.
 
+## Pictures and recordings
+
+The preview in the editor has two buttons in its top corner:
+
+- **Picture** saves a PNG of your player and cosmetics with a transparent background.
+- **● Rec** records the preview until you click **Stop**, as numbered PNG frames with a transparent background (`frame_00001.png`, `frame_00002.png` ...).
+
+Both land in `config/rainium/captures` (**Settings > Capture > Open captures folder**). What you see is what you get: set up the angle and zoom first. In **Settings > Capture** you can choose the size (the preview's size on screen, 2× or 4×), the frame rate (30 or 60) and a slow or fast spin while recording.
+
+Video editors such as DaVinci Resolve, Premiere, After Effects, CapCut and Blender import a folder of frames as one clip with transparency (choose "image sequence" and the same frame rate). To turn the frames into a single video file with transparency, [ffmpeg](https://ffmpeg.org) can do it from inside the folder:
+
+```
+ffmpeg -framerate 30 -i frame_%05d.png -c:v libvpx-vp9 -pix_fmt yuva420p clip.webm
+```
+
 ## Sharing a look
 
 Open a folder in the layer list and click **Export as zip**. The zip lands in `config/rainium/exports`, with the models and textures it uses. Send it to a friend; they put it in their `config/rainium` folder and add it from **Add > Shared sets**. Your **Shown on** choices (and any names in them) stay with you, not in the zip.
