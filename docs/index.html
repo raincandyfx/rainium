@@ -964,16 +964,17 @@ function md(src) {
    clip.mp4 / clip.webm play a looping stretch of the recording in real time, with the picture in the
    top half and its transparency in the bottom half (so it works in every browser); WebGL puts them back together.
    If video or WebGL isn't available, 00–31.webp cross-fade instead.
-   w/h: the clip's size (as printed by make_clip.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
+   w/h: the clip's size (as printed by make_loop.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
    A visitor gets a random one; the arrows step through the rest. */
 const CLIPS = [
-  { id: "halo", w: 832, h: 1162, k: 0.75, label: "A player wearing the Gold halo" },
-  { id: "wings", w: 748, h: 1326, k: 0.75, label: "A player with dark red wings" },
-  { id: "pod", w: 910, h: 1226, k: 0.68, y: 0.48, label: "A player with a floating robot pod" },
-  { id: "spear", w: 1104, h: 1058, k: 0.85, label: "A player holding a long red spear" },
-  { id: "doll", w: 1266, h: 1450, k: 0.62, label: "A player with a small doll sitting on their head" },
+  { id: "halo", w: 832, h: 1162, k: 0.75, s: 0.25, label: "A player wearing the Gold halo" },
+  { id: "wings", w: 748, h: 1326, k: 0.75, s: 0.25, label: "A player with dark red wings" },
+  { id: "pod", w: 910, h: 1226, k: 0.68, y: 0.48, s: 0.25, label: "A player with a floating robot pod" },
+  { id: "spear", w: 992, h: 1054, k: 0.85, t: 3.2, label: "A player holding a long red spear" },
+  { id: "doll", w: 1000, h: 1140, k: 0.79, t: 10.3, label: "A player with a small doll sitting on their head" },
 ];
-const SPEED = 0.25;   // playback speed of the character clips (1 = as recorded)
+// s: playback speed (1 = as recorded, the default). The older 120 fps recordings look too fast, so they play at a
+// quarter speed until they're re-recorded. t: loop length in seconds (default 8), for pacing the still-picture fallback.
 window.startHero = (function () {
   let started = false;
   const onHome = () => document.body.dataset.page === "home" && !document.hidden;
@@ -1019,9 +1020,7 @@ window.startHero = (function () {
     video = document.createElement("video");
     video.muted = true; video.loop = true; video.playsInline = true; video.preload = "auto";
     video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
-    // The recordings look faster than the game, so they play at a quarter speed for now (each frame is held 4× longer)
-    video.defaultPlaybackRate = SPEED; video.playbackRate = SPEED;
-    video.addEventListener("loadedmetadata", () => { video.playbackRate = SPEED; });
+    video.addEventListener("loadedmetadata", () => { video.playbackRate = CLIPS[cur].s || 1; });
     const draw = () => {
       if (video.readyState < 2) return;
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
@@ -1048,7 +1047,7 @@ window.startHero = (function () {
 
   // Still pictures, cross-faded in a loop
   function stills(c) {
-    const N = 32, STEP = 250 / SPEED, token = {};
+    const N = 32, STEP = (c.t || 8) * 1000 / N / (c.s || 1), token = {};
     fb = token;
     const order = [...Array(N).keys()]; // the clips loop, so the stills do too
     const frames = [];
@@ -1082,6 +1081,7 @@ window.startHero = (function () {
     fb = null;
     if (mode === "video") {
       canvas.width = c.w; canvas.height = c.h; gl.viewport(0, 0, c.w, c.h);
+      video.defaultPlaybackRate = c.s || 1;
       video.src = `hero/${c.id}/clip.${mp4() ? "mp4" : "webm"}`;
       video.load();
     } else {
