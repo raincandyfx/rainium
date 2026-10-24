@@ -187,7 +187,8 @@
   .hero .ph.has img { object-fit: contain; object-position: center bottom; }
   /* Live 3D player (skinview3d). When it loads, it replaces the picture slot. */
   .hero-model { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; }
-  .hero-model canvas { display: block; width: 100% !important; height: 100% !important; }
+  .hero-model img { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; transform: translate(-50%, -50%); }
+  .hero-model .f { opacity: 0; }
   .hero.has-model .hero-model { opacity: 1; }
   .hero.has-model .ph { display: none; }
 
@@ -487,7 +488,7 @@
     <p class="tagline-m" hidden>Wear any model in Minecraft.</p>
 
     <div class="hero" id="hero">
-      <div class="hero-model" id="heroModel" aria-label="3D player wearing the Gold halo" role="img"></div>
+      <div class="hero-model" id="heroModel" role="img" aria-label="A player wearing the Gold halo, swaying gently"><img class="b" alt=""><img class="f" alt=""></div>
       <figure class="ph" data-img="img/hero.png"><span>Your character art: a player wearing Rainium cosmetics, cut out on a transparent background</span><code>docs/img/hero.png</code></figure>
     </div>
     <i class="shard s1" aria-hidden="true"></i><i class="shard s2" aria-hidden="true"></i><i class="shard s3" aria-hidden="true"></i><i class="shard s4" aria-hidden="true"></i>
@@ -793,7 +794,7 @@ document.addEventListener("keydown", (e) => {
 addEventListener("hashchange", go);
 go();
 // If the 3D libraries can't load, don't leave visitors on the intro screen
-setTimeout(() => { if (!window.__introReady) document.documentElement.classList.remove("intro-on"); }, 9000);
+setTimeout(() => { if (!window.__introReady) { document.documentElement.classList.remove("intro-on"); window.startHero && window.startHero(); } }, 9000);
 
 /* ---------- Questions: pick a line, read the answer ---------- */
 choices.forEach((b, i) => {
@@ -939,8 +940,52 @@ function md(src) {
 </script>
 
 <script>
+/* ---------- Home: the player and halo, rendered in game, as a looping image sequence ----------
+   33 frames from docs/hero/, blended into one another so the idle sway runs smoothly. */
+window.startHero = (function () {
+  let started = false;
+  return function startHero() {
+    if (started) return;
+    started = true;
+    const host = document.getElementById("heroModel"), hero = document.getElementById("hero");
+    const back = host.querySelector(".b"), front = host.querySelector(".f");
+    const N = 33, STEP = 240;                       // about 8 seconds per loop, like the capture
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const src = (i) => "hero/" + String(i).padStart(2, "0") + ".webp";
+    const frames = [];
+    let ready = 0;
+    for (let i = 0; i < N; i++) {
+      const im = new Image();
+      im.onload = () => { ready++; if (i === 0) { back.src = im.src; hero.classList.add("has-model"); } };
+      im.src = src(i);
+      frames.push(im);
+    }
+    if (still) return;
+    let i = 0, t0 = 0, last = 0;
+    const loaded = (k) => frames[k].complete && frames[k].naturalWidth > 0;
+    function tick(now) {
+      requestAnimationFrame(tick);
+      if (document.body.dataset.page !== "home" || document.hidden) { t0 = 0; return; }
+      const next = (i + 1) % N;
+      if (!loaded(i) || !loaded(next)) return;
+      if (!t0) { t0 = now; back.src = frames[i].src; front.src = frames[next].src; }
+      const u = (now - t0) / STEP;
+      if (u >= 1) {
+        i = next; t0 = now;
+        back.src = frames[i].src; front.src = frames[(i + 1) % N].src; front.style.opacity = 0;
+        return;
+      }
+      front.style.opacity = u;
+    }
+    requestAnimationFrame(tick);
+  };
+})();
+// With no intro to wait for, start straight away
+if (!document.documentElement.classList.contains("intro-on")) window.startHero();
+</script>
+<script>
   // If the 3D libraries fail to download, open the site straight away instead of waiting on the intro
-  window.__libFail = () => document.documentElement.classList.remove("intro-on");
+  window.__libFail = () => { document.documentElement.classList.remove("intro-on"); window.startHero(); };
 </script>
 <script type="module">
 /* ---------- Players: skinview3d (MIT) on three.js, wearing Rainium's own Gold halo files ---------- */
@@ -953,7 +998,7 @@ const html = document.documentElement;
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const SKIN_BEFORE = "skins/skin-1.png";   // shown on the intro screen
 const SKIN_AFTER = "skins/skin-2.png";    // after the click, and on the home page
-let introViewer = null, heroViewer = null;
+let introViewer = null;
 
 // A viewer on a canvas with a transparent background
 function makeViewer(host, zoom) {
@@ -985,64 +1030,12 @@ async function loadSkin(v, url, fallback) {
 const before = () => standInSkin("#0d1b5e", "#c9d8ff");
 const after = () => standInSkin("#eef1ff", "#48e6ff");
 
-// Rainium's Gold halo, read from its own mesh file (8 floats per vertex: x y z u v nx ny nz, quads).
-// Rainium space is blocks from the neck, +Y down, +Z behind; skinview3d is pixels, +Y up, facing +Z.
-let haloData = null;
-async function goldHalo() {
-  haloData ||= Promise.all([
-    fetch("models/gold-halo/halo.json").then((r) => { if (!r.ok) throw new Error("halo"); return r.json(); }),
-    new THREE.TextureLoader().loadAsync("models/gold-halo/halo.png"),
-  ]);
-  const [mesh, tex] = await haloData;
-  tex.flipY = false;                       // Rainium UVs start at the top-left
-  const group = new THREE.Group();
-  for (const [name, part] of Object.entries(mesh)) {
-    const v = part.v, q = part.q, n = v.length / 8;
-    const pos = new Float32Array(n * 3), uv = new Float32Array(n * 2), nor = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) {
-      const o = i * 8;
-      pos[i * 3] = v[o]; pos[i * 3 + 1] = -v[o + 1]; pos[i * 3 + 2] = -v[o + 2];
-      uv[i * 2] = v[o + 3]; uv[i * 2 + 1] = v[o + 4];
-      nor[i * 3] = v[o + 5]; nor[i * 3 + 1] = -v[o + 6]; nor[i * 3 + 2] = -v[o + 7];
-    }
-    const idx = [];
-    for (let i = 0; i + 3 < q.length; i += 4) idx.push(q[i], q[i + 1], q[i + 2], q[i], q[i + 2], q[i + 3]);
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-    geo.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
-    geo.setIndex(idx);
-    // Same styles as the preset: cut-out, both sides; the rungs ignore lighting
-    const opts = { map: tex, alphaTest: 0.5, side: THREE.DoubleSide };
-    const mat = name.startsWith("rungs") ? new THREE.MeshBasicMaterial(opts) : new THREE.MeshStandardMaterial({ ...opts, roughness: 0.6, metalness: 0.2 });
-    group.add(new THREE.Mesh(geo, mat));
-  }
-  // Preset placement: anchored to the body without lean, 225% size, 0.1 blocks back
-  group.scale.setScalar(2.25 * 16);
-  group.position.z = -0.1 * 16;
-  return group;
-}
-
-/* ---------- Home: player with the second skin and the Gold halo ---------- */
-async function startHero() {
-  if (heroViewer) return;
-  heroViewer = makeViewer($("heroModel"), 0.52);
-  heroViewer.animation = new sv.IdleAnimation();
-  heroViewer.playerWrapper.rotation.y = 0.45;
-  await loadSkin(heroViewer, SKIN_AFTER, after());
-  try { heroViewer.playerObject.skin.add(await goldHalo()); } catch (e) {}
-  $("hero").classList.add("has-model");
-  // Only draw while the home page is showing
-  new MutationObserver(() => { heroViewer.renderPaused = document.body.dataset.page !== "home"; })
-    .observe(document.body, { attributes: true, attributeFilter: ["data-page"] });
-}
-
 /* ---------- Intro: one model, waiting; any click or key plays the change, then the site opens ---------- */
 function closeIntro() {
   html.classList.remove("intro-on");
   try { sessionStorage.setItem("rainium-intro", "1"); } catch (e) {}
   dispose(introViewer); introViewer = null;
-  startHero();
+  window.startHero();
 }
 // Camera "shots" for the intro, described by where the head sits on screen:
 // x, y = head centre as a fraction of the screen; size = head height as a fraction of screen height;
@@ -1118,7 +1111,7 @@ function runIntroSequence(v, intro) {
   at(MOVE + 1650, () => {
     html.classList.remove("intro-on");
     intro.classList.add("panning");
-    startHero();
+    window.startHero();
   });
   at(MOVE + 2550, () => { cancelAnimationFrame(raf); closeIntro(); intro.classList.remove("panning"); });
 }
@@ -1134,7 +1127,6 @@ async function runIntro() {
   hold();
   $("introModel").classList.add("ready");
   window.__introReady = true;
-  goldHalo().catch(() => {});            // load the halo now, so the home page has it ready
   intro.focus({ preventScroll: true });
 
   let started = false;
@@ -1159,11 +1151,11 @@ async function runIntro() {
 
 try {
   if (html.classList.contains("intro-on")) await runIntro();
-  else await startHero();
 } catch (e) {
   // No WebGL, or the libraries didn't load: open the site with the picture slot instead
   html.classList.remove("intro-on");
   dispose(introViewer);
+  window.startHero();
 }
 </script>
 </body>
