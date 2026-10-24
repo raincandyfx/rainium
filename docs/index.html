@@ -964,15 +964,15 @@ function md(src) {
    w/h: the clip's size (as printed by make_loop.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
    A visitor gets a random one; the arrows step through the rest. */
 const CLIPS = [
-  { id: "halo", w: 770, h: 1078, f: 1056, mid: 686, k: 0.928, t: 5.5, label: "A player wearing the Gold halo" },
+  { id: "halo", w: 770, h: 1078, f: 1056, mid: 686, k: 0.773, t: 5.5, label: "A player wearing the Gold halo" },
   { id: "wings", w: 662, h: 1142, f: 1127, k: 1.07, t: 6.4, label: "A player with dark red wings" },
   { id: "pod", w: 786, h: 1064, f: 1051, k: 0.896, t: 5.8, label: "A player with a floating robot pod" },
-  { id: "spear", w: 992, h: 1054, f: 944, k: 1.135, t: 3.2, label: "A player holding a long red spear" },
+  { id: "spear", w: 992, h: 1054, f: 944, k: 0.946, t: 3.2, label: "A player holding a long red spear" },
   { id: "doll", w: 1000, h: 1140, f: 1085, k: 0.868, t: 10.3, label: "A player with a small doll sitting on their head" },
 ];
 // f: the row the feet stand on (in the clip's pixels); every character's feet are lined up on the same line.
 // k: sizes each clip so the distance from the feet to the top of the head is the same for every character
-// (so heads line up too, even when the legs are bent); halo and spear are then at 0.9 of that. mid: instead of standing on the feet line, put this row
+// (so heads line up too, even when the legs are bent); halo and spear are then at 0.75 of that. mid: instead of standing on the feet line, put this row
 // (halfway between head and feet) halfway up the others.
 // The doll is the reference: from the top of its plush to its feet it is as tall as the menu (Features to Questions).
 // s: playback speed (1 = as recorded, the default). t: loop length in seconds (default 8), for pacing the still-picture fallback.
