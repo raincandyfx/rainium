@@ -174,15 +174,15 @@
   /* ============ HOME ============ */
   .home { position: absolute; inset: 0; overflow: hidden; }
   .strip { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: clamp(140px, 15vw, 270px); background: var(--paper);
-    clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%); }
-  /* RAINIUM fills the white band: the whole page height, as thick as the band is wide at the top, cut off by the band's slope.
+    clip-path: polygon(0 0, 62% 0, 100% 100%, 0 100%); }
+  /* RAINIUM fills the white band: the whole page height, as thick as the band is wide at the bottom, cut off by the band's slope.
      It's an SVG sized by fitName below; the real heading stays for screen readers and phones. */
   .strip svg { position: absolute; left: 0; top: 0; display: block; overflow: visible; }
   .strip text { font-family: "Archivo", system-ui, sans-serif; font-style: italic; font-weight: 900; font-stretch: 62%; font-size: 100px; fill: var(--ink); }
   .strip text.echo { fill: none; stroke: #9aa3c2; stroke-width: 2px; vector-effect: non-scaling-stroke; }
   .vname { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-  .hero { position: absolute; z-index: 4; left: 3vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
+  .hero { position: absolute; z-index: 4; left: -2vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
   .hero .ph { width: 100%; height: 100%; aspect-ratio: auto; clip-path: polygon(14% 0, 100% 0, 78% 100%, 0 100%); outline-offset: -10px;
     background: repeating-linear-gradient(-50deg, rgba(255,255,255,0.1) 0 2px, transparent 2px 16px), rgba(255,255,255,0.12); }
   .hero .ph span { font-size: 1.15rem; }
@@ -199,7 +199,7 @@
   /* Gallery arrows: step through the recorded characters, round and round */
   .hero-nav { position: absolute; z-index: 6; top: 91%; width: 44px; height: 58px; margin-top: -29px; padding: 0; border: 0; background: none;
     cursor: pointer; pointer-events: auto; transition: transform 0.15s; }
-  .hero-nav.prev { left: 27%; } .hero-nav.next { right: 33%; }
+  .hero-nav.prev { left: 33%; } .hero-nav.next { right: 30%; }
   .hero-nav::before, .hero-nav::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 0 50%, 100% 100%, 68% 50%); }
   .hero-nav::after { background: var(--menu); transition: background 0.15s; }
   .hero-nav::before { background: var(--ink); transform: translate(5px, 5px); }
@@ -930,8 +930,8 @@ function md(src) {
 
 <script>
 /* ---------- Home: RAINIUM running up the white band ----------
-   The word is measured once the font is in, then drawn as thick as the band is wide at the top and the full height of
-   the page, leaning halfway towards the band's slope; the slope cuts into it towards the bottom. */
+   The word is measured once the font is in, then drawn as thick as the band is wide at the bottom and the full height of
+   the page, upright; the band's slope cuts into it towards the top. */
 (function fitName() {
   const svg = document.getElementById("sname");
   if (!svg) return;
@@ -951,9 +951,6 @@ function md(src) {
     svg.setAttribute("preserveAspectRatio", "none");
     svg.style.left = pad + "px"; svg.style.top = pad + "px";
     svg.style.width = thick + "px"; svg.style.height = len + "px";
-    // lean it halfway between upright and the band's slope (the slope runs from 100% wide at the top to 62% at the bottom)
-    const lean = Math.atan(0.38 * W / H) / 2;
-    svg.style.transformOrigin = "50% 50%"; svg.style.transform = `rotate(${lean}rad)`;
   };
   fit();
   addEventListener("resize", fit);
