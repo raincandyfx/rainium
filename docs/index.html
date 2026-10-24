@@ -55,22 +55,32 @@
   .h { font-style: italic; font-weight: 800; font-stretch: 80%; font-size: 1.55rem; line-height: 1.05; text-transform: uppercase; }
   .muted { color: var(--haze); }
 
-  /* The selection look, after the game: black type over two wedges that almost cover it.
-     The larger wedge tints whatever is behind it red (the moving water still shows through).
-     The smaller one is solid white, and the type turns red inside it. */
+  /* The selection look, after the game: black type pierced by two wedges, points first.
+     The red wedge tints whatever is behind it (the moving water still shows through) and every so often beats.
+     The white wedge is solid, and the type turns red inside it. Both stab in when something is selected. */
   .pick { position: relative; z-index: 0; display: inline-block; padding: 0.04em 0.3em 0 0.2em; }
   .pick::before, .pick::after { content: ""; position: absolute; pointer-events: none; opacity: 0; }
-  .pick::before { inset: -30% -10% -26% -84%; z-index: -2; background: rgba(240, 22, 58, 0.38);
+  .pick::before { inset: -40%; z-index: -2; background: rgba(240, 22, 58, 0.58);
     -webkit-backdrop-filter: hue-rotate(150deg) saturate(1.9); backdrop-filter: hue-rotate(150deg) saturate(1.9);
-    clip-path: polygon(12% 64%, 97% 6%, 94% 95%); }
-  .pick::after { inset: 0; z-index: -1; background: var(--paper); box-shadow: 0 0 0 60vmax var(--paper);
-    clip-path: polygon(-40% 52%, 82% -6%, 70% 96%); }
-  .pick .r { position: absolute; inset: 0; z-index: 1; padding: inherit; color: var(--red); visibility: hidden; pointer-events: none; text-shadow: none;
-    clip-path: polygon(-40% 52%, 82% -6%, 70% 96%); }
+    clip-path: polygon(21% 12%, 24.5% 100%, 95.5% 59%); }
+  .pick::after { inset: 0; z-index: -1; background: var(--paper); box-shadow: 0 0 0 60vmax var(--paper); clip-path: polygon(-8% -30%, -2% 128%, 128% 50%); }
+  .pick .r { position: absolute; inset: 0; z-index: 1; padding: inherit; color: var(--red); visibility: hidden; pointer-events: none; text-shadow: none; clip-path: polygon(-8% -30%, -2% 128%, 128% 50%); }
   .pick.sel { color: var(--ink) !important; text-shadow: none !important; z-index: 2; }
   .pick.sel::before, .pick.sel::after { opacity: 1; }
   .pick.sel .r { visibility: visible; }
   .pick.sel:focus-visible { outline: none; }
+  .pick.sel::after, .pick.sel .r { animation: stabWhite 0.17s cubic-bezier(.2,.9,.3,1) both; }
+  .pick.sel::before { animation: stabRed 0.21s 0.03s cubic-bezier(.2,.9,.3,1) both; }
+  @keyframes stabWhite {
+    from { clip-path: polygon(-8% -30%, -2% 128%, -5% 49%); }
+    70% { clip-path: polygon(-8% -30%, -2% 128%, 138% 50%); }
+    to { clip-path: polygon(-8% -30%, -2% 128%, 128% 50%); }
+  }
+  @keyframes stabRed {
+    from { clip-path: polygon(21% 12%, 24.5% 100%, 23% 56%); }
+    70% { clip-path: polygon(21% 12%, 24.5% 100%, 100% 60%); }
+    to { clip-path: polygon(21% 12%, 24.5% 100%, 95.5% 59%); }
+  }
   #pg-download .pick::before { background: rgba(240, 22, 58, 0.85); }
 
   /* ============ Sea and moving water light ============ */
@@ -83,7 +93,7 @@
   .sea::after { opacity: 0; background: var(--mood, none); }
   body[data-page="particles"] .sea::after { --mood: radial-gradient(80% 60% at 70% 15%, #3a1f9a 0%, rgba(58,31,154,0) 60%), linear-gradient(180deg, #0d1048 0%, #050826 100%); opacity: 1; }
   body[data-page="models"] .sea::after { --mood: radial-gradient(100% 80% at 20% 0%, #c6f8ff 0%, rgba(198,248,255,0) 55%), linear-gradient(170deg, #48e6ff 0%, #22b8f0 45%, #1a7ee6 100%); opacity: 1; }
-  body[data-page="updates"] .sea::after, body[data-page="questions"] .sea::after { --mood: linear-gradient(175deg, #10237f 0%, #08144f 55%, #040a2e 100%); opacity: 1; }
+  body[data-page="updates"] .sea::after { --mood: linear-gradient(175deg, #10237f 0%, #08144f 55%, #040a2e 100%); opacity: 1; }
   .caustics { position: fixed; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen;
     -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.1) 100%);
             mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.1) 100%); }
@@ -656,6 +666,24 @@ document.querySelectorAll(".pick").forEach((el) => {
   r.className = "r"; r.setAttribute("aria-hidden", "true"); r.textContent = el.textContent;
   el.append(r);
 });
+// Every so often the red wedge beats: a quick swell and shrink, drifting a random way
+(function beatLoop() {
+  setTimeout(beatLoop, 900 + Math.random() * 1800);
+  if (still || !Element.prototype.animate) return;
+  document.querySelectorAll(".page.on .pick.sel").forEach((el) => {
+    if (Math.random() < 0.35) return;
+    const a = Math.random() * Math.PI * 2, d = 5 + Math.random() * 7;
+    const dx = Math.cos(a) * d, dy = Math.sin(a) * d * 0.6;
+    try {
+      el.animate([
+        { transform: "none" },
+        { transform: `translate(${dx}px, ${dy}px) scale(1.13)`, offset: 0.3 },
+        { transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.95)`, offset: 0.65 },
+        { transform: "none" },
+      ], { duration: 260, easing: "ease-out", pseudoElement: "::before" });
+    } catch (e) {}
+  });
+})();
 function select(a) {
   menuLinks.forEach((l) => l.classList.toggle("sel", l === a));
   $("say").textContent = a.dataset.say;
