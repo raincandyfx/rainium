@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rainium – wear any model in Minecraft</title>
-<meta name="description" content="Wear any OBJ, glTF or GLB model in Minecraft 26.3. Keep its materials, texture each part, make it glow, and show it on anyone you see. A client-side Fabric mod with an in-game editor.">
+<meta name="description" content="Wear any OBJ, glTF or GLB model in Minecraft 26.3. Keep its materials, texture each part, make it glow, and show it on anyone you see.">
 <meta name="theme-color" content="#1436c9">
 <meta property="og:title" content="Rainium">
 <meta property="og:description" content="Wear any model in Minecraft 26.3. Keep its materials, texture each part, make it glow, and show it on anyone you see.">
@@ -21,57 +21,58 @@
     --bright: #1f7cff;
     --surface: #4fd6ff;
     --cyan: #48e6ff;
-    --ink: #071046;
+    --menu: #8ff0ff;      /* unselected menu items */
+    --red: #f2163a;       /* selected item text */
+    --pink: #ff4f9a;      /* the shard behind a selection */
+    --ink: #050b33;
     --paper: #ffffff;
     --haze: #c9d8ff;
     --grey: #4b5785;
     --line: #d6def5;
-    --font: "Archivo", "Arial", sans-serif;
-    --t-sm: 0.875rem; --t-md: 1.0625rem; --t-lg: 1.3rem; --t-xl: 1.65rem; --t-2xl: 2.3rem;
-    --t-hero: clamp(3.4rem, 8vw, 7rem);
-    --gutter: clamp(16px, 4vw, 56px);
+    --font: "Archivo", "Arial Narrow", sans-serif;
+    --gutter: clamp(16px, 3.6vw, 56px);
+    --top: 88px;          /* room for the top bar */
+    --bottom: 92px;       /* room for the prompt bar */
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body {
-    margin: 0; overflow: hidden; color: var(--paper);
-    font: 400 var(--t-md)/1.6 var(--font);
+    margin: 0; overflow: hidden; color: var(--paper); background-color: var(--sea);
+    font: 400 1.0625rem/1.55 var(--font);
     -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
-    background-color: var(--sea);
   }
   a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1.5px; }
   :focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
   h1:focus { outline: none; }
-  code, kbd {
-    font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 0.84em;
-    background: rgba(7, 16, 70, 0.35); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; padding: 0.05em 0.4em;
-  }
-  kbd { border-bottom-width: 3px; }
-  p { margin: 0 0 0.9em; }
-  strong { font-weight: 700; }
+  code, kbd { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 0.84em;
+    background: rgba(5, 11, 51, 0.35); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; padding: 0.05em 0.4em; }
+  p { margin: 0; }
   h1, h2, h3 { margin: 0; font-weight: inherit; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  .d { font-style: italic; font-weight: 900; font-stretch: 118%; text-transform: uppercase; line-height: 0.88; letter-spacing: -0.02em; }
-  .h { font-style: italic; font-weight: 800; font-stretch: 108%; font-size: var(--t-xl); line-height: 1.08; letter-spacing: -0.01em; }
-  .lede { font-size: var(--t-lg); line-height: 1.5; font-weight: 500; max-width: 46ch; }
+  /* Display type: condensed, black, italic, like the game's menus */
+  .d { font-style: italic; font-weight: 900; font-stretch: 72%; text-transform: uppercase; line-height: 0.86; letter-spacing: -0.01em; }
+  .h { font-style: italic; font-weight: 800; font-stretch: 80%; font-size: 1.55rem; line-height: 1.05; text-transform: uppercase; }
   .muted { color: var(--haze); }
-  .small { font-size: var(--t-sm); }
 
-  /* ============ Sea: a different mood per page ============ */
-  .sea { position: fixed; inset: 0; z-index: 0; transition: opacity 0.5s; }
-  .sea::before { content: ""; position: absolute; inset: 0; transition: opacity 0.6s;
-    background:
-      radial-gradient(120% 85% at 12% -8%, var(--surface) 0%, rgba(79,214,255,0) 46%),
-      radial-gradient(90% 70% at 85% 10%, rgba(31,124,255,0.85) 0%, rgba(31,124,255,0) 60%),
-      linear-gradient(175deg, var(--bright) 0%, var(--sea) 42%, var(--deep) 100%); }
-  .sea::after { content: ""; position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; background: var(--mood, none); }
-  body[data-page="guide"] .sea::after { --mood: linear-gradient(170deg, #12a6d6 0%, #0b5bb8 45%, #062a6e 100%); opacity: 1; }
-  body[data-page="particles"] .sea::after { --mood: radial-gradient(90% 70% at 70% 20%, #2a1a8a 0%, rgba(42,26,138,0) 60%), linear-gradient(180deg, #0b0f3d 0%, #050826 100%); opacity: 1; }
-  body[data-page="models"] .sea::after { --mood: radial-gradient(100% 80% at 20% 0%, #b9f6ff 0%, rgba(185,246,255,0) 55%), linear-gradient(170deg, #48e6ff 0%, #22b8f0 45%, #1a7ee6 100%); opacity: 1; }
-  body[data-page="updates"] .sea::after { --mood: linear-gradient(175deg, #10237f 0%, #08144f 55%, #040a2e 100%); opacity: 1; }
+  /* The selection look: red type on a white slab, a pink shard behind */
+  .slab { position: relative; isolation: isolate; display: inline-block; color: var(--red); padding: 0.04em 0.34em 0 0.22em; }
+  .slab::before { content: ""; position: absolute; z-index: -1; inset: 0.06em -0.06em 0.02em 0;
+    background: var(--paper); clip-path: polygon(4% 8%, 100% 0, 96% 100%, 0 92%); filter: drop-shadow(4px 4px 0 var(--ink)); }
+  .slab::after { content: ""; position: absolute; z-index: -2; left: -0.42em; top: 46%; width: 1.3em; height: 0.36em;
+    background: var(--pink); clip-path: polygon(0 60%, 100% 0, 80% 100%); }
 
-  /* Live caustics from Paper Shaders, with a still texture until it loads (or if WebGL is missing) */
+  /* ============ Sea and moving water light ============ */
+  .sea { position: fixed; inset: 0; z-index: 0; }
+  .sea::before, .sea::after { content: ""; position: absolute; inset: 0; transition: opacity 0.6s; }
+  .sea::before { background:
+      radial-gradient(70% 55% at 62% -6%, #9ff4ff 0%, rgba(159,244,255,0) 60%),
+      radial-gradient(120% 85% at 20% -10%, var(--surface) 0%, rgba(79,214,255,0) 50%),
+      linear-gradient(178deg, var(--bright) 0%, var(--sea) 46%, var(--deep) 100%); }
+  .sea::after { opacity: 0; background: var(--mood, none); }
+  body[data-page="particles"] .sea::after { --mood: radial-gradient(80% 60% at 70% 15%, #3a1f9a 0%, rgba(58,31,154,0) 60%), linear-gradient(180deg, #0d1048 0%, #050826 100%); opacity: 1; }
+  body[data-page="models"] .sea::after { --mood: radial-gradient(100% 80% at 20% 0%, #c6f8ff 0%, rgba(198,248,255,0) 55%), linear-gradient(170deg, #48e6ff 0%, #22b8f0 45%, #1a7ee6 100%); opacity: 1; }
+  body[data-page="updates"] .sea::after, body[data-page="questions"] .sea::after { --mood: linear-gradient(175deg, #10237f 0%, #08144f 55%, #040a2e 100%); opacity: 1; }
   .caustics { position: fixed; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen;
     -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.1) 100%);
             mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.1) 100%); }
@@ -80,369 +81,304 @@
   .still-water { opacity: 0.18;
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1600'%3E%3Cfilter id='c' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.0042 0.0066' numOctaves='2' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 -3.4 0 0 0 1.05'/%3E%3C/filter%3E%3Crect width='1600' height='1600' filter='url(%23c)'/%3E%3C/svg%3E") center / cover no-repeat; }
   body.live-water .still-water { display: none; }
-  body[data-page="particles"] .caustics, body[data-page="download"] .caustics { opacity: 0.25; }
+  body[data-page="download"] .caustics, body[data-page="particles"] .caustics { opacity: 0.2; }
 
   /* ============ Wipe between pages ============ */
   .wipe { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
   .wipe i { position: absolute; top: -30%; bottom: -30%; left: -40%; width: 180%; transform: translateX(-130%) skewX(-18deg); }
-  .wipe i:nth-child(1) { background: var(--cyan); }
+  .wipe i:nth-child(1) { background: var(--pink); }
   .wipe i:nth-child(2) { background: var(--paper); }
-  .wipe i:nth-child(3) { background: var(--ink); }
+  .wipe i:nth-child(3) { background: var(--sea); }
   .wipe.run i { animation: wipe 0.7s cubic-bezier(.75,0,.25,1) both; }
   .wipe.run i:nth-child(2) { animation-delay: 0.06s; }
   .wipe.run i:nth-child(3) { animation-delay: 0.12s; }
   @keyframes wipe { 0% { transform: translateX(-130%) skewX(-18deg); } 46%, 56% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(130%) skewX(-18deg); } }
-  .page.on .slam { animation: slam 0.5s 0.05s cubic-bezier(.2,.9,.25,1.15) both; }
-  @keyframes slam { from { transform: translateX(-70px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .page.on .slam { animation: slam 0.45s 0.05s cubic-bezier(.2,.9,.25,1.2) both; }
+  @keyframes slam { from { transform: translateX(-60px) scale(1.1); opacity: 0; } to { transform: none; opacity: 1; } }
 
   /* ============ Pages ============ */
-  .page { position: fixed; inset: 0; z-index: 2; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; display: none;
-    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.4) transparent; }
+  .page { position: fixed; inset: 0; z-index: 2; display: none; overflow: hidden; }
   .page.on { display: block; }
-  .wrap { max-width: 1240px; margin: 0 auto; padding: 108px var(--gutter) 80px; }
+  .page.scroll { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.4) transparent; }
+  .fit { height: 100%; max-width: 1280px; margin: 0 auto; padding: var(--top) var(--gutter) var(--bottom); display: flex; flex-direction: column; justify-content: center; gap: clamp(14px, 3vh, 34px); }
+  .ptitle { font-size: clamp(2.8rem, 9vh, 5.4rem); align-self: flex-start; }
 
-  .topbar { position: fixed; z-index: 10; inset: 0 0 auto 0; height: 80px; display: flex; align-items: center; gap: 20px; padding: 0 var(--gutter); pointer-events: none; }
+  .topbar { position: fixed; z-index: 10; inset: 0 0 auto 0; height: 76px; display: flex; align-items: center; padding: 0 var(--gutter); pointer-events: none; }
   .topbar > * { pointer-events: auto; }
-  body[data-page="home"] .topbar { display: none; }
-  .back { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); background: var(--paper);
-    padding: 8px 22px 8px 16px; clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%); filter: drop-shadow(5px 5px 0 var(--ink));
-    font-style: italic; font-weight: 900; font-stretch: 112%; font-size: 1.15rem; text-transform: uppercase; line-height: 1; }
-  .back:hover { background: var(--cyan); }
-  .back svg { width: 13px; height: 13px; }
-  body[data-page="download"] .back, body[data-page="models"] .back { background: var(--ink); color: var(--paper); filter: drop-shadow(5px 5px 0 var(--sea)); }
-  .crumbs { margin-left: auto; display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-stretch: 80%;
-    font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase; }
-  .crumbs img { width: 30px; height: 30px; border: 2px solid var(--paper); transform: rotate(-6deg); }
+  body[data-page="home"] .topbar, body[data-page="home"] .prompts { display: none; }
+  .crumbs { display: flex; align-items: center; gap: 10px; text-decoration: none; font-style: italic; font-weight: 900; font-stretch: 72%; font-size: 1.5rem; text-transform: uppercase; }
+  .crumbs img { width: 34px; height: 34px; border: 2px solid var(--paper); transform: rotate(-6deg); box-shadow: 3px 3px 0 var(--ink); }
   body[data-page="download"] .crumbs, body[data-page="models"] .crumbs { color: var(--ink); }
 
-  .card { background: var(--paper); color: var(--ink); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-    filter: drop-shadow(8px 8px 0 rgba(7,16,70,0.55)); }
-  .card a { color: var(--sea); }
-  .card code, .card kbd { background: #eef2ff; border-color: var(--line); color: var(--ink); }
-  .card .muted { color: var(--grey); }
+  /* Bottom-right prompts, like the game's button hints */
+  .prompts { position: fixed; z-index: 10; right: 0; bottom: 22px; display: flex; flex-direction: column; align-items: flex-end; }
+  .prompts .line { width: min(560px, 60vw); height: 2px; background: currentColor; margin-bottom: 8px; }
+  .prompts nav { display: flex; gap: 22px; padding-right: var(--gutter); }
+  .prompts a { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-style: italic; font-weight: 800; font-stretch: 75%; font-size: 1.35rem; }
+  .prompts a:hover { color: var(--cyan); }
+  .key { display: inline-grid; place-items: center; min-width: 1.15em; height: 1.15em; padding: 0 0.2em; border-radius: 1em; background: var(--paper); color: var(--ink);
+    font-style: normal; font-weight: 800; font-stretch: 85%; font-size: 0.8em; line-height: 1; }
+  body[data-page="download"] .prompts, body[data-page="models"] .prompts { color: var(--ink); }
+  body[data-page="updates"] .prompts { left: 0; padding-top: 34px; bottom: 0; padding-bottom: 22px; background: linear-gradient(180deg, rgba(4,10,46,0) 0%, rgba(4,10,46,0.96) 45%); }
+  body[data-page="download"] .key, body[data-page="models"] .key { background: var(--ink); color: var(--paper); }
 
-  /* Picture slots. A file at data-img replaces the frame automatically. */
-  .ph { position: relative; margin: 0; aspect-ratio: var(--ar, 16 / 9); overflow: hidden; display: grid; place-content: center; text-align: center; padding: 18px;
-    background: repeating-linear-gradient(-50deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 14px), rgba(7,16,70,0.35);
-    outline: 2px dashed rgba(255,255,255,0.55); outline-offset: -8px; }
-  .ph span { font-style: italic; font-weight: 800; font-stretch: 105%; font-size: 1.05rem; line-height: 1.2; max-width: 26ch; }
-  .ph code { display: block; margin-top: 8px; font-size: 0.72rem; background: none; border: 0; opacity: 0.75; }
-  .card .ph, .ph.light { background: repeating-linear-gradient(-50deg, rgba(20,54,201,0.08) 0 2px, transparent 2px 14px), #eef2ff; outline-color: #9fb0e6; color: var(--ink); }
+  .card { background: var(--paper); color: var(--ink); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); filter: drop-shadow(7px 7px 0 rgba(5,11,51,0.55)); }
+  .card a { color: var(--sea); }
+  .card code { background: #eef2ff; border-color: var(--line); color: var(--ink); }
+
+  /* Picture slots: a file at data-img replaces the frame automatically */
+  .ph { position: relative; margin: 0; aspect-ratio: var(--ar, 16 / 9); overflow: hidden; display: grid; place-content: center; text-align: center; padding: 14px;
+    background: repeating-linear-gradient(-50deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 14px), rgba(5,11,51,0.35);
+    outline: 2px dashed rgba(255,255,255,0.55); outline-offset: -7px; }
+  .ph span { font-style: italic; font-weight: 800; font-stretch: 85%; font-size: 1rem; line-height: 1.15; max-width: 24ch; }
+  .ph code { display: block; margin-top: 6px; font-size: 0.7rem; background: none; border: 0; opacity: 0.75; }
+  .card .ph { background: repeating-linear-gradient(-50deg, rgba(20,54,201,0.08) 0 2px, transparent 2px 14px), #eef2ff; outline-color: #9fb0e6; color: var(--ink); }
   .ph.has { padding: 0; outline: 0; background: none; display: block; }
   .ph.has img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .shadowed { box-shadow: 12px 12px 0 var(--ink); }
 
-  .btn { display: inline-flex; flex-direction: column; gap: 3px; text-decoration: none; color: var(--ink); background: var(--cyan);
-    padding: 14px 40px 14px 24px; clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%); line-height: 1.05;
-    font-style: italic; font-weight: 900; font-stretch: 115%; font-size: 1.55rem; text-transform: uppercase; filter: drop-shadow(6px 6px 0 var(--ink)); }
-  .btn:hover { background: var(--paper); }
+  .btn { display: inline-flex; flex-direction: column; gap: 2px; text-decoration: none; padding: 12px 40px 12px 22px; line-height: 1;
+    clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%); font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 2rem; text-transform: uppercase; }
   .btn small { font-style: normal; font-weight: 500; font-stretch: 100%; text-transform: none; font-size: 0.8rem; }
 
-  .pager { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 96px; padding-top: 22px; border-top: 2px solid rgba(255,255,255,0.35); }
-  .pager a { text-decoration: none; display: flex; flex-direction: column; }
-  .pager a small { opacity: 0.75; }
-  .pager a b { font-style: italic; font-weight: 900; font-stretch: 118%; font-size: var(--t-2xl); text-transform: uppercase; line-height: 1; text-shadow: 4px 4px 0 var(--ink); }
-  .pager a:hover b { color: var(--cyan); }
-  .pager .next { margin-left: auto; text-align: right; }
+  /* ============ HOME ============ */
+  .home { position: absolute; inset: 0; overflow: hidden; }
+  .strip { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: clamp(150px, 15vw, 260px); background: var(--paper);
+    clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%); }
+  .vname { position: absolute; z-index: 3; left: clamp(4px, 1vw, 18px); bottom: 2vh; margin: 0; writing-mode: vertical-rl; transform: rotate(180deg);
+    font-size: clamp(8rem, 23vh, 15rem); color: var(--ink); line-height: 0.78; pointer-events: none; }
+  .vname .echo { position: absolute; inset: 0; transform: translate(0.08em, -0.06em); color: transparent; -webkit-text-stroke: 2px #9aa3c2; z-index: -1; }
 
-  /* ============ HOME: the pause menu ============ */
-  #pg-home { overflow: hidden; }
-  .home { position: relative; height: 100%; min-height: 600px; }
-  .band { position: absolute; z-index: 0; left: -14vw; transform: rotate(-14deg); transform-origin: left center; clip-path: polygon(0 0, 100% 0, 93% 100%, 0 100%); }
-  .band.one { top: 64%; width: 70vw; height: 160px; background: var(--ink); opacity: 0.85; }
-  .band.two { top: calc(64% + 176px); width: 64vw; height: 14px; background: var(--cyan); }
-  .hero { position: absolute; z-index: 1; left: 21vw; bottom: 0; height: 86vh; aspect-ratio: 3 / 4; }
-  .hero .ph { height: 100%; aspect-ratio: auto; place-content: start center; padding-top: 16%; }
-  .hero .ph.has img { object-fit: contain; object-position: bottom center; filter: drop-shadow(0 0 40px rgba(72,230,255,0.35)); }
+  .hero { position: absolute; z-index: 1; left: 9vw; top: 0; bottom: 0; width: 40vw; }
+  .hero .ph { width: 100%; height: 100%; aspect-ratio: auto; clip-path: polygon(14% 0, 100% 0, 78% 100%, 0 100%); outline-offset: -10px;
+    background: repeating-linear-gradient(-50deg, rgba(255,255,255,0.1) 0 2px, transparent 2px 16px), rgba(255,255,255,0.12); }
+  .hero .ph span { font-size: 1.15rem; }
+  .hero .ph.has { clip-path: none; }
+  .hero .ph.has img { object-fit: contain; object-position: center bottom; }
+  .shard { position: absolute; z-index: 3; pointer-events: none; }
+  .shard.s1 { left: 34vw; top: 24vh; width: 34px; height: 18px; background: var(--pink); clip-path: polygon(0 40%, 100% 0, 70% 100%); }
+  .shard.s2 { left: 29vw; top: 70vh; width: 52px; height: 26px; background: var(--paper); clip-path: polygon(0 0, 100% 50%, 20% 100%); }
+  .shard.s3 { left: 14vw; top: 46vh; width: 40px; height: 22px; background: #7a4dff; clip-path: polygon(0 100%, 60% 0, 100% 70%); }
+  .shard.s4 { left: 38vw; top: 82vh; width: 26px; height: 26px; background: var(--pink); clip-path: polygon(50% 0, 100% 100%, 0 70%); }
 
-  .date { position: absolute; left: var(--gutter); top: 26px; z-index: 3; display: grid; grid-template-columns: auto auto; column-gap: 12px; align-items: end; }
-  .date .mday { font-style: italic; font-weight: 900; font-stretch: 112%; font-size: 3.6rem; line-height: 0.8; text-shadow: 4px 4px 0 var(--ink); grid-row: span 2; }
-  .date .wd { font-style: italic; font-weight: 900; font-size: 1.4rem; line-height: 1; color: var(--cyan); text-shadow: 2px 2px 0 var(--ink); }
-  .date .yr { font-weight: 700; font-stretch: 80%; font-size: 0.85rem; letter-spacing: 0.08em; line-height: 1; }
-  .moonphase { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-top: 10px; font-weight: 700; font-stretch: 85%; font-size: 0.9rem; letter-spacing: 0.04em; text-transform: uppercase; }
-  .moonphase svg { width: 20px; height: 20px; }
+  .wallet { position: absolute; z-index: 4; left: clamp(70px, 7vw, 120px); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
+    padding: 6px 18px 6px 12px; min-width: 170px; text-decoration: none; }
+  .wallet b { display: block; font-weight: 600; font-stretch: 90%; font-size: 1.7rem; line-height: 1; letter-spacing: -0.01em; }
+  .wallet span { font-style: italic; font-size: 0.72rem; font-weight: 600; }
+  .wallet .new { position: absolute; right: -12px; top: -12px; background: var(--red); color: var(--paper); padding: 1px 8px; transform: rotate(8deg);
+    font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 0.9rem; }
 
-  .pitch { position: absolute; z-index: 3; left: var(--gutter); bottom: 108px; max-width: min(560px, 44vw); }
-  .wordmark { font-size: clamp(3.6rem, 8.6vw, 7.6rem); text-shadow: 6px 6px 0 var(--ink); }
-  .tag-strip { display: inline-block; margin: 14px 0 0; background: var(--paper); color: var(--ink); padding: 6px 30px 6px 14px;
-    clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%); font-style: italic; font-weight: 900; font-stretch: 112%; font-size: clamp(1.3rem, 2.2vw, 1.9rem); text-transform: uppercase; line-height: 1.1; }
-  .pitch .sub { margin: 14px 0 0; font-weight: 500; max-width: 44ch; text-shadow: 0 1px 12px rgba(7,16,70,0.6); }
-  .pitch .fine { margin: 8px 0 0; font-size: var(--t-sm); color: var(--haze); max-width: 44ch; }
-  .chip { display: inline-flex; gap: 10px; align-items: baseline; margin-top: 14px; text-decoration: none; padding-bottom: 2px; border-bottom: 3px solid var(--cyan);
-    font-style: italic; font-weight: 900; font-stretch: 112%; font-size: 1.2rem; text-transform: uppercase; }
-  .chip small { font-style: normal; font-weight: 500; font-stretch: 100%; text-transform: none; font-size: var(--t-sm); color: var(--haze); }
-  .chip:hover { color: var(--cyan); }
-
-  .menu { position: absolute; z-index: 4; right: calc(var(--gutter) + 1vw); top: 47%; transform: translateY(-50%) rotate(-8deg); }
-  .menu ol { list-style: none; margin: 0; padding: 0; text-align: right; }
-  .menu li { margin-right: calc(var(--i, 0) * 0.42em); }
-  .menu li:has(.sel) { margin-top: 0.12em; margin-bottom: 0.3em; }
-  .menu a { display: inline-block; text-decoration: none; color: var(--deep); padding: 0 0.12em;
-    font-style: italic; font-weight: 900; font-stretch: 118%; text-transform: uppercase; letter-spacing: -0.02em;
-    font-size: clamp(2.3rem, 6.6vh, 4.4rem); line-height: 0.96; transform-origin: right center;
-    transition: transform 0.18s cubic-bezier(.2,.9,.3,1.3), color 0.12s, text-shadow 0.12s; }
-  .menu a.sel { color: var(--paper); transform: translateX(-0.3em) scale(1.13); text-shadow: 5px 5px 0 var(--cyan), 9px 9px 0 var(--ink); }
+  .menu { position: absolute; z-index: 5; left: 41vw; top: 51%; transform: translateY(-50%) rotate(-11deg); }
+  .menu ol { list-style: none; margin: 0; padding: 0; }
+  .menu li { margin-left: var(--x); line-height: 0.8; }
+  .menu a { display: inline-block; text-decoration: none; color: var(--menu); font-size: clamp(3rem, 9.4vh, 6.2rem); letter-spacing: -0.02em;
+    text-shadow: 0 2px 14px rgba(5,11,51,0.25); transition: transform 0.16s cubic-bezier(.2,.9,.3,1.4); transform-origin: left center; }
+  .menu a.sel { color: var(--red); transform: scale(1.22) rotate(-3deg); text-shadow: none; }
   .menu a:focus-visible { outline: none; }
 
-  .say { position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 22px; min-height: 64px; padding: 12px var(--gutter); background: var(--ink); }
-  .say::before { content: ""; position: absolute; left: 0; right: 0; top: -6px; height: 6px; background: var(--cyan); }
-  .say p { margin: 0; font-style: italic; font-weight: 700; font-stretch: 105%; font-size: 1.2rem; }
-  .say .keys { margin-left: auto; display: flex; gap: 18px; color: var(--haze); font-size: var(--t-sm); white-space: nowrap; }
-  .say .keys kbd { font-size: 0.72rem; }
-  .brand { position: absolute; z-index: 3; right: var(--gutter); top: 26px; display: flex; align-items: center; gap: 12px; text-decoration: none;
-    font-weight: 700; font-stretch: 80%; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.9rem; }
-  .brand img { width: 44px; height: 44px; border: 2px solid var(--paper); transform: rotate(-6deg); box-shadow: 4px 4px 0 var(--ink); }
+  .chips { position: absolute; z-index: 4; right: var(--gutter); top: 30px; display: flex; flex-direction: column; gap: 18px; align-items: flex-end; }
+  .chip { display: grid; grid-template-columns: auto 74px; grid-template-rows: 74px auto; gap: 0 10px; align-items: center; }
+  .chip .lab { text-align: right; font-style: italic; font-weight: 900; font-stretch: 72%; font-size: 1.15rem; line-height: 1; text-transform: uppercase; text-shadow: 2px 2px 0 var(--ink); }
+  .chip .lab small { display: block; font-weight: 700; font-size: 0.8rem; color: var(--cyan); margin-top: 3px; }
+  .chip .tile { width: 74px; height: 74px; display: grid; place-items: center; border: 3px solid var(--paper); background: var(--sea); transform: skewX(-8deg); box-shadow: 4px 4px 0 var(--ink); }
+  .chip .tile > * { transform: skewX(8deg); }
+  .chip .tile b { font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 2.6rem; line-height: 1; }
+  .chip .tile svg { width: 46px; height: 46px; }
+  .chip .bar { grid-column: 1 / -1; justify-self: end; width: 150px; height: 8px; margin-top: 8px; background: rgba(5,11,51,0.7); border: 1px solid rgba(255,255,255,0.6); transform: skewX(-30deg); }
+  .chip .bar i { display: block; height: 100%; width: var(--v, 50%); background: linear-gradient(90deg, var(--cyan), #c8fbff); }
 
-  .toast { position: absolute; z-index: 6; right: var(--gutter); top: 92px; width: 290px; color: var(--ink); background: var(--paper);
-    padding: 12px 44px 14px 18px; clip-path: polygon(4% 0, 100% 0, 100% 100%, 0 100%); filter: drop-shadow(5px 5px 0 var(--ink));
-    animation: toastIn 0.45s 0.7s cubic-bezier(.2,.9,.25,1) both; }
-  @keyframes toastIn { from { transform: translateX(130%); } to { transform: none; } }
-  .toast b { display: block; font-style: italic; font-weight: 900; font-stretch: 112%; font-size: 1.25rem; text-transform: uppercase; line-height: 1.1; }
-  .toast span { font-size: var(--t-sm); color: var(--grey); }
-  .toast a { color: var(--sea); font-weight: 700; font-size: var(--t-sm); }
-  .toast button { position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; border: 0; background: none; cursor: pointer; color: var(--ink); font-size: 1.1rem; }
+  .command { position: absolute; z-index: 5; right: 0; bottom: 22px; text-align: right; }
+  .command .say { padding-right: var(--gutter); font-style: italic; font-weight: 800; font-stretch: 75%; font-size: clamp(1.6rem, 3.6vh, 2.3rem); line-height: 1.05; }
+  .command .tag { padding-right: var(--gutter); font-style: italic; font-weight: 700; font-size: 0.78rem; color: var(--haze); margin-top: 2px; }
+  .command .line { width: min(560px, 46vw); margin-left: auto; height: 2px; background: var(--paper); margin-top: 4px; margin-bottom: 8px; }
+  .command .keys { padding-right: var(--gutter); display: flex; gap: 20px; justify-content: flex-end; font-style: italic; font-weight: 800; font-stretch: 75%; font-size: 1.35rem; }
+  .command .keys span { display: inline-flex; align-items: center; gap: 7px; }
 
-  /* ============ FEATURES: a status screen ============ */
-  .claim { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
-  .claim ul { list-style: none; padding: 0; margin: 0; }
-  .claim li { font-size: clamp(2.2rem, 4.3vw, 3.9rem); text-shadow: 5px 5px 0 var(--ink); }
-  .claim li:nth-child(even) { color: var(--cyan); padding-left: 0.45em; }
-  .claim .lede { margin-top: 28px; }
-  .claim .ph { --ar: 4 / 3; }
-  .scatter { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 30px; margin-top: 110px; padding-bottom: 30px; }
-  .scatter .card { padding: 0 0 22px; transition: transform 0.2s cubic-bezier(.2,.9,.3,1.3); }
-  .scatter .card:nth-child(1) { transform: rotate(-3deg); }
-  .scatter .card:nth-child(2) { transform: rotate(2deg) translateY(34px); }
-  .scatter .card:nth-child(3) { transform: rotate(-1.5deg) translateY(-8px); }
-  .scatter .card:nth-child(4) { transform: rotate(3deg) translateY(26px); }
-  .scatter .card:hover { transform: rotate(0) translateY(-6px) scale(1.03); z-index: 2; }
-  .scatter .ph { --ar: 1 / 1; margin: 0 0 18px; }
-  .scatter h2, .scatter p { padding: 0 20px; }
-  .scatter h2 { margin-bottom: 8px; }
-  .scatter p { color: var(--grey); margin: 0; font-size: 0.97rem; }
-  .stats { margin-top: 120px; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
-  .stats h2 { font-size: clamp(2.2rem, 3.6vw, 3.2rem); font-stretch: 105%; text-shadow: 5px 5px 0 var(--ink); }
-  .stats .lede { margin-top: 18px; }
-  .spec { margin: 0; background: var(--ink); padding: 8px 0; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%); }
-  .spec div { display: grid; grid-template-columns: 13rem 1fr; gap: 16px; padding: 12px 28px; align-items: baseline; }
-  .spec div:nth-child(odd) { background: rgba(72,230,255,0.06); }
-  .spec dt { font-style: italic; font-weight: 800; font-stretch: 108%; font-size: 1.1rem; color: var(--cyan); }
-  .spec dd { margin: 0; color: var(--haze); font-size: 0.95rem; line-height: 1.5; }
-  .more { margin-top: 100px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; }
-  .more > div { border-left: 4px solid var(--cyan); padding-left: 18px; }
-  .more p { color: var(--haze); margin: 6px 0 0; }
-  .more a { color: var(--cyan); }
+  /* ============ FEATURES ============ */
+  .feat { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); gap: clamp(24px, 4vw, 64px); align-items: center; }
+  .claims { list-style: none; padding: 0; margin: 0; }
+  .claims li { font-size: clamp(2.4rem, 8vh, 4.8rem); text-shadow: 4px 4px 0 var(--ink); }
+  .claims li:nth-child(even) { color: var(--menu); padding-left: 0.5em; }
+  .feat .lede { margin-top: 2.4vh; font-size: 1.2rem; font-weight: 500; max-width: 30ch; }
+  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 2.6vh, 26px) 24px; }
+  .tile-card { padding: 0 0 14px; }
+  .tile-card:nth-child(1) { transform: rotate(-2deg); }
+  .tile-card:nth-child(2) { transform: rotate(1.5deg) translateY(10px); }
+  .tile-card:nth-child(3) { transform: rotate(1deg); }
+  .tile-card:nth-child(4) { transform: rotate(-1.5deg) translateY(10px); }
+  .tile-card .ph { aspect-ratio: auto; height: clamp(80px, 17vh, 190px); margin-bottom: 10px; }
+  .tile-card h2, .tile-card p { padding: 0 16px; }
+  .tile-card h2 { font-size: 1.35rem; }
+  .tile-card p { color: var(--grey); font-size: 0.95rem; margin-top: 2px; }
 
-  /* ============ DOWNLOAD: a white save screen ============ */
+  /* ============ DOWNLOAD (light) ============ */
   #pg-download { background: #f6f8ff; color: var(--ink); }
-  #pg-download::before { content: ""; position: fixed; inset: 0; pointer-events: none;
-    background: linear-gradient(105deg, transparent 0 58%, rgba(20,54,201,0.06) 58% 76%, transparent 76%),
+  #pg-download::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(105deg, transparent 0 56%, rgba(20,54,201,0.07) 56% 74%, transparent 74%),
                 repeating-linear-gradient(-62deg, rgba(20,54,201,0.05) 0 2px, transparent 2px 34px); }
-  #pg-download .wrap { position: relative; }
+  #pg-download .fit { position: relative; }
   #pg-download a { color: var(--sea); }
-  #pg-download code, #pg-download kbd { background: #fff; border-color: var(--line); color: var(--ink); }
-  #pg-download .pager { border-top-color: var(--line); }
-  #pg-download .pager a b { text-shadow: 4px 4px 0 var(--cyan); }
-  #pg-download .pager a:hover b { color: var(--sea); }
-  .save { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(28px, 4vw, 64px); align-items: start; }
-  .save .eyebrow { font-style: italic; font-weight: 900; font-stretch: 118%; font-size: clamp(2rem, 4vw, 3rem); text-transform: uppercase; color: var(--ink); line-height: 1; }
-  .bigver { font-style: italic; font-weight: 900; font-stretch: 125%; line-height: 0.8; letter-spacing: -0.045em; margin: 10px 0 18px -0.04em;
-    font-size: clamp(5rem, 13vw, 12rem); color: var(--sea); text-shadow: 8px 8px 0 var(--cyan); font-variant-numeric: tabular-nums; }
-  .bigver-cap { font-weight: 700; font-stretch: 85%; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.95rem; color: var(--grey); margin: 0 0 26px; }
-  .save .btn { background: var(--ink); color: var(--paper); filter: drop-shadow(6px 6px 0 var(--cyan)); }
+  #pg-download code { background: #fff; border-color: var(--line); color: var(--ink); }
+  .save { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(24px, 4vw, 64px); align-items: center; }
+  .bigver { font-style: italic; font-weight: 900; font-stretch: 100%; line-height: 0.8; letter-spacing: -0.05em; margin: 1vh 0 1.4vh -0.04em;
+    font-size: clamp(5rem, 24vh, 13rem); color: var(--sea); text-shadow: 8px 8px 0 var(--cyan); font-variant-numeric: tabular-nums; }
+  .cap { font-weight: 700; font-stretch: 85%; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.95rem; color: var(--grey); }
+  .save .btn { margin-top: 3vh; background: var(--ink); color: var(--paper); filter: drop-shadow(6px 6px 0 var(--cyan)); }
+  #pg-download .save .btn { color: var(--paper); }
   .save .btn:hover { background: var(--sea); }
   .save .btn small { color: var(--haze); }
-  .facts { list-style: none; padding: 0; margin: 28px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
-  .facts li { padding: 3px 12px; border: 2px solid var(--ink); font-weight: 700; font-stretch: 85%; font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; }
-  .status { margin: 16px 0 0; color: var(--grey); }
+  .status { margin-top: 12px; color: var(--grey); font-size: 0.9rem; }
   .ribbons { list-style: none; padding: 0; margin: 0; counter-reset: n; }
-  .ribbons li { counter-increment: n; position: relative; padding: 16px 26px 18px 86px; margin-bottom: 14px; background: var(--ink); color: var(--paper);
-    clip-path: polygon(0 0, 100% 0, 97% 100%, 0 100%); }
+  .ribbons li { counter-increment: n; position: relative; padding: 14px 24px 16px 80px; margin-bottom: 12px; background: var(--ink); color: var(--paper); clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%); }
   .ribbons li:nth-child(2) { margin-left: 18px; }
   .ribbons li:nth-child(3) { margin-left: 36px; }
-  .ribbons li::before { content: counter(n); position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-style: italic; font-weight: 900; font-stretch: 120%;
-    font-size: 3.2rem; line-height: 1; color: var(--cyan); }
-  .ribbons b { display: block; font-style: italic; font-weight: 800; font-stretch: 108%; font-size: 1.3rem; line-height: 1.1; margin-bottom: 2px; }
-  .ribbons a { color: var(--cyan) !important; }
-  .ribbons code, .ribbons kbd { background: rgba(255,255,255,0.12) !important; color: var(--paper) !important; border-color: rgba(255,255,255,0.3) !important; }
-  .save .note { color: var(--grey); font-size: var(--t-sm); margin: 6px 0 26px; }
-  .save .ph { --ar: 16 / 10; }
+  .ribbons li::before { content: counter(n); position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-style: italic; font-weight: 900; font-stretch: 80%; font-size: 3.2rem; line-height: 1; color: var(--cyan); }
+  .ribbons b { display: block; font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 1.5rem; line-height: 1; text-transform: uppercase; margin-bottom: 4px; }
+  #pg-download .ribbons a { color: var(--cyan); }
+  #pg-download .ribbons code { background: rgba(255,255,255,0.14); color: var(--paper); border-color: rgba(255,255,255,0.3); }
+  .after { color: var(--grey); font-size: 0.95rem; margin-top: 6px; }
 
-  /* ============ GUIDE: a zig-zag path with a vertical title ============ */
-  .guide { display: grid; grid-template-columns: 120px 1fr; gap: clamp(20px, 4vw, 56px); }
-  .vtitle { position: sticky; top: 100px; height: max-content; }
-  .vtitle h1 { writing-mode: vertical-rl; transform: rotate(180deg); font-size: clamp(5rem, 11vw, 9rem); text-shadow: -6px 6px 0 var(--ink); }
-  .guide .lede { margin-bottom: 40px; }
-  .path { list-style: none; padding: 0; margin: 0; position: relative; }
-  .path::before { content: ""; position: absolute; left: 50%; top: 40px; bottom: 40px; width: 4px; margin-left: -2px;
-    background: repeating-linear-gradient(180deg, var(--cyan) 0 16px, transparent 16px 28px); }
-  .stop { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; position: relative; margin-bottom: 64px; }
-  .stop::before { content: ""; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; transform: rotate(45deg);
-    background: var(--cyan); box-shadow: 0 0 0 5px var(--ink); }
-  .stop:nth-child(even) .stop-text { order: -1; text-align: right; }
-  .stop .n { font-style: italic; font-weight: 900; font-stretch: 125%; font-size: 6rem; line-height: 0.8; color: transparent; -webkit-text-stroke: 2px var(--paper); }
-  .stop h2 { font-size: var(--t-2xl); margin: 6px 0 10px; text-shadow: 3px 3px 0 var(--ink); }
-  .stop p, .stop ul { color: var(--haze); margin: 0; }
-  .stop ul { list-style: none; padding: 0; }
-  .stop li { margin: 4px 0; }
-  .stop .ph { --ar: 16 / 11; }
-  .tips { margin-top: 30px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; }
-  .tips div { border-top: 4px solid var(--cyan); padding-top: 14px; color: var(--haze); }
-  .tips b { display: block; font-style: italic; font-weight: 800; font-stretch: 108%; font-size: 1.25rem; color: var(--paper); margin-bottom: 4px; }
+  /* ============ GUIDE ============ */
+  .guide { display: grid; grid-template-columns: auto 1fr; gap: clamp(20px, 3vw, 48px); align-items: center; }
+  .vtitle { writing-mode: vertical-rl; transform: rotate(180deg); font-size: clamp(5rem, 22vh, 11rem); text-shadow: -5px 5px 0 var(--ink); }
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; position: relative; }
+  .steps::before { content: ""; position: absolute; left: 0; right: 0; top: clamp(30px, 6vh, 50px); height: 4px; background: repeating-linear-gradient(90deg, var(--cyan) 0 16px, transparent 16px 28px); }
+  .steps li:nth-child(even) { margin-top: 5vh; }
+  .steps .n { position: relative; font-style: italic; font-weight: 900; font-stretch: 80%; font-size: clamp(3.4rem, 11vh, 6rem); line-height: 0.85; color: var(--paper); text-shadow: 4px 4px 0 var(--ink); }
+  .steps .ph { --ar: 16 / 11; margin: 1.6vh 0 12px; box-shadow: 8px 8px 0 var(--ink); }
+  .steps h2 { font-size: clamp(1.3rem, 3.4vh, 1.7rem); text-shadow: 2px 2px 0 var(--ink); }
+  .steps p { color: var(--haze); margin-top: 4px; }
+  .hint { color: var(--haze); font-size: 0.95rem; }
 
-  /* ============ PARTICLES: night, neon, a settings list ============ */
-  .neon h1 { font-size: var(--t-hero); color: #fff; text-shadow: 0 0 18px rgba(212,198,255,0.9), 0 0 42px rgba(255,159,216,0.6), 5px 5px 0 #2a1a8a; }
-  .neon p { margin-top: 18px; color: #d9d2ff; }
-  .px { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(28px, 5vw, 72px); align-items: center; margin-top: 44px; }
+  /* ============ PARTICLES (night, neon) ============ */
+  .px { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 4fr) minmax(0, 4fr); gap: clamp(20px, 3vw, 48px); align-items: center; }
   .presets { list-style: none; padding: 0; margin: 0; }
-  .presets li { font-size: clamp(2.4rem, 5.2vw, 4.4rem); line-height: 0.98; }
+  .presets li { font-size: clamp(2.6rem, 9vh, 5.2rem); line-height: 0.95; }
   .presets li:nth-child(1) { color: #fff1b0; text-shadow: 0 0 22px rgba(255,241,176,0.75); }
-  .presets li:nth-child(2) { color: #ffab7a; padding-left: 0.35em; text-shadow: 0 0 22px rgba(255,171,122,0.75); }
-  .presets li:nth-child(3) { color: #ff9fd8; padding-left: 0.7em; text-shadow: 0 0 22px rgba(255,159,216,0.75); }
-  .presets li:nth-child(4) { color: var(--cyan); padding-left: 1em; text-shadow: 0 0 22px rgba(72,230,255,0.75); }
-  .presets li:nth-child(5) { color: #d4c6ff; padding-left: 1.25em; text-shadow: 0 0 22px rgba(212,198,255,0.75); }
-  .px .ph { --ar: 4 / 3; box-shadow: 0 0 0 2px rgba(212,198,255,0.5), 0 0 60px rgba(160,120,255,0.35); outline-color: rgba(212,198,255,0.6); background: repeating-linear-gradient(-50deg, rgba(212,198,255,0.08) 0 2px, transparent 2px 14px), rgba(20,10,70,0.6); }
-  .settings { margin-top: 96px; border-top: 2px solid rgba(212,198,255,0.35); }
-  .settings h2 { font-size: var(--t-xl); margin: 26px 0 12px; color: #d4c6ff; }
-  .row { display: grid; grid-template-columns: 15rem 1fr; gap: 24px; align-items: baseline; padding: 16px 20px; position: relative;
-    border-bottom: 1px solid rgba(212,198,255,0.18); transition: background 0.15s; }
-  .row:hover { background: linear-gradient(90deg, rgba(72,230,255,0.18), rgba(72,230,255,0)); }
-  .row:hover::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--cyan); }
-  .row dt { font-style: italic; font-weight: 800; font-stretch: 110%; font-size: 1.35rem; }
-  .row dd { margin: 0; color: #c9c2f0; }
-  #pg-particles .pager { border-top-color: rgba(212,198,255,0.35); }
-  #pg-particles .pager a b { text-shadow: 0 0 18px rgba(212,198,255,0.8); }
+  .presets li:nth-child(2) { color: #ffab7a; padding-left: 0.3em; text-shadow: 0 0 22px rgba(255,171,122,0.75); }
+  .presets li:nth-child(3) { color: #ff9fd8; padding-left: 0.6em; text-shadow: 0 0 22px rgba(255,159,216,0.75); }
+  .presets li:nth-child(4) { color: var(--cyan); padding-left: 0.9em; text-shadow: 0 0 22px rgba(72,230,255,0.75); }
+  .presets li:nth-child(5) { color: #d4c6ff; padding-left: 1.1em; text-shadow: 0 0 22px rgba(212,198,255,0.75); }
+  .px .ph { --ar: 4 / 5; max-height: 56vh; box-shadow: 0 0 0 2px rgba(212,198,255,0.5), 0 0 60px rgba(160,120,255,0.35); outline-color: rgba(212,198,255,0.6);
+    background: repeating-linear-gradient(-50deg, rgba(212,198,255,0.08) 0 2px, transparent 2px 14px), rgba(20,10,70,0.6); }
+  .knobs { margin: 0; }
+  .knobs div { padding: 1.4vh 0 1.4vh 16px; border-left: 3px solid rgba(212,198,255,0.35); }
+  .knobs div:hover { border-left-color: var(--cyan); background: linear-gradient(90deg, rgba(72,230,255,0.16), rgba(72,230,255,0)); }
+  .knobs dt { font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 1.5rem; line-height: 1; text-transform: uppercase; }
+  .knobs dd { margin: 3px 0 0; color: #cfc8f5; }
+  #pg-particles .ptitle { text-shadow: 0 0 30px rgba(255,79,154,0.6); }
 
-  /* ============ MODELS: bright cyan, ink type ============ */
+  /* ============ MODELS (bright cyan, ink type) ============ */
   #pg-models { color: var(--ink); }
   #pg-models a { color: var(--ink); }
-  .formats { display: flex; align-items: flex-end; gap: clamp(12px, 2.4vw, 32px); flex-wrap: wrap; margin: 0 0 28px; }
-  .formats span { font-style: italic; font-weight: 900; font-stretch: 125%; letter-spacing: -0.04em; font-size: clamp(4rem, 12.5vw, 10.5rem); line-height: 0.8; color: var(--ink); text-shadow: 7px 7px 0 var(--paper); }
+  .formats { display: flex; align-items: flex-end; gap: clamp(12px, 2.4vw, 32px); flex-wrap: wrap; }
+  .formats span { font-style: italic; font-weight: 900; font-stretch: 100%; letter-spacing: -0.04em; font-size: clamp(4rem, 21vh, 11rem); line-height: 0.8; color: var(--ink); text-shadow: 7px 7px 0 var(--paper); }
   .formats span:nth-child(2) { color: var(--paper); text-shadow: 7px 7px 0 var(--ink); }
-  #pg-models .lede { color: var(--ink); }
-  .conveyor { margin-top: 64px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.3fr); gap: 16px; align-items: stretch; }
-  .conveyor .card { padding: 20px 22px 24px; }
-  .conveyor h2 { font-size: 1.3rem; margin-bottom: 6px; }
-  .conveyor p { color: var(--grey); font-size: 0.95rem; margin: 0; }
+  .formats p { font-weight: 600; max-width: 18ch; margin-bottom: 0.6em; }
+  .conveyor { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.25fr); gap: 16px; align-items: stretch; }
+  .conveyor .card { padding: 18px 20px 20px; }
+  .conveyor h2 { font-size: 1.4rem; margin-bottom: 4px; }
+  .conveyor p { color: var(--grey); }
   .arrow { align-self: center; width: 44px; height: 24px; background: var(--ink); clip-path: polygon(0 35%, 60% 35%, 60% 0, 100% 50%, 60% 100%, 60% 65%, 0 65%); }
-  .parts { list-style: none; padding: 0; margin: 10px 0 0; }
-  .parts li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 0.95rem; }
+  .parts { list-style: none; padding: 0; margin: 6px 0 0; }
+  .parts li { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-top: 1px solid var(--line); }
   .parts li span:last-child { color: var(--grey); }
   .parts .glow { color: #0097b8 !important; font-weight: 700; text-shadow: 0 0 10px rgba(72,230,255,0.9); }
-  .models2 { margin-top: 96px; display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
-  .models2 .ph { --ar: 16 / 10; background: repeating-linear-gradient(-50deg, rgba(7,16,70,0.08) 0 2px, transparent 2px 14px), rgba(255,255,255,0.5); outline-color: var(--ink); color: var(--ink); }
-  .models2 h2 { margin: 0 0 10px; }
-  .models2 ul { padding-left: 20px; }
-  .models2 li { margin: 6px 0; }
-  .models2 section + section { margin-top: 36px; }
-  #pg-models code { background: rgba(255,255,255,0.6); border-color: rgba(7,16,70,0.25); color: var(--ink); }
-  #pg-models .pager { border-top-color: rgba(7,16,70,0.3); }
-  #pg-models .pager a b { color: var(--ink); text-shadow: 4px 4px 0 var(--paper); }
+  .extras { display: flex; gap: 40px; flex-wrap: wrap; font-weight: 500; }
+  .extras b { font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 1.3rem; text-transform: uppercase; margin-right: 8px; }
+  #pg-models code { background: rgba(255,255,255,0.6); border-color: rgba(5,11,51,0.25); color: var(--ink); }
 
-  /* ============ UPDATES: a quest log ============ */
-  .logbar { display: flex; align-items: flex-end; gap: 24px; margin-bottom: 34px; padding-bottom: 14px; border-bottom: 4px solid var(--cyan); }
-  .logbar h1 { font-size: var(--t-hero); text-shadow: 6px 6px 0 #000a2e; }
-  .logbar p { margin: 0 0 6px; color: var(--haze); }
-  .log { display: grid; grid-template-columns: 260px 1fr; gap: 30px; align-items: start; }
-  .log-list { list-style: none; padding: 0; margin: 0; position: sticky; top: 100px; }
-  .log-list button { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 10px; width: 100%;
-    padding: 12px 16px; margin-bottom: 6px; color: var(--haze); clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%); }
-  .log-list b { font-style: italic; font-weight: 900; font-stretch: 118%; font-size: 1.9rem; line-height: 1; }
-  .log-list span { font-size: 0.8rem; font-weight: 600; font-stretch: 85%; letter-spacing: 0.04em; text-transform: uppercase; }
-  .log-list button:hover { color: var(--paper); background: rgba(72,230,255,0.12); }
-  .log-list button[aria-selected="true"] { background: var(--paper); color: var(--ink); }
-  .log-list button[aria-selected="true"] b { color: var(--sea); }
+  /* ============ UPDATES (quest log, may scroll) ============ */
+  #pg-updates .fit { height: auto; min-height: 100%; justify-content: flex-start; padding-bottom: 130px; }
+  .log { display: grid; grid-template-columns: 240px 1fr; gap: 30px; align-items: start; }
+  .log-list { list-style: none; padding: 0; margin: 0; position: sticky; top: var(--top); }
+  .log-list button { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; width: 100%;
+    padding: 8px 18px 8px 14px; margin-bottom: 6px; color: var(--menu); }
+  .log-list b { font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 2.2rem; line-height: 1; }
+  .log-list span { font-size: 0.8rem; font-weight: 600; font-stretch: 85%; letter-spacing: 0.04em; text-transform: uppercase; color: var(--haze); }
+  .log-list button:hover b { color: var(--paper); }
+  .log-list button[aria-selected="true"] { background: var(--paper); clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%); }
+  .log-list button[aria-selected="true"] b { color: var(--red); }
+  .log-list button[aria-selected="true"] span { color: var(--grey); }
   .log-list button:focus-visible { outline: 3px solid var(--cyan); outline-offset: -3px; }
-  .log-detail { padding: 28px 32px 32px; min-height: 260px; }
-  .log-detail h2 { font-style: italic; font-weight: 900; font-stretch: 120%; font-size: 3.2rem; line-height: 0.9; color: var(--sea); }
-  .tags { display: flex; gap: 8px; margin: 12px 0 16px; flex-wrap: wrap; }
-  .tag { display: inline-block; font-weight: 700; font-stretch: 85%; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 10px; background: var(--ink); color: var(--paper); }
-  .tag.latest { background: var(--cyan); color: var(--ink); }
+  .log-detail { padding: 24px 30px 28px; }
+  .log-detail h2 { font-style: italic; font-weight: 900; font-stretch: 80%; font-size: 3rem; line-height: 0.9; color: var(--sea); }
+  .tags { display: flex; gap: 8px; margin: 10px 0 14px; flex-wrap: wrap; }
+  .tag-chip { font-weight: 700; font-stretch: 85%; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 10px; background: var(--ink); color: var(--paper); }
+  .tag-chip.latest { background: var(--red); }
   .md { overflow-wrap: anywhere; color: #29325f; }
-  .md h4 { margin: 12px 0 4px; }
   .md ul { padding-left: 20px; margin: 6px 0; }
   .md li { margin: 4px 0; }
   .md p { margin: 6px 0; }
-  .log-detail .get { display: inline-block; margin-top: 14px; font-weight: 700; }
+  .log-detail .get { display: inline-block; margin-top: 12px; font-weight: 700; }
 
-  /* ============ QUESTIONS: game dialogue ============ */
-  .talk { display: flex; flex-direction: column; gap: 22px; max-width: 980px; }
-  .q { align-self: flex-end; max-width: 70%; background: var(--cyan); color: var(--ink); padding: 12px 30px 12px 22px;
-    clip-path: polygon(3% 0, 100% 0, 100% 100%, 0 100%); font-style: italic; font-weight: 800; font-stretch: 106%; font-size: 1.3rem; line-height: 1.2;
-    filter: drop-shadow(5px 5px 0 var(--ink)); }
-  .a { position: relative; align-self: flex-start; width: min(100%, 860px); margin-top: 14px; background: rgba(7,16,70,0.88);
-    border: 2px solid rgba(255,255,255,0.8); padding: 26px 30px 20px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
-  .who { display: inline-block; background: var(--paper); color: var(--ink); padding: 3px 20px 3px 12px; clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%);
-    font-style: italic; font-weight: 900; font-stretch: 112%; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.02em; }
-  .a-wrap { position: relative; padding-top: 14px; }
-  .a-wrap .who { position: absolute; left: 18px; top: 0; z-index: 1; }
-  .a p { margin: 0 0 0.6em; }
-  .a p:last-child { margin: 0; }
-  .a a { color: var(--cyan); }
-  .legal { margin-top: 64px; font-size: 0.8rem; color: var(--haze); max-width: 92ch; }
+  /* ============ QUESTIONS (dialogue) ============ */
+  .talk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 480px); grid-template-rows: auto 1fr; gap: 3vh clamp(20px, 4vw, 64px); align-items: end; height: 100%; }
+  .talk .ptitle { grid-column: 1; grid-row: 1; align-self: start; justify-self: start; }
+  .choices { grid-column: 2; grid-row: 1 / span 2; list-style: none; padding: 0; margin: 0; align-self: center; text-align: right; transform: rotate(-4deg); padding-right: 24px; }
+  .choices li { margin: 0 0 1.1vh; }
+  .choices button { all: unset; position: relative; isolation: isolate; cursor: pointer; display: inline-block; padding: 0.06em 0.34em 0 0.22em; color: var(--menu);
+    font-style: italic; font-weight: 900; font-stretch: 72%; font-size: clamp(1.35rem, 4vh, 2.1rem); line-height: 1.05; text-transform: uppercase; }
+  .choices button:hover { color: var(--paper); }
+  .choices button[aria-pressed="true"] { color: var(--red); }
+  .choices button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
+  .box-wrap { grid-column: 1; grid-row: 2; position: relative; padding-top: 16px; }
+  .who { position: absolute; left: 22px; top: 0; z-index: 1; background: var(--paper); color: var(--ink); padding: 3px 22px 3px 12px; clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%);
+    font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 1.05rem; text-transform: uppercase; }
+  .box { position: relative; min-height: 22vh; background: rgba(5,11,51,0.88); border: 2px solid rgba(255,255,255,0.85); padding: 30px 34px 26px;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
+  .box p { font-size: clamp(1.15rem, 2.9vh, 1.45rem); line-height: 1.45; max-width: 40ch; }
+  .box p.show { animation: fadeup 0.25s ease-out both; }
+  @keyframes fadeup { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .box::after { content: ""; position: absolute; right: 34px; bottom: 22px; width: 14px; height: 10px; background: var(--cyan); clip-path: polygon(0 0, 100% 0, 50% 100%); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .legal { margin-top: 12px; font-size: 0.72rem; color: var(--haze); max-width: 90ch; }
   .legal a { color: var(--paper); }
 
   [hidden] { display: none !important; }
 
-  /* ============ Without JavaScript: everything stacked ============ */
+  /* ============ Without JavaScript ============ */
   html:not(.js) body { overflow: auto; }
-  html:not(.js) .page { position: static; display: block; overflow: visible; }
-  html:not(.js) #pg-home { height: 100vh; }
-  html:not(.js) .topbar, html:not(.js) .wipe { display: none; }
+  html:not(.js) .page { position: relative; display: block; min-height: 100vh; }
+  html:not(.js) .topbar, html:not(.js) .wipe, html:not(.js) .prompts { display: none; }
 
-  /* ============ Medium and narrow screens ============ */
-  @media (max-width: 1080px) {
-    .scatter { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 56px; }
+  /* ============ Narrow screens scroll, everything stacks ============ */
+  @media (max-width: 860px) {
+    :root { --top: 80px; --bottom: 40px; }
+    .page { overflow-y: auto; }
+    .fit { height: auto; min-height: 100%; justify-content: flex-start; gap: 22px; }
+    .prompts { position: static; display: none; }
+    .feat, .save, .px, .guide, .talk, .log { grid-template-columns: 1fr; }
+    .tiles, .steps { grid-template-columns: 1fr 1fr; }
+    .steps::before { display: none; }
+    .steps li:nth-child(even) { margin-top: 0; }
+    .vtitle { writing-mode: horizontal-tb; transform: none; font-size: 3.4rem; text-shadow: 4px 4px 0 var(--ink); }
     .conveyor { grid-template-columns: 1fr; }
     .arrow { transform: rotate(90deg); justify-self: center; }
-    .hero { left: 14vw; }
-  }
-  @media (max-width: 860px) {
-    .claim, .stats, .save, .px, .models2, .more, .tips { grid-template-columns: 1fr; }
-    .spec div, .row { grid-template-columns: 1fr; gap: 4px; }
-    .guide { grid-template-columns: 1fr; }
-    .vtitle { position: static; }
-    .vtitle h1 { writing-mode: horizontal-tb; transform: none; font-size: var(--t-hero); text-shadow: 6px 6px 0 var(--ink); }
-    .path::before { left: 11px; }
-    .stop { grid-template-columns: 1fr; gap: 18px; padding-left: 40px; }
-    .stop::before { left: 11px; top: 30px; }
-    .stop:nth-child(even) .stop-text { order: 0; text-align: left; }
-    .log { grid-template-columns: 1fr; }
-    .log-list { position: static; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+    .talk { height: auto; grid-template-rows: auto; }
+    .talk .ptitle, .choices, .box-wrap { grid-column: 1; grid-row: auto; }
+    .talk { grid-template-columns: minmax(0, 1fr); }
+    .choices { transform: none; text-align: left; padding-right: 0; }
+    .talk .ptitle { font-size: 13vw; }
+    .log-list { position: static; display: flex; gap: 6px; overflow-x: auto; }
     .log-list button { width: auto; white-space: nowrap; }
-    .logbar { flex-direction: column; align-items: flex-start; }
-    .q { max-width: 92%; }
-    .wrap { padding-top: 92px; }
+    .px .ph { max-height: none; --ar: 4 / 3; }
+    .bigver { font-size: 26vw; }
 
-    #pg-home { overflow-y: auto; }
-    .home { height: auto; min-height: 100%; display: flex; flex-direction: column; padding: 132px var(--gutter) 0; }
-    .date { top: 20px; }
-    .date .mday { font-size: 2.8rem; }
-    .brand { top: 22px; }
-    .brand span { display: none; }
-    .pitch { position: relative; left: auto; bottom: auto; max-width: none; order: 1; }
-    .menu { position: relative; right: auto; top: auto; transform: rotate(-7deg); order: 2; margin: 56px 0 40px; align-self: flex-start; }
-    .menu ol { text-align: left; }
-    .menu li { margin: 0 0 0 calc(var(--i, 0) * 0.3em); }
-    .menu a { font-size: clamp(2.3rem, 11vw, 3.4rem); color: var(--paper); transform-origin: left center; }
-    .menu a.sel { transform: translateX(0.2em) scale(1.08); }
-    .hero { position: relative; left: auto; bottom: auto; height: auto; width: 100%; order: 3; margin-bottom: 20px; }
-    .hero .ph { aspect-ratio: 3 / 4; height: auto; }
-    .band, .say { display: none; }
-    .toast { position: relative; inset: auto; width: auto; order: 4; margin: 0 0 32px; }
-    .crumbs span { display: none; }
+    .home { position: relative; inset: auto; min-height: 100%; display: flex; flex-direction: column; padding: 112px 16px 32px; }
+    .strip, .shard, .chips, .command { display: none; }
+    .vname { position: relative; left: auto; bottom: auto; writing-mode: horizontal-tb; transform: none; font-size: 24vw; color: var(--paper); text-shadow: 5px 5px 0 var(--ink); order: 1; }
+    .vname .echo { display: none; }
+    .wallet { left: 16px; top: 20px; }
+    .tagline-m { display: block !important; order: 2; margin-top: 10px; font-weight: 600; }
+    .menu { position: relative; left: auto; top: auto; transform: rotate(-7deg); order: 3; margin: 40px 0 36px 6px; align-self: flex-start; }
+    .menu a { font-size: clamp(2.6rem, 13vw, 3.6rem); }
+    .menu li { margin-left: calc(var(--x) * 0.6); }
+    .hero { position: relative; left: auto; top: auto; bottom: auto; width: 100%; height: 70vh; order: 4; }
   }
-  @media (max-width: 600px) {
-    .scatter { grid-template-columns: 1fr; }
-    .scatter .card:nth-child(n) { transform: none; }
-    .scatter .ph { --ar: 16 / 10; }
-    .logbar h1, .neon h1, .vtitle h1 { font-size: 12.5vw; }
-    .formats span { font-size: 18vw; }
-    .ribbons li:nth-child(n) { margin-left: 0; }
-  }
+  @media (max-width: 560px) { .tiles, .steps { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) {
-    .wipe.run i, .page.on .slam, .toast { animation: none; }
-    .menu a, .scatter .card { transition: none; }
+    .wipe.run i, .page.on .slam, .box p.show, .box::after { animation: none; }
+    .menu a { transition: none; }
   }
 </style>
 <script>document.documentElement.classList.add("js");</script>
@@ -453,320 +389,195 @@
 <div class="caustics" id="water" aria-hidden="true"></div>
 
 <header class="topbar">
-  <a class="back" href="#"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M7 1 2 5l5 4" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>Menu</a>
-  <a class="crumbs" href="#" aria-label="Rainium home"><img src="icon.png" alt=""><span id="crumbVer">Rainium</span></a>
+  <a class="crumbs" href="#" aria-label="Back to the menu"><img src="icon.png" alt="">Rainium</a>
 </header>
+<div class="prompts" id="prompts"><div class="line"></div><nav aria-label="Page navigation" id="promptNav"></nav></div>
 
 <!-- ================= HOME ================= -->
 <section class="page on" id="pg-home" data-page="home" aria-label="Rainium">
   <div class="home">
-    <div class="band one" aria-hidden="true"></div>
-    <div class="band two" aria-hidden="true"></div>
+    <div class="strip" aria-hidden="true"></div>
+    <h1 class="vname d">Rainium<span class="echo" aria-hidden="true">Rainium</span></h1>
+    <p class="tagline-m" hidden>Wear any model in Minecraft.</p>
 
     <div class="hero">
-      <figure class="ph" data-img="img/hero.png"><span>A player wearing Rainium cosmetics, cut out on a transparent background</span><code>docs/img/hero.png</code></figure>
+      <figure class="ph" data-img="img/hero.png"><span>Your character art: a player wearing Rainium cosmetics, cut out on a transparent background</span><code>docs/img/hero.png</code></figure>
     </div>
+    <i class="shard s1" aria-hidden="true"></i><i class="shard s2" aria-hidden="true"></i><i class="shard s3" aria-hidden="true"></i><i class="shard s4" aria-hidden="true"></i>
 
-    <div class="date" aria-label="Today's date and moon phase">
-      <span class="mday" id="md"></span><span class="wd" id="wd"></span><span class="yr" id="yr"></span>
-      <span class="moonphase"><svg viewBox="-10 -10 20 20" aria-hidden="true"><circle r="9" fill="rgba(7,16,70,0.55)" stroke="#fff" stroke-width="1.2"/><path id="lit" fill="#fff"/></svg><span id="phaseName"></span></span>
-    </div>
-
-    <a class="brand" href="#download"><span id="brandVer">Rainium for Minecraft 26.3</span><img src="icon.png" alt=""></a>
-
-    <div class="pitch">
-      <h1 class="d wordmark">Rainium</h1>
-      <p class="tag-strip">Wear any model.</p>
-      <p class="sub">Bring an OBJ and keep its materials. Texture each part, make it glow, and put it on anyone you see.</p>
-      <p class="fine">A client-side Fabric mod for Minecraft 26.3. Only you see it, so it works on any server.</p>
-      <a class="chip" href="#download"><span id="chipLabel">Download</span><small id="chipSub">for Minecraft 26.3</small></a>
-    </div>
+    <a class="wallet" href="#updates"><b id="walletVer">0.4.0</b><span>latest version</span><i class="new" id="walletNew" hidden>New!</i></a>
 
     <nav class="menu" aria-label="Pages">
       <ol>
-        <li style="--i:0"><a class="sel" href="#features" data-say="What you can make, and how far you can tune it.">Features</a></li>
-        <li style="--i:1"><a href="#download" data-say="Get the latest version. Three steps to install.">Download</a></li>
-        <li style="--i:2"><a href="#guide" data-say="From a model file to wearing it, in four steps.">Guide</a></li>
-        <li style="--i:3"><a href="#particles" data-say="Sparkles, embers, hearts, trails and auras.">Particles</a></li>
-        <li style="--i:2"><a href="#models" data-say="OBJ, glTF and GLB, and what Rainium does with them.">Models</a></li>
-        <li style="--i:1"><a href="#updates" data-say="What changed in each release.">Updates</a></li>
-        <li style="--i:0"><a href="#questions" data-say="Servers, privacy, and where your files live.">Questions</a></li>
+        <li style="--x:1.1em"><a class="d" href="#features" data-say="What Rainium can do">Features</a></li>
+        <li style="--x:0.2em"><a class="d" href="#download" data-say="Get the latest version">Download</a></li>
+        <li style="--x:0.9em"><a class="d" href="#guide" data-say="Four steps to wearing your model">Guide</a></li>
+        <li style="--x:0.1em"><a class="d" href="#particles" data-say="Sparkles, embers and hearts">Particles</a></li>
+        <li style="--x:1.2em"><a class="d" href="#models" data-say="OBJ, glTF and GLB">Models</a></li>
+        <li style="--x:0.6em"><a class="d" href="#updates" data-say="What changed in each release">Updates</a></li>
+        <li style="--x:1.4em"><a class="d" href="#questions" data-say="Servers, privacy and files">Questions</a></li>
       </ol>
     </nav>
 
-    <div class="say" aria-hidden="true">
-      <p id="say">What you can make, and how far you can tune it.</p>
-      <span class="keys"><span><kbd>↑</kbd> <kbd>↓</kbd> Choose</span><span><kbd>Enter</kbd> Open</span><span><kbd>Esc</kbd> Back</span></span>
+    <div class="chips" aria-label="Today">
+      <div class="chip">
+        <span class="lab" id="dayLab"></span>
+        <span class="tile"><b id="dayNum"></b></span>
+        <span class="bar" title="How far through the month"><i id="monthBar"></i></span>
+      </div>
+      <div class="chip">
+        <span class="lab"><span id="phaseName"></span><small id="phaseLit"></small></span>
+        <span class="tile"><svg viewBox="-10 -10 20 20" aria-hidden="true"><circle r="9" fill="rgba(5,11,51,0.6)" stroke="#fff" stroke-width="1"/><path id="lit" fill="#fff"/></svg></span>
+        <span class="bar" title="Moon illumination"><i id="moonBar"></i></span>
+      </div>
     </div>
 
-    <aside class="toast" id="toast" hidden aria-live="polite">
-      <b>New version</b>
-      <span id="toastText"></span><br>
-      <a href="#updates" id="toastLink">What's new</a>
-      <button type="button" id="toastClose" aria-label="Dismiss">✕</button>
-    </aside>
+    <div class="command" aria-hidden="true">
+      <p class="say" id="say">Wear any model in Minecraft</p>
+      <p class="tag">Command</p>
+      <div class="line"></div>
+      <div class="keys"><span><span class="key">↑↓</span>Select</span><span><span class="key">↵</span>Confirm</span></div>
+    </div>
   </div>
 </section>
 
 <!-- ================= FEATURES ================= -->
 <section class="page" id="pg-features" data-page="features" aria-labelledby="t-features">
-  <div class="wrap">
+  <div class="fit">
     <h1 class="sr" id="t-features" tabindex="-1">Features</h1>
-    <div class="claim">
+    <div class="feat">
       <div>
-        <ul class="slam" aria-label="What Rainium does">
+        <ul class="claims slam" aria-label="What Rainium does">
           <li class="d">Any model</li><li class="d">Every material</li><li class="d">Your textures</li><li class="d">Real glow</li><li class="d">Anyone you see</li>
         </ul>
-        <p class="lede">Import an OBJ, glTF or GLB and Rainium keeps it in pieces, one part per object and material. Each part gets its own texture, colour, light and motion, and you decide who wears the result.</p>
+        <p class="lede">Every part is yours to tune in an in-game editor, with a live preview.</p>
       </div>
-      <figure class="ph shadowed" data-img="img/features-hero.png"><span>Wings with glowing trim, worn on a player at night</span><code>docs/img/features-hero.png</code></figure>
-    </div>
-
-    <div class="scatter">
-      <div class="card">
-        <figure class="ph" data-img="img/materials.png"><span>A model split into its material parts in the layer list</span><code>docs/img/materials.png</code></figure>
-        <h2 class="h">One part per material</h2>
-        <p>Every material in your OBJ becomes its own part, grouped in a folder so the model still moves, hides and resizes as one.</p>
-      </div>
-      <div class="card">
-        <figure class="ph" data-img="img/textures.png"><span>One model, three textures side by side</span><code>docs/img/textures.png</code></figure>
-        <h2 class="h">Textures and colour</h2>
-        <p>Give each part any PNG. Hue swings its colours round the wheel, and opacity fades it out. Textures packed in a <code>.glb</code> load by themselves.</p>
-      </div>
-      <div class="card">
-        <figure class="ph" data-img="img/glow.png"><span>A halo glowing in a dark cave</span><code>docs/img/glow.png</code></figure>
-        <h2 class="h">Glow in the dark</h2>
-        <p>Glowing parts ignore world light, so halos, trims and eyes stay bright at night. Mix glow with see-through for soft light.</p>
-      </div>
-      <div class="card">
-        <figure class="ph" data-img="img/players.png"><span>Cosmetics on friends and an armor stand</span><code>docs/img/players.png</code></figure>
-        <h2 class="h">On anyone you see</h2>
-        <p>You, everyone, other players, a list of names, or armor stands. It's drawn on your screen only, so nobody else needs the mod.</p>
+      <div class="tiles">
+        <div class="card tile-card"><figure class="ph" data-img="img/materials.png"><span>A model split into its material parts</span><code>docs/img/materials.png</code></figure>
+          <h2 class="h">Materials become parts</h2><p>Style each one on its own.</p></div>
+        <div class="card tile-card"><figure class="ph" data-img="img/textures.png"><span>One model, three textures</span><code>docs/img/textures.png</code></figure>
+          <h2 class="h">Any texture</h2><p>Any PNG, any hue, any opacity.</p></div>
+        <div class="card tile-card"><figure class="ph" data-img="img/glow.png"><span>A halo glowing in a dark cave</span><code>docs/img/glow.png</code></figure>
+          <h2 class="h">Real glow</h2><p>Glowing parts ignore world light.</p></div>
+        <div class="card tile-card"><figure class="ph" data-img="img/players.png"><span>Cosmetics on friends and an armor stand</span><code>docs/img/players.png</code></figure>
+          <h2 class="h">On anyone</h2><p>You, friends, everyone, armor stands.</p></div>
       </div>
     </div>
-
-    <div class="stats">
-      <div>
-        <h2 class="d">Tune everything</h2>
-        <p class="lede">Every number has a live preview on your player, a tooltip, and a box to type an exact value. Undo is one key away.</p>
-      </div>
-      <dl class="spec">
-        <div><dt>Attach point</dt><dd>Body, head, body without leaning, either arm or either leg.</dd></div>
-        <div><dt>Size, position, angle</dt><dd>Drag, or type exact numbers for each axis.</dd></div>
-        <div><dt>Style</dt><dd>Solid, see-through, glow, or see-through glow.</dd></div>
-        <div><dt>Hue and opacity</dt><dd>Recolour any texture without editing the image.</dd></div>
-        <div><dt>Movement</dt><dd>Sways as you run and turn, from Still to Bouncy, with fine-tuning.</dd></div>
-        <div><dt>Mirrored copy</dt><dd>Model one wing, get two. Works on arms and legs too.</dd></div>
-        <div><dt>Hide while gliding</dt><dd>Keeps wings and capes out of the way when you glide.</dd></div>
-        <div><dt>Shown on</dt><dd>Per layer or per folder: you, everyone, named players, armor stands.</dd></div>
-      </dl>
-    </div>
-
-    <div class="more">
-      <div><h2 class="h">Particle emitters</h2><p>Layers can give off sparkles, embers, hearts and more. <a href="#particles">See particles</a></p></div>
-      <div><h2 class="h">Share a look</h2><p>Export a folder as a zip, models and textures included, and a friend adds it in two clicks.</p></div>
-      <div><h2 class="h">Updates itself</h2><p>New versions download in the background and install when you close the game.</p></div>
-    </div>
-
-    <nav class="pager" aria-label="More pages">
-      <a href="#"><small>Back to</small><b>Menu</b></a>
-      <a class="next" href="#download"><small>Next</small><b>Download</b></a>
-    </nav>
   </div>
 </section>
 
 <!-- ================= DOWNLOAD ================= -->
 <section class="page" id="pg-download" data-page="download" aria-labelledby="t-download">
-  <div class="wrap">
+  <div class="fit">
     <div class="save">
       <div>
-        <h1 class="eyebrow slam" id="t-download" tabindex="-1">Download Rainium</h1>
-        <p class="bigver" id="bigVer" aria-hidden="true">0.4</p>
-        <p class="bigver-cap" id="bigCap">Latest release for Minecraft 26.3</p>
-        <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest">
-          <span id="mainDlLabel">Download Rainium</span><small id="mainDlSub">from GitHub Releases</small>
-        </a>
-        <p class="status small" id="status" aria-live="polite"></p>
-        <ul class="facts" aria-label="At a glance"><li>Free</li><li>Open source</li><li>Fabric</li><li>Minecraft 26.3</li><li>Client-side</li></ul>
+        <h1 class="ptitle d slab slam" id="t-download" tabindex="-1">Download</h1>
+        <p class="bigver" id="bigVer" aria-hidden="true">0.4.0</p>
+        <p class="cap" id="bigCap">Latest release for Minecraft 26.3</p>
+        <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
+        <p class="status" id="status" aria-live="polite"></p>
       </div>
       <div>
         <ol class="ribbons">
-          <li><b>Install Fabric</b><a href="https://fabricmc.net/use/">Fabric Loader</a> for Minecraft 26.3, plus <a href="https://modrinth.com/mod/fabric-api">Fabric API</a>.</li>
-          <li><b>Add Rainium</b>Put the <code>.jar</code> in your <code>.minecraft/mods</code> folder.</li>
-          <li><b>Press K</b>Launch the game and press <kbd>K</kbd> to open the editor.</li>
+          <li><b>Install Fabric</b><a href="https://fabricmc.net/use/">Fabric Loader</a> and <a href="https://modrinth.com/mod/fabric-api">Fabric API</a> for 26.3.</li>
+          <li><b>Add Rainium</b>Drop the <code>.jar</code> into <code>.minecraft/mods</code>.</li>
+          <li><b>Press K</b>The editor opens in game.</li>
         </ol>
-        <p class="note"><a href="https://modrinth.com/mod/modmenu">Mod Menu</a> is optional; with it, Rainium's Configure button opens the editor too. After the first install, Rainium keeps itself up to date.</p>
-        <figure class="ph light shadowed" data-img="img/download-editor.png"><span>The Rainium editor on first launch</span><code>docs/img/download-editor.png</code></figure>
+        <p class="after">After that, updates install themselves.</p>
       </div>
     </div>
-    <nav class="pager" aria-label="More pages">
-      <a href="#features"><small>Previous</small><b>Features</b></a>
-      <a class="next" href="#guide"><small>Next</small><b>Guide</b></a>
-    </nav>
   </div>
 </section>
 
 <!-- ================= GUIDE ================= -->
 <section class="page" id="pg-guide" data-page="guide" aria-labelledby="t-guide">
-  <div class="wrap guide">
-    <div class="vtitle"><h1 class="d slam" id="t-guide" tabindex="-1">Guide</h1></div>
-    <div>
-      <p class="lede">Four steps from a model file to wearing it. No config files.</p>
-      <ol class="path">
-        <li class="stop">
-          <figure class="ph shadowed" data-img="img/guide-editor.png"><span>The editor open over the game</span><code>docs/img/guide-editor.png</code></figure>
-          <div class="stop-text"><div class="n" aria-hidden="true">1</div><h2 class="h">Open the editor</h2>
-            <p>Press <kbd>K</kbd> in game. <code>/rainium</code> and Mod Menu's Configure button work too, and the key can be rebound in Controls.</p></div>
-        </li>
-        <li class="stop">
-          <figure class="ph shadowed" data-img="img/guide-halo.png"><span>The example halo switched on</span><code>docs/img/guide-halo.png</code></figure>
-          <div class="stop-text"><div class="n" aria-hidden="true">2</div><h2 class="h">Try the example</h2>
-            <p>A Gold halo comes with the mod, switched off. Click the square next to <strong>Gold halo</strong> in the layer list to show it.</p></div>
-        </li>
-        <li class="stop">
-          <figure class="ph shadowed" data-img="img/guide-import.png"><span>Importing a model with the live preview</span><code>docs/img/guide-import.png</code></figure>
-          <div class="stop-text"><div class="n" aria-hidden="true">3</div><h2 class="h">Bring your model</h2>
-            <p>Click <strong>Open rainium folder</strong> and drop in your model and its textures. Pick it on the <strong>Add</strong> tab, line it up on the preview, and add it.</p></div>
-        </li>
-        <li class="stop">
-          <figure class="ph shadowed" data-img="img/guide-edit.png"><span>The Edit tab with Look and Placement</span><code>docs/img/guide-edit.png</code></figure>
-          <div class="stop-text"><div class="n" aria-hidden="true">4</div><h2 class="h">Make it yours</h2>
-            <ul><li><strong>Look:</strong> texture, style, hue, opacity</li><li><strong>Placement:</strong> attach point, size, angle</li><li><strong>Behaviour:</strong> mirroring, sway, gliding</li><li><strong>Shown on:</strong> who wears it</li></ul></div>
-        </li>
-      </ol>
-      <div class="tips">
-        <div><b>Hover for help</b>Every setting's name explains itself in a tooltip.</div>
-        <div><b>Type exact values</b>Click any number to type it instead of dragging.</div>
-        <div><b>Undo anything</b><kbd>Ctrl</kbd>+<kbd>Z</kbd> and <kbd>Ctrl</kbd>+<kbd>Y</kbd>, or the buttons in the top bar.</div>
+  <div class="fit">
+    <div class="guide">
+      <h1 class="vtitle d slam" id="t-guide" tabindex="-1">Guide</h1>
+      <div>
+        <ol class="steps">
+          <li><div class="n" aria-hidden="true">1</div><figure class="ph" data-img="img/guide-editor.png"><span>The editor over the game</span><code>docs/img/guide-editor.png</code></figure>
+            <h2 class="h">Open the editor</h2><p>Press <kbd>K</kbd> in game.</p></li>
+          <li><div class="n" aria-hidden="true">2</div><figure class="ph" data-img="img/guide-halo.png"><span>The example halo, on</span><code>docs/img/guide-halo.png</code></figure>
+            <h2 class="h">Try the halo</h2><p>Switch on Gold halo in the layer list.</p></li>
+          <li><div class="n" aria-hidden="true">3</div><figure class="ph" data-img="img/guide-import.png"><span>Importing with the live preview</span><code>docs/img/guide-import.png</code></figure>
+            <h2 class="h">Add your model</h2><p>Drop it in the rainium folder, then pick it on the Add tab.</p></li>
+          <li><div class="n" aria-hidden="true">4</div><figure class="ph" data-img="img/guide-edit.png"><span>The Edit tab</span><code>docs/img/guide-edit.png</code></figure>
+            <h2 class="h">Make it yours</h2><p>Texture, glow, size, sway and who wears it.</p></li>
+        </ol>
+        <p class="hint" style="margin-top:4vh">Hover any setting for help. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes anything.</p>
       </div>
-      <nav class="pager" aria-label="More pages">
-        <a href="#download"><small>Previous</small><b>Download</b></a>
-        <a class="next" href="#particles"><small>Next</small><b>Particles</b></a>
-      </nav>
     </div>
   </div>
 </section>
 
 <!-- ================= PARTICLES ================= -->
 <section class="page" id="pg-particles" data-page="particles" aria-labelledby="t-particles">
-  <div class="wrap">
-    <div class="neon"><h1 class="d slam" id="t-particles" tabindex="-1">Particles</h1>
-      <p class="lede">A layer can be an emitter instead of a model. Start from a preset, or an empty one, then shape when, where and how it fires.</p></div>
+  <div class="fit">
+    <h1 class="ptitle d slab slam" id="t-particles" tabindex="-1">Particles</h1>
     <div class="px">
-      <ul class="presets" aria-label="Starting presets"><li class="d">Sparkles</li><li class="d">Embers</li><li class="d">Hearts</li><li class="d">Trail</li><li class="d">Aura</li></ul>
-      <figure class="ph" data-img="img/particles.png"><span>Embers trailing behind a running player</span><code>docs/img/particles.png</code></figure>
-    </div>
-    <div class="settings">
-      <h2 class="h">Emitter settings</h2>
-      <dl>
-        <div class="row"><dt>Picture</dt><dd>Minecraft's own particles (flame, sparkle, heart, note, smoke, petal and more) or any PNG of yours. Style, hue and opacity work like on models.</dd></div>
-        <div class="row"><dt>When</dt><dd>Always, only while moving, only while standing still, or more the faster you go. Set how many per second and how long each lasts.</dd></div>
-        <div class="row"><dt>Where</dt><dd>A point, ball, box or ring around your body, head, arms or legs, at any size.</dd></div>
-        <div class="row"><dt>Motion</dt><dd>Direction, speed, spread, gravity (negative floats up), drag and spin, plus size over time and fading.</dd></div>
-        <div class="row"><dt>Trail or follow</dt><dd>Particles travel with you, or stay where they appeared and leave a trail.</dd></div>
+      <ul class="presets" aria-label="Presets"><li class="d">Sparkles</li><li class="d">Embers</li><li class="d">Hearts</li><li class="d">Trail</li><li class="d">Aura</li></ul>
+      <figure class="ph" data-img="img/particles.png"><span>Embers trailing a running player</span><code>docs/img/particles.png</code></figure>
+      <dl class="knobs">
+        <div><dt>Picture</dt><dd>Minecraft's particles or your own PNG</dd></div>
+        <div><dt>When</dt><dd>Always, moving, standing still, or by speed</dd></div>
+        <div><dt>Where</dt><dd>Point, ball, box or ring</dd></div>
+        <div><dt>Motion</dt><dd>Speed, gravity, drag, spin, fade</dd></div>
+        <div><dt>Trail</dt><dd>Follow you, or stay behind</dd></div>
       </dl>
     </div>
-    <nav class="pager" aria-label="More pages">
-      <a href="#guide"><small>Previous</small><b>Guide</b></a>
-      <a class="next" href="#models"><small>Next</small><b>Models</b></a>
-    </nav>
   </div>
 </section>
 
 <!-- ================= MODELS ================= -->
 <section class="page" id="pg-models" data-page="models" aria-labelledby="t-models">
-  <div class="wrap">
+  <div class="fit">
     <h1 class="sr" id="t-models" tabindex="-1">Models</h1>
-    <div class="formats slam" aria-label="Formats Rainium imports"><span>OBJ</span><span>glTF</span><span>GLB</span></div>
-    <p class="lede">Nearly every 3D program exports these. Blender's defaults work as they are.</p>
-
+    <div class="formats slam" aria-label="Formats Rainium imports"><span>OBJ</span><span>glTF</span><span>GLB</span><p>Blender's default export works as it is.</p></div>
     <div class="conveyor" aria-label="How a model becomes parts">
-      <div class="card"><h2 class="h">Your file</h2><p>An <code>.obj</code>, <code>.gltf</code> or <code>.glb</code> in the rainium folder, with its PNG textures beside it.</p></div>
+      <div class="card"><h2 class="h">Your file</h2><p>Model and PNG textures in the rainium folder.</p></div>
       <div class="arrow" aria-hidden="true"></div>
-      <div class="card"><h2 class="h">Split into parts</h2><p>Rainium separates it by object and material, with a live preview while you set its size and angle.</p></div>
+      <div class="card"><h2 class="h">Split into parts</h2><p>One part per object and material.</p></div>
       <div class="arrow" aria-hidden="true"></div>
       <div class="card"><h2 class="h">Style each part</h2>
         <ul class="parts" aria-label="Example: a pair of wings">
-          <li><span>Feathers</span><span>texture, solid</span></li>
-          <li><span>Trim</span><span class="glow">glow</span></li>
-          <li><span>Veil</span><span>see-through, 60%</span></li>
-        </ul>
-      </div>
+          <li><span>Feathers</span><span>texture</span></li><li><span>Trim</span><span class="glow">glow</span></li><li><span>Veil</span><span>see-through</span></li>
+        </ul></div>
     </div>
-
-    <div class="models2">
-      <figure class="ph shadowed" data-img="img/models-import.png"><span>The Add tab previewing an imported model</span><code>docs/img/models-import.png</code></figure>
-      <div>
-        <section>
-          <h2 class="h">Convert outside the game</h2>
-          <p>The <a href="https://github.com/raincandyfx/rainium/tree/main/tools"><code>tools/</code></a> folder has two converters:</p>
-          <ul>
-            <li><strong>obj-converter.html</strong> runs in your browser. Your model never leaves your computer.</li>
-            <li><strong>mesh_convert.py</strong> handles OBJ, glTF and GLB from the command line (Python 3.8+).</li>
-          </ul>
-        </section>
-        <section>
-          <h2 class="h">Share a look</h2>
-          <p>Open a folder in the layer list and click <strong>Export as zip</strong>; models and textures come along. Your friend drops it into their <code>config/rainium</code> folder and adds it from <strong>Add › Shared sets</strong>. Who you show it on stays private.</p>
-        </section>
-      </div>
-    </div>
-    <nav class="pager" aria-label="More pages">
-      <a href="#particles"><small>Previous</small><b>Particles</b></a>
-      <a class="next" href="#updates"><small>Next</small><b>Updates</b></a>
-    </nav>
+    <p class="extras"><span><b>Convert</b>without the game using <a href="https://github.com/raincandyfx/rainium/tree/main/tools">the converters</a>.</span><span><b>Share</b>a look as a zip.</span></p>
   </div>
 </section>
 
 <!-- ================= UPDATES ================= -->
-<section class="page" id="pg-updates" data-page="updates" aria-labelledby="t-updates">
-  <div class="wrap">
-    <div class="logbar"><h1 class="d slam" id="t-updates" tabindex="-1">Updates</h1><p>Every release, newest first. Rainium installs these for you.</p></div>
+<section class="page scroll" id="pg-updates" data-page="updates" aria-labelledby="t-updates">
+  <div class="fit">
+    <h1 class="ptitle d slab slam" id="t-updates" tabindex="-1">Updates</h1>
     <div class="log">
       <ol class="log-list" id="logList" role="tablist" aria-label="Releases"></ol>
-      <article class="log-detail card" id="logDetail" role="tabpanel" aria-live="polite"><p class="muted" id="relStatus">Loading releases from GitHub…</p></article>
+      <article class="log-detail card" id="logDetail" role="tabpanel" aria-live="polite"><p class="muted" id="relStatus" style="color:var(--grey)">Loading releases…</p></article>
     </div>
-    <nav class="pager" aria-label="More pages">
-      <a href="#models"><small>Previous</small><b>Models</b></a>
-      <a class="next" href="#questions"><small>Next</small><b>Questions</b></a>
-    </nav>
   </div>
 </section>
 
 <!-- ================= QUESTIONS ================= -->
 <section class="page" id="pg-questions" data-page="questions" aria-labelledby="t-questions">
-  <div class="wrap">
-    <div class="logbar" style="border-bottom-color: var(--paper)"><h1 class="d slam" id="t-questions" tabindex="-1">Questions</h1></div>
+  <div class="fit">
     <div class="talk">
-      <p class="q">Can other players see my cosmetics?</p>
-      <div class="a-wrap"><span class="who">Rainium</span><div class="a"><p>No. I'm client-side, so only you see what you set up. To share a look, send someone an exported zip.</p></div></div>
-
-      <p class="q">Does it work on servers?</p>
-      <div class="a-wrap"><span class="who">Rainium</span><div class="a"><p>Yes. I only run on your side, so I work on any server and nothing needs installing there.</p></div></div>
-
-      <p class="q">What does "anyone you see" mean?</p>
-      <div class="a-wrap"><span class="who">Rainium</span><div class="a"><p>On your screen, your cosmetics can appear on everyone, other players, a list of player names, or armor stands with a name tag you choose. Set it for everything in <strong>Settings › Visibility</strong>, or per layer under <strong>Shown on</strong>.</p></div></div>
-
-      <p class="q">Will my OBJ's materials carry over?</p>
-      <div class="a-wrap"><span class="who">Rainium</span><div class="a"><p>Each material becomes its own part, so you can texture and style it separately. Put the PNG textures in the rainium folder with the model; a texture packed inside a <code>.glb</code> is picked up automatically.</p></div></div>
-
-      <p class="q">How do updates work?</p>
-      <div class="a-wrap"><span class="who">Rainium</span><div class="a"><p>Once per launch I check for a newer release for your Minecraft version, download and verify it, and install it when you close the game. Your layers and settings are kept. Turn this off in <strong>Settings › Updates</strong>.</p></div></div>
-
-      <p class="q">Do you collect any data?</p>
-      <div class="a-wrap"><span class="who">Rainium</span><div class="a"><p>No. My only network request is the optional update check, which lets GitHub see your IP address. Folder paths in the editor show your in-game name instead of your computer's account name, so screenshots are safe to share.</p></div></div>
-
-      <p class="q">Where are my files?</p>
-      <div class="a-wrap"><span class="who">Rainium</span><div class="a"><p>In <code>.minecraft/config/rainium/</code>. <strong>Open rainium folder</strong> in the editor takes you there. If a file you edited by hand has a problem, I keep your last working setup and explain what's wrong.</p></div></div>
-
-      <p class="q">Can I translate you?</p>
-      <div class="a-wrap"><span class="who">Rainium</span><div class="a"><p>Yes, please. Copy <a href="https://github.com/raincandyfx/rainium/blob/main/src/main/resources/assets/rainium/lang/en_us.json"><code>en_us.json</code></a> to your language's code, translate the right side of each line, and send it in an <a href="https://github.com/raincandyfx/rainium/issues">issue</a>.</p></div></div>
+      <h1 class="ptitle d slab slam" id="t-questions" tabindex="-1">Questions</h1>
+      <ul class="choices" id="choices" aria-label="Ask a question">
+        <li><button type="button" aria-pressed="true" data-a="No. Only you see your cosmetics. To share a look, send a friend an exported zip.">Can others see it?</button></li>
+        <li><button type="button" aria-pressed="false" data-a="Yes, any server. Nothing needs installing there.">Does it work on servers?</button></li>
+        <li><button type="button" aria-pressed="false" data-a="On your screen: you, everyone, named players or armor stands. Set it per layer.">Who can wear it?</button></li>
+        <li><button type="button" aria-pressed="false" data-a="Yes. Each material becomes its own part. Keep the PNG textures next to the model.">Do materials carry over?</button></li>
+        <li><button type="button" aria-pressed="false" data-a="No. The only time it goes online is the update check, and you can switch that off in Settings.">Does it collect data?</button></li>
+        <li><button type="button" aria-pressed="false" data-a="In .minecraft/config/rainium. The editor's Open rainium folder button takes you there.">Where are my files?</button></li>
+      </ul>
+      <div class="box-wrap">
+        <span class="who">Rainium</span>
+        <div class="box" aria-live="polite"><p id="answer" class="show">No. Only you see your cosmetics. To share a look, send a friend an exported zip.</p></div>
+        <p class="legal">MIT License. <a href="https://github.com/raincandyfx/rainium">Source</a> and <a href="https://github.com/raincandyfx/rainium/issues">issues</a>. Water by <a href="https://github.com/paper-design/shaders">Paper Shaders</a>. The Gold halo example is based on a Genshin Impact ornament; Rainium is not affiliated with HoYoverse. Not an official Minecraft product.</p>
+      </div>
     </div>
-    <p class="legal">Rainium is open source under the <a href="https://github.com/raincandyfx/rainium/blob/main/LICENSE">MIT License</a>. Read the <a href="https://github.com/raincandyfx/rainium">source</a> or <a href="https://github.com/raincandyfx/rainium/issues">report a problem</a> on GitHub. Water effect by <a href="https://github.com/paper-design/shaders">Paper Shaders</a> (Apache 2.0). The Gold halo example is based on a character ornament from Genshin Impact. Rainium is not affiliated with, endorsed by or connected to HoYoverse or the original creators, and all rights to the original design belong to them. Minecraft is a trademark of Mojang; Rainium is not an official Minecraft product.</p>
-    <nav class="pager" aria-label="More pages">
-      <a href="#updates"><small>Previous</small><b>Updates</b></a>
-      <a class="next" href="#"><small>Back to</small><b>Menu</b></a>
-    </nav>
   </div>
 </section>
 
@@ -780,25 +591,35 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
 };
 
-/* ---------- Pages and the wipe between them ---------- */
+/* ---------- Pages, the wipe, and the prompt bar ---------- */
 const PAGES = ["home", "features", "download", "guide", "particles", "models", "updates", "questions"];
+const INNER = PAGES.slice(1);
+const NAMES = { features: "Features", download: "Download", guide: "Guide", particles: "Particles", models: "Models", updates: "Updates", questions: "Questions" };
 const keyOf = () => { const k = location.hash.slice(1); return PAGES.includes(k) ? k : "home"; };
 const menuLinks = [...document.querySelectorAll(".menu a")];
 let current = null, timer = null, lastFrom = null;
 
+function neighbours(key) {
+  const i = INNER.indexOf(key);
+  return { prev: INNER[i - 1] || null, next: INNER[i + 1] || null };
+}
 function swap(key) {
   document.querySelectorAll(".page").forEach((p) => p.classList.toggle("on", p.dataset.page === key));
   document.body.dataset.page = key;
-  const page = $("pg-" + key);
-  page.scrollTop = 0;
+  $("pg-" + key).scrollTop = 0;
   current = key;
   if (key === "home") {
     const a = lastFrom && menuLinks.find((l) => l.hash === "#" + lastFrom);
     if (a) { select(a); a.focus({ preventScroll: true }); }
-  } else {
-    const h = page.querySelector("h1[tabindex]");
-    if (h) h.focus({ preventScroll: true });
+    return;
   }
+  const { prev, next } = neighbours(key);
+  $("promptNav").innerHTML =
+    (prev ? `<a href="#${prev}"><span class="key">←</span>${NAMES[prev]}</a>` : "") +
+    (next ? `<a href="#${next}"><span class="key">→</span>${NAMES[next]}</a>` : "") +
+    `<a href="#"><span class="key">Esc</span>Menu</a>`;
+  const h = $("pg-" + key).querySelector("h1[tabindex]");
+  if (h) h.focus({ preventScroll: true });
 }
 function go() {
   const key = keyOf();
@@ -810,28 +631,56 @@ function go() {
   w.classList.remove("run"); void w.offsetWidth; w.classList.add("run");
   timer = setTimeout(() => { swap(key); timer = setTimeout(() => w.classList.remove("run"), 420); }, 400);
 }
+
+/* The menu keeps one item selected, like a game cursor */
 function select(a) {
   menuLinks.forEach((l) => l.classList.toggle("sel", l === a));
+  menuLinks.forEach((l) => l.classList.toggle("slab", l === a));
   $("say").textContent = a.dataset.say;
 }
 menuLinks.forEach((a) => {
   a.addEventListener("mouseenter", () => select(a));
   a.addEventListener("focus", () => select(a));
 });
+select(menuLinks[0]);
+$("say").textContent = "Wear any model in Minecraft";
+
 document.addEventListener("keydown", (e) => {
   if (e.altKey || e.ctrlKey || e.metaKey) return;
-  if (e.key === "Escape" && current !== "home") { e.preventDefault(); location.hash = ""; return; }
-  if (current !== "home") return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (current !== "home") {
+    if (e.key === "Escape") { e.preventDefault(); location.hash = ""; return; }
+    if (e.target.closest && e.target.closest("#logList, #choices")) return;
+    const { prev, next } = neighbours(current);
+    if (e.key === "ArrowLeft" && prev) { e.preventDefault(); location.hash = prev; }
+    if (e.key === "ArrowRight" && next) { e.preventDefault(); location.hash = next; }
+    return;
+  }
   const i = menuLinks.findIndex((l) => l.classList.contains("sel"));
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
     menuLinks[e.key === "ArrowDown" ? (i + 1) % menuLinks.length : (i - 1 + menuLinks.length) % menuLinks.length].focus();
-  } else if (e.key === "Enter" && document.activeElement === document.body) {
+  } else if (e.key === "Enter" && tag === "body") {
     menuLinks[i].click();
   }
 });
 addEventListener("hashchange", go);
 go();
+
+/* ---------- Questions: pick a line, read the answer ---------- */
+document.querySelectorAll("#choices button").forEach((b, i, all) => {
+  b.addEventListener("click", () => {
+    all.forEach((x) => { x.setAttribute("aria-pressed", x === b); x.classList.toggle("slab", x === b); });
+    const p = $("answer");
+    p.classList.remove("show"); void p.offsetWidth; p.textContent = b.dataset.a; p.classList.add("show");
+  });
+  b.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    all[(i + (e.key === "ArrowDown" ? 1 : -1) + all.length) % all.length].focus();
+  });
+  if (i === 0) b.classList.add("slab");
+});
 
 /* ---------- Animated caustics: Paper Shaders' Water shader (Apache 2.0) ---------- */
 (async function () {
@@ -864,16 +713,20 @@ document.querySelectorAll(".ph[data-img]").forEach((fig) => {
   img.src = fig.dataset.img;
 });
 
-/* ---------- Date and tonight's moon phase ---------- */
+/* ---------- Today's date and tonight's moon ---------- */
 (function () {
   const now = new Date();
-  $("md").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
-  $("wd").textContent = now.toLocaleDateString("en", { weekday: "short" }).toUpperCase();
-  $("yr").textContent = now.getFullYear();
+  const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  $("dayNum").textContent = now.getDate();
+  $("dayLab").innerHTML = `${now.toLocaleDateString("en", { weekday: "short" })}<small>${now.toLocaleDateString("en", { month: "long" })}</small>`;
+  $("monthBar").style.setProperty("--v", Math.round((now.getDate() / days) * 100) + "%");
   const syn = 29.530588853, ref = Date.UTC(2000, 0, 6, 18, 14) / 86400000;
   let p = ((now.getTime() / 86400000 - ref) % syn) / syn; if (p < 0) p += 1;
   const names = ["New moon", "Waxing crescent", "First quarter", "Waxing gibbous", "Full moon", "Waning gibbous", "Last quarter", "Waning crescent"];
+  const lit = Math.round(((1 - Math.cos(2 * Math.PI * p)) / 2) * 100);
   $("phaseName").textContent = names[Math.round(p * 8) % 8];
+  $("phaseLit").textContent = lit + "% lit";
+  $("moonBar").style.setProperty("--v", lit + "%");
   const r = 9, rx = Math.abs(r * Math.cos(2 * Math.PI * p)), waxing = p < 0.5, q = waxing ? p : p - 0.5;
   $("lit").setAttribute("d", `M0,${-r} A${r},${r} 0 0 1 0,${r} A${rx},${r} 0 0 ${q < 0.25 ? 0 : 1} 0,${-r} Z`);
   if (!waxing) $("lit").setAttribute("transform", "scale(-1,1)");
@@ -888,8 +741,8 @@ fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`)
   .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
   .then(render)
   .catch(() => {
-    $("status").textContent = "Couldn't reach GitHub for version details. The button still downloads the latest release.";
-    $("relStatus").innerHTML = `Couldn't reach GitHub just now. Every release is listed on <a href="${RELEASES}">GitHub Releases</a>.`;
+    $("status").textContent = "Version details didn't load. The button still gets the latest release.";
+    $("relStatus").innerHTML = `Releases didn't load. See them on <a href="${RELEASES}">GitHub</a>.`;
   });
 
 function render(releases) {
@@ -899,28 +752,24 @@ function render(releases) {
     const [, version, mc] = jar.name.match(JAR);
     return { r, jar, version, mc, date: new Date(r.published_at) };
   }).filter(Boolean).sort((a, b) => b.date - a.date);
-  if (!REL.length) { $("relStatus").innerHTML = `Nothing released yet. Check <a href="${RELEASES}">GitHub Releases</a> later.`; return; }
+  if (!REL.length) { $("relStatus").innerHTML = `Nothing released yet.`; return; }
 
   const latest = REL[0];
   $("bigVer").textContent = latest.version;
-  $("bigCap").textContent = `Released ${fmtDate(latest.date)} for Minecraft ${latest.mc}`;
+  $("bigCap").textContent = `For Minecraft ${latest.mc}, released ${fmtDate(latest.date)}`;
   $("mainDl").href = latest.jar.browser_download_url;
   $("mainDlLabel").textContent = `Download ${latest.version}`;
   $("mainDlSub").textContent = `${latest.jar.name}, ${fmtSize(latest.jar.size)}`;
-  $("chipLabel").textContent = `Download ${latest.version}`;
-  $("chipSub").textContent = `for Minecraft ${latest.mc}`;
-  $("brandVer").textContent = `Rainium ${latest.version}`;
-  $("crumbVer").textContent = `Rainium ${latest.version}`;
-  toast(latest);
+  $("walletVer").textContent = latest.version;
+  if ((Date.now() - latest.date) / 86400000 <= 14 && store.get("rainium-seen") !== latest.version) $("walletNew").hidden = false;
 
   $("logList").innerHTML = REL.map((x, i) => `<li><button role="tab" id="tab-${i}" aria-selected="${i === 0}" aria-controls="logDetail" tabindex="${i === 0 ? 0 : -1}" data-i="${i}"><b>${esc(x.version)}</b><span>${fmtDate(x.date)}</span></button></li>`).join("");
   const tabs = [...$("logList").querySelectorAll("button")];
   tabs.forEach((t) => t.addEventListener("click", () => openRel(+t.dataset.i)));
   $("logList").addEventListener("keydown", (e) => {
     const i = tabs.indexOf(document.activeElement);
-    if (i < 0) return;
     const n = { ArrowDown: i + 1, ArrowRight: i + 1, ArrowUp: i - 1, ArrowLeft: i - 1 }[e.key];
-    if (n === undefined) return;
+    if (i < 0 || n === undefined) return;
     e.preventDefault();
     const j = (n + tabs.length) % tabs.length;
     openRel(j); tabs[j].focus();
@@ -930,22 +779,14 @@ function render(releases) {
 
 function openRel(i) {
   const x = REL[i];
+  if (i === 0) store.set("rainium-seen", x.version);
   $("logList").querySelectorAll("button").forEach((b, k) => { b.setAttribute("aria-selected", k === i); b.tabIndex = k === i ? 0 : -1; });
   $("logDetail").setAttribute("aria-labelledby", "tab-" + i);
   $("logDetail").innerHTML = `
     <h2>${esc(x.version)}</h2>
-    <div class="tags">${i === 0 ? '<span class="tag latest">Latest</span>' : ""}<span class="tag">Minecraft ${esc(x.mc)}</span><span class="tag">${fmtDate(x.date)}</span></div>
+    <div class="tags">${i === 0 ? '<span class="tag-chip latest">Latest</span>' : ""}<span class="tag-chip">Minecraft ${esc(x.mc)}</span><span class="tag-chip">${fmtDate(x.date)}</span></div>
     ${x.r.body ? `<div class="md">${md(x.r.body)}</div>` : ""}
-    <a class="get" href="${x.jar.browser_download_url}">Download ${esc(x.jar.name)}</a> <span class="muted small">${fmtSize(x.jar.size)}</span>`;
-}
-
-function toast(latest) {
-  if ((Date.now() - latest.date) / 86400000 > 14 || store.get("rainium-seen") === latest.version) return;
-  $("toastText").textContent = `Rainium ${latest.version} is out.`;
-  $("toast").hidden = false;
-  const close = () => { $("toast").hidden = true; store.set("rainium-seen", latest.version); };
-  $("toastClose").addEventListener("click", close);
-  $("toastLink").addEventListener("click", close);
+    <a class="get" href="${x.jar.browser_download_url}">Download ${esc(x.jar.name)}</a> <span style="color:var(--grey);font-size:.875rem">${fmtSize(x.jar.size)}</span>`;
 }
 
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
