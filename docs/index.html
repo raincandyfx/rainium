@@ -197,12 +197,12 @@
   .hero-model.video img { display: none; }
   .hero-model:not(.video) canvas { display: none; }
   /* Gallery arrows: step through the recorded characters, round and round */
-  .hero-nav { position: absolute; z-index: 6; top: 87%; width: 44px; height: 58px; margin-top: -29px; padding: 0; border: 0; background: none;
+  .hero-nav { position: absolute; z-index: 6; top: 84%; width: 32px; height: 42px; margin-top: -21px; padding: 0; border: 0; background: none;
     cursor: pointer; pointer-events: auto; transition: transform 0.15s; }
-  .hero-nav.prev { left: 68%; } .hero-nav.next { left: 82%; }
+  .hero-nav.prev { left: 71%; } .hero-nav.next { left: 83%; }
   .hero-nav::before, .hero-nav::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 0 50%, 100% 100%, 68% 50%); }
   .hero-nav::after { background: var(--menu); transition: background 0.15s; }
-  .hero-nav::before { background: var(--ink); transform: translate(5px, 5px); }
+  .hero-nav::before { background: var(--ink); transform: translate(4px, 4px); }
   .hero-nav.next::before, .hero-nav.next::after { clip-path: polygon(0 0, 100% 50%, 0 100%, 32% 50%); }
   .hero-nav:hover, .hero-nav:focus-visible { transform: scale(1.12); outline: none; }
   .hero-nav:hover::after, .hero-nav:focus-visible::after { background: var(--red); }
@@ -457,11 +457,8 @@
 </style>
 <script>
   document.documentElement.classList.add("js");
-  // The intro shows on a fresh visit to the home page (once per tab)
-  try {
-    if ((!location.hash || location.hash === "#") && !sessionStorage.getItem("rainium-intro"))
-      document.documentElement.classList.add("intro-on");
-  } catch (e) {}
+  // The intro shows whenever the site is opened or reloaded on the home page
+  if (!location.hash || location.hash === "#") document.documentElement.classList.add("intro-on");
 </script>
 </head>
 <body data-page="home">
@@ -967,12 +964,14 @@ function md(src) {
    w/h: the clip's size (as printed by make_loop.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
    A visitor gets a random one; the arrows step through the rest. */
 const CLIPS = [
-  { id: "halo", w: 770, h: 1078, k: 0.81, t: 5.5, label: "A player wearing the Gold halo" },
-  { id: "wings", w: 662, h: 1142, k: 0.87, t: 6.4, label: "A player with dark red wings" },
-  { id: "pod", w: 786, h: 1064, k: 0.78, y: 0.48, t: 5.8, label: "A player with a floating robot pod" },
-  { id: "spear", w: 992, h: 1054, k: 0.85, t: 3.2, label: "A player holding a long red spear" },
-  { id: "doll", w: 1000, h: 1140, k: 0.79, t: 10.3, label: "A player with a small doll sitting on their head" },
+  { id: "halo", w: 770, h: 1078, f: 1056, k: 0.72, t: 5.5, label: "A player wearing the Gold halo" },
+  { id: "wings", w: 662, h: 1142, f: 1127, k: 1.07, t: 6.4, label: "A player with dark red wings" },
+  { id: "pod", w: 786, h: 1064, f: 1051, k: 0.85, t: 5.8, label: "A player with a floating robot pod" },
+  { id: "spear", w: 992, h: 1054, f: 944, k: 1.0, t: 3.2, label: "A player holding a long red spear" },
+  { id: "doll", w: 1000, h: 1140, f: 1109, k: 0.86, t: 10.3, label: "A player with a small doll sitting on their head" },
 ];
+// f: the row the feet stand on (in the clip's pixels); every character's feet are lined up on the same line.
+// k: evens out the camera distance between recordings, so a skin pixel is the same size on screen in all of them.
 // s: playback speed (1 = as recorded, the default). t: loop length in seconds (default 8), for pacing the still-picture fallback.
 window.startHero = (function () {
   let started = false;
@@ -981,13 +980,12 @@ window.startHero = (function () {
   let host, hero, stage, back, front, canvas, gl, video, cur = 0, mode = "video";
   let fb = null; // the running still-picture fallback, if any
 
-  // Size and place the current clip. Sizes are relative to the first clip, which fills min(66vh, 94%) of the area.
+  // Size and place the current clip: one scale for all of them, feet on the same line.
+  const FEET = 0.9; // where the feet stand, as a share of the area's height
   function layout() {
     const c = CLIPS[cur], W = hero.clientWidth, H = hero.clientHeight;
-    const base = Math.min(innerHeight * 0.66, H * 0.94);
-    let h = base * (c.h / 960) * (c.k || 1);
-    h = Math.min(h, H * 0.98);
-    const w = h * c.w / c.h, left = W * (c.x ?? 0.5) - w / 2, top = H * (c.y ?? 0.52) - h / 2;
+    const s = Math.min(innerHeight * 0.66, H * 0.94) / 960 * 0.81 * (c.k || 1);
+    const w = c.w * s, h = c.h * s, left = W * (c.x ?? 0.5) - w / 2, top = H * FEET - (c.f ?? c.h) * s;
     for (const el of [canvas, back, front]) {
       if (!el) continue;
       el.style.left = left + "px"; el.style.top = top + "px"; el.style.width = w + "px"; el.style.height = h + "px";
@@ -1074,6 +1072,16 @@ window.startHero = (function () {
     requestAnimationFrame(tick);
   }
 
+  // Download every clip once (the current one first) and play them from memory, so the arrows switch instantly
+  const ready = {};
+  const clipUrl = (c) => `hero/${c.id}/clip.${mp4() ? "mp4" : "webm"}`;
+  async function preload() {
+    const order = CLIPS.map((_, i) => CLIPS[(cur + i) % CLIPS.length]);
+    for (const c of order) {
+      try { const r = await fetch(clipUrl(c)); if (r.ok) ready[c.id] = URL.createObjectURL(await r.blob()); } catch (e) {}
+    }
+  }
+
   function load() {
     const c = CLIPS[cur];
     host.setAttribute("aria-label", c.label);
@@ -1081,7 +1089,7 @@ window.startHero = (function () {
     if (mode === "video") {
       canvas.width = c.w; canvas.height = c.h; gl.viewport(0, 0, c.w, c.h);
       video.defaultPlaybackRate = c.s || 1;
-      video.src = `hero/${c.id}/clip.${mp4() ? "mp4" : "webm"}`;
+      video.src = ready[c.id] || clipUrl(c);
       video.load();
     } else {
       stills(c);
@@ -1115,6 +1123,7 @@ window.startHero = (function () {
     if (ok) host.classList.add("video"); else { mode = "stills"; canvas = null; }
     host.classList.add("out");
     load();
+    if (mode === "video") preload();
     addEventListener("resize", layout);
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ["data-page"] });
     document.addEventListener("visibilitychange", sync);
@@ -1126,8 +1135,8 @@ window.startHero = (function () {
     }
   };
 })();
-// With no intro to wait for, start straight away
-if (!document.documentElement.classList.contains("intro-on")) window.startHero();
+// Start straight away, even behind the intro, so the first character is loaded and the rest download while it shows
+window.startHero();
 
 /* ---------- Intro: any click or key slides the white page away to reveal the home page ---------- */
 (function () {
@@ -1141,7 +1150,6 @@ if (!document.documentElement.classList.contains("intro-on")) window.startHero()
     if (started) return;
     started = true;
     removeEventListener("keydown", go, true);
-    try { sessionStorage.setItem("rainium-intro", "1"); } catch (err) {}
     html.classList.remove("intro-on");
     window.startHero();
     if (still) return;
