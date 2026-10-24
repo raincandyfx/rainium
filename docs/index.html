@@ -55,12 +55,23 @@
   .h { font-style: italic; font-weight: 800; font-stretch: 80%; font-size: 1.55rem; line-height: 1.05; text-transform: uppercase; }
   .muted { color: var(--haze); }
 
-  /* The selection look: red type on a white slab, a pink shard behind */
-  .slab { position: relative; isolation: isolate; display: inline-block; color: var(--red); padding: 0.04em 0.34em 0 0.22em; }
-  .slab::before { content: ""; position: absolute; z-index: -1; inset: 0.06em -0.06em 0.02em 0;
-    background: var(--paper); clip-path: polygon(4% 8%, 100% 0, 96% 100%, 0 92%); filter: drop-shadow(4px 4px 0 var(--ink)); }
-  .slab::after { content: ""; position: absolute; z-index: -2; left: -0.42em; top: 46%; width: 1.3em; height: 0.36em;
-    background: var(--pink); clip-path: polygon(0 60%, 100% 0, 80% 100%); }
+  /* The selection look, after the game: black type over two wedges that almost cover it.
+     The larger wedge tints whatever is behind it red (the moving water still shows through).
+     The smaller one is solid white, and the type turns red inside it. */
+  .pick { position: relative; z-index: 0; display: inline-block; padding: 0.04em 0.3em 0 0.2em; }
+  .pick::before, .pick::after { content: ""; position: absolute; pointer-events: none; opacity: 0; }
+  .pick::before { inset: -30% -10% -26% -84%; z-index: -2; background: rgba(240, 22, 58, 0.38);
+    -webkit-backdrop-filter: hue-rotate(150deg) saturate(1.9); backdrop-filter: hue-rotate(150deg) saturate(1.9);
+    clip-path: polygon(12% 64%, 97% 6%, 94% 95%); }
+  .pick::after { inset: 0; z-index: -1; background: var(--paper); box-shadow: 0 0 0 60vmax var(--paper);
+    clip-path: polygon(-40% 52%, 82% -6%, 70% 96%); }
+  .pick .r { position: absolute; inset: 0; z-index: 1; padding: inherit; color: var(--red); visibility: hidden; pointer-events: none; text-shadow: none;
+    clip-path: polygon(-40% 52%, 82% -6%, 70% 96%); }
+  .pick.sel { color: var(--ink) !important; text-shadow: none !important; z-index: 2; }
+  .pick.sel::before, .pick.sel::after { opacity: 1; }
+  .pick.sel .r { visibility: visible; }
+  .pick.sel:focus-visible { outline: none; }
+  #pg-download .pick::before { background: rgba(240, 22, 58, 0.85); }
 
   /* ============ Sea and moving water light ============ */
   .sea { position: fixed; inset: 0; z-index: 0; }
@@ -97,7 +108,7 @@
   @keyframes slam { from { transform: translateX(-60px) scale(1.1); opacity: 0; } to { transform: none; opacity: 1; } }
 
   /* ============ Pages ============ */
-  .page { position: fixed; inset: 0; z-index: 2; display: none; overflow: hidden; }
+  .page { position: fixed; inset: 0; z-index: 2; display: none; overflow: hidden; overflow-x: hidden; }
   .page.on { display: block; }
   .page.scroll { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.4) transparent; }
   .fit { height: 100%; max-width: 1280px; margin: 0 auto; padding: var(--top) var(--gutter) var(--bottom); display: flex; flex-direction: column; justify-content: center; gap: clamp(14px, 3vh, 34px); }
@@ -169,10 +180,11 @@
 
   .menu { position: absolute; z-index: 5; left: 41vw; top: 51%; transform: translateY(-50%) rotate(-11deg); }
   .menu ol { list-style: none; margin: 0; padding: 0; }
-  .menu li { margin-left: var(--x); line-height: 0.8; }
+  .menu li { margin-left: var(--x); margin-top: var(--y, 0); line-height: 0.8; }
   .menu a { display: inline-block; text-decoration: none; color: var(--menu); font-size: clamp(3rem, 9.4vh, 6.2rem); letter-spacing: -0.02em;
-    text-shadow: 0 2px 14px rgba(5,11,51,0.25); transition: transform 0.16s cubic-bezier(.2,.9,.3,1.4); transform-origin: left center; }
-  .menu a.sel { color: var(--red); transform: scale(1.22) rotate(-3deg); text-shadow: none; }
+    text-shadow: 0 2px 14px rgba(5,11,51,0.25); transition: transform 0.16s cubic-bezier(.2,.9,.3,1.4); transform-origin: left center;
+    transform: rotate(var(--r, 0deg)) scale(var(--s, 1)); }
+  .menu a.sel { transform: rotate(calc(var(--r, 0deg) - 3deg)) scale(calc(var(--s, 1) * 1.2)); }
   .menu a:focus-visible { outline: none; }
 
   .chips { position: absolute; z-index: 4; right: var(--gutter); top: 30px; display: flex; flex-direction: column; gap: 18px; align-items: flex-end; }
@@ -315,11 +327,14 @@
   .talk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 480px); grid-template-rows: auto 1fr; gap: 3vh clamp(20px, 4vw, 64px); align-items: end; height: 100%; }
   .talk .ptitle { grid-column: 1; grid-row: 1; align-self: start; justify-self: start; }
   .choices { grid-column: 2; grid-row: 1 / span 2; list-style: none; padding: 0; margin: 0; align-self: center; text-align: right; transform: rotate(-4deg); padding-right: 24px; }
-  .choices li { margin: 0 0 1.1vh; }
-  .choices button { all: unset; position: relative; isolation: isolate; cursor: pointer; display: inline-block; padding: 0.06em 0.34em 0 0.22em; color: var(--menu);
+  .choices li { margin: 0 var(--x, 0) 0.9vh 0; }
+  .choices li:nth-child(1) { --x: 0.2em; } .choices li:nth-child(2) { --x: 1.1em; } .choices li:nth-child(3) { --x: 0.4em; }
+  .choices li:nth-child(4) { --x: 1.5em; } .choices li:nth-child(5) { --x: 0.1em; } .choices li:nth-child(6) { --x: 0.9em; }
+  .choices li:nth-child(odd) button { transform: rotate(-1.5deg); } .choices li:nth-child(3n) button { transform: rotate(1.5deg) scale(0.94); }
+  .choices li:nth-child(4) button { transform: rotate(-2.5deg) scale(1.05); }
+  .choices button { all: unset; position: relative; isolation: isolate; cursor: pointer; display: inline-block; padding: 0.04em 0.3em 0 0.2em; color: var(--menu);
     font-style: italic; font-weight: 900; font-stretch: 72%; font-size: clamp(1.35rem, 4vh, 2.1rem); line-height: 1.05; text-transform: uppercase; }
   .choices button:hover { color: var(--paper); }
-  .choices button[aria-pressed="true"] { color: var(--red); }
   .choices button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
   .box-wrap { grid-column: 1; grid-row: 2; position: relative; padding-top: 16px; }
   .who { position: absolute; left: 22px; top: 0; z-index: 1; background: var(--paper); color: var(--ink); padding: 3px 22px 3px 12px; clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%);
@@ -344,7 +359,7 @@
   /* ============ Narrow screens scroll, everything stacks ============ */
   @media (max-width: 860px) {
     :root { --top: 80px; --bottom: 40px; }
-    .page { overflow-y: auto; }
+    .page { overflow-y: auto; overflow-x: hidden; }
     .fit { height: auto; min-height: 100%; justify-content: flex-start; gap: 22px; }
     .prompts { position: static; display: none; }
     .feat, .save, .px, .guide, .talk, .log { grid-template-columns: 1fr; }
@@ -356,7 +371,8 @@
     .arrow { transform: rotate(90deg); justify-self: center; }
     .talk { height: auto; grid-template-rows: auto; }
     .talk .ptitle, .choices, .box-wrap { grid-column: 1; grid-row: auto; }
-    .talk { grid-template-columns: minmax(0, 1fr); }
+    .talk { grid-template-columns: minmax(0, 1fr); overflow-x: clip; }
+    .home { overflow-x: clip; }
     .choices { transform: none; text-align: left; padding-right: 0; }
     .talk .ptitle { font-size: 13vw; }
     .log-list { position: static; display: flex; gap: 6px; overflow-x: auto; }
@@ -409,13 +425,13 @@
 
     <nav class="menu" aria-label="Pages">
       <ol>
-        <li style="--x:1.1em"><a class="d" href="#features" data-say="What Rainium can do">Features</a></li>
-        <li style="--x:0.2em"><a class="d" href="#download" data-say="Get the latest version">Download</a></li>
-        <li style="--x:0.9em"><a class="d" href="#guide" data-say="Four steps to wearing your model">Guide</a></li>
-        <li style="--x:0.1em"><a class="d" href="#particles" data-say="Sparkles, embers and hearts">Particles</a></li>
-        <li style="--x:1.2em"><a class="d" href="#models" data-say="OBJ, glTF and GLB">Models</a></li>
-        <li style="--x:0.6em"><a class="d" href="#updates" data-say="What changed in each release">Updates</a></li>
-        <li style="--x:1.4em"><a class="d" href="#questions" data-say="Servers, privacy and files">Questions</a></li>
+        <li style="--x:1.25em;--y:0;--r:-2deg;--s:0.86"><a class="d pick" href="#features" data-say="What Rainium can do">Features</a></li>
+        <li style="--x:0.05em;--y:-0.02em;--r:1.5deg;--s:1.05"><a class="d pick" href="#download" data-say="Get the latest version">Download</a></li>
+        <li style="--x:1em;--y:-0.06em;--r:-3.5deg;--s:0.9"><a class="d pick" href="#guide" data-say="Four steps to wearing your model">Guide</a></li>
+        <li style="--x:0.3em;--y:-0.04em;--r:0.5deg;--s:1.08"><a class="d pick" href="#particles" data-say="Sparkles, embers and hearts">Particles</a></li>
+        <li style="--x:1.6em;--y:-0.08em;--r:2.5deg;--s:0.84"><a class="d pick" href="#models" data-say="OBJ, glTF and GLB">Models</a></li>
+        <li style="--x:0.55em;--y:-0.03em;--r:-1.5deg;--s:1"><a class="d pick" href="#updates" data-say="What changed in each release">Updates</a></li>
+        <li style="--x:1.15em;--y:-0.05em;--r:1deg;--s:0.95"><a class="d pick" href="#questions" data-say="Servers, privacy and files">Questions</a></li>
       </ol>
     </nav>
 
@@ -471,7 +487,7 @@
   <div class="fit">
     <div class="save">
       <div>
-        <h1 class="ptitle d slab slam" id="t-download" tabindex="-1">Download</h1>
+        <h1 class="ptitle d pick sel slam" id="t-download" tabindex="-1">Download</h1>
         <p class="bigver" id="bigVer" aria-hidden="true">0.4.0</p>
         <p class="cap" id="bigCap">Latest release for Minecraft 26.3</p>
         <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
@@ -514,7 +530,7 @@
 <!-- ================= PARTICLES ================= -->
 <section class="page" id="pg-particles" data-page="particles" aria-labelledby="t-particles">
   <div class="fit">
-    <h1 class="ptitle d slab slam" id="t-particles" tabindex="-1">Particles</h1>
+    <h1 class="ptitle d pick sel slam" id="t-particles" tabindex="-1">Particles</h1>
     <div class="px">
       <ul class="presets" aria-label="Presets"><li class="d">Sparkles</li><li class="d">Embers</li><li class="d">Hearts</li><li class="d">Trail</li><li class="d">Aura</li></ul>
       <figure class="ph" data-img="img/particles.png"><span>Embers trailing a running player</span><code>docs/img/particles.png</code></figure>
@@ -551,7 +567,7 @@
 <!-- ================= UPDATES ================= -->
 <section class="page scroll" id="pg-updates" data-page="updates" aria-labelledby="t-updates">
   <div class="fit">
-    <h1 class="ptitle d slab slam" id="t-updates" tabindex="-1">Updates</h1>
+    <h1 class="ptitle d pick sel slam" id="t-updates" tabindex="-1">Updates</h1>
     <div class="log">
       <ol class="log-list" id="logList" role="tablist" aria-label="Releases"></ol>
       <article class="log-detail card" id="logDetail" role="tabpanel" aria-live="polite"><p class="muted" id="relStatus" style="color:var(--grey)">Loading releases…</p></article>
@@ -563,14 +579,14 @@
 <section class="page" id="pg-questions" data-page="questions" aria-labelledby="t-questions">
   <div class="fit">
     <div class="talk">
-      <h1 class="ptitle d slab slam" id="t-questions" tabindex="-1">Questions</h1>
+      <h1 class="ptitle d pick sel slam" id="t-questions" tabindex="-1">Questions</h1>
       <ul class="choices" id="choices" aria-label="Ask a question">
-        <li><button type="button" aria-pressed="true" data-a="No. Only you see your cosmetics. To share a look, send a friend an exported zip.">Can others see it?</button></li>
-        <li><button type="button" aria-pressed="false" data-a="Yes, any server. Nothing needs installing there.">Does it work on servers?</button></li>
-        <li><button type="button" aria-pressed="false" data-a="On your screen: you, everyone, named players or armor stands. Set it per layer.">Who can wear it?</button></li>
-        <li><button type="button" aria-pressed="false" data-a="Yes. Each material becomes its own part. Keep the PNG textures next to the model.">Do materials carry over?</button></li>
-        <li><button type="button" aria-pressed="false" data-a="No. The only time it goes online is the update check, and you can switch that off in Settings.">Does it collect data?</button></li>
-        <li><button type="button" aria-pressed="false" data-a="In .minecraft/config/rainium. The editor's Open rainium folder button takes you there.">Where are my files?</button></li>
+        <li><button class="pick" type="button" aria-pressed="true" data-a="No. Only you see your cosmetics. To share a look, send a friend an exported zip.">Can others see it?</button></li>
+        <li><button class="pick" type="button" aria-pressed="false" data-a="Yes, any server. Nothing needs installing there.">Does it work on servers?</button></li>
+        <li><button class="pick" type="button" aria-pressed="false" data-a="On your screen: you, everyone, named players or armor stands. Set it per layer.">Who can wear it?</button></li>
+        <li><button class="pick" type="button" aria-pressed="false" data-a="Yes. Each material becomes its own part. Keep the PNG textures next to the model.">Do materials carry over?</button></li>
+        <li><button class="pick" type="button" aria-pressed="false" data-a="No. The only time it goes online is the update check, and you can switch that off in Settings.">Does it collect data?</button></li>
+        <li><button class="pick" type="button" aria-pressed="false" data-a="In .minecraft/config/rainium. The editor's Open rainium folder button takes you there.">Where are my files?</button></li>
       </ul>
       <div class="box-wrap">
         <span class="who">Rainium</span>
@@ -597,6 +613,7 @@ const INNER = PAGES.slice(1);
 const NAMES = { features: "Features", download: "Download", guide: "Guide", particles: "Particles", models: "Models", updates: "Updates", questions: "Questions" };
 const keyOf = () => { const k = location.hash.slice(1); return PAGES.includes(k) ? k : "home"; };
 const menuLinks = [...document.querySelectorAll(".menu a")];
+const choices = [...document.querySelectorAll("#choices button")];
 let current = null, timer = null, lastFrom = null;
 
 function neighbours(key) {
@@ -633,9 +650,14 @@ function go() {
 }
 
 /* The menu keeps one item selected, like a game cursor */
+// Each highlightable item carries a red copy of its words, shown only inside the white wedge
+document.querySelectorAll(".pick").forEach((el) => {
+  const r = document.createElement("span");
+  r.className = "r"; r.setAttribute("aria-hidden", "true"); r.textContent = el.textContent;
+  el.append(r);
+});
 function select(a) {
   menuLinks.forEach((l) => l.classList.toggle("sel", l === a));
-  menuLinks.forEach((l) => l.classList.toggle("slab", l === a));
   $("say").textContent = a.dataset.say;
 }
 menuLinks.forEach((a) => {
@@ -650,7 +672,14 @@ document.addEventListener("keydown", (e) => {
   const tag = (e.target.tagName || "").toLowerCase();
   if (current !== "home") {
     if (e.key === "Escape") { e.preventDefault(); location.hash = ""; return; }
-    if (e.target.closest && e.target.closest("#logList, #choices")) return;
+    if (current === "questions" && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      const i = choices.findIndex((c) => c.classList.contains("sel"));
+      const n = choices[(i + (e.key === "ArrowDown" ? 1 : -1) + choices.length) % choices.length];
+      n.click(); n.focus();
+      return;
+    }
+    if (e.target.closest && e.target.closest("#logList")) return;
     const { prev, next } = neighbours(current);
     if (e.key === "ArrowLeft" && prev) { e.preventDefault(); location.hash = prev; }
     if (e.key === "ArrowRight" && next) { e.preventDefault(); location.hash = next; }
@@ -668,18 +697,14 @@ addEventListener("hashchange", go);
 go();
 
 /* ---------- Questions: pick a line, read the answer ---------- */
-document.querySelectorAll("#choices button").forEach((b, i, all) => {
+choices.forEach((b, i) => {
   b.addEventListener("click", () => {
-    all.forEach((x) => { x.setAttribute("aria-pressed", x === b); x.classList.toggle("slab", x === b); });
+    if (b.classList.contains("sel")) return;
+    choices.forEach((x) => { x.setAttribute("aria-pressed", x === b); x.classList.toggle("sel", x === b); });
     const p = $("answer");
     p.classList.remove("show"); void p.offsetWidth; p.textContent = b.dataset.a; p.classList.add("show");
   });
-  b.addEventListener("keydown", (e) => {
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    e.preventDefault();
-    all[(i + (e.key === "ArrowDown" ? 1 : -1) + all.length) % all.length].focus();
-  });
-  if (i === 0) b.classList.add("slab");
+  if (i === 0) b.classList.add("sel");
 });
 
 /* ---------- Animated caustics: Paper Shaders' Water shader (Apache 2.0) ---------- */
