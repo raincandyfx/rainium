@@ -148,7 +148,7 @@ The Gold halo example that comes with the mod, and the models worn in the charac
 - **Long red spear**: "[Lance of Longinus](https://skfb.ly/6Rxyq)" by Mr. The Rich, licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/); from *Neon Genesis Evangelion* (khara)
 - **Small doll**: a MySekai item from *Hatsune Miku: Colorful Stage!* (SEGA and Colorful Palette; Hatsune Miku by Crypton Future Media)
 
-The characters in the recordings are animated with emotes by Milyan-SPEmotes, played with [Emotecraft](https://modrinth.com/mod/emotecraft); the animations aren't part of Rainium.
+The characters in the recordings are animated with emotes by Milyan-SPEmotes, played with [Emotecraft](https://modrinth.com/mod/emotecraft); the animations aren't part of Rainium. One of them is based on the dance from the *Hatsune Miku: Colorful Stage!* version of "Heat Abnormal" (song by Iyowa).
 
 Rainium is not affiliated with, endorsed by or connected to any of these companies or the original creators, and all rights to the original designs belong to them. They're shown only as examples of what the mod can display.
 
