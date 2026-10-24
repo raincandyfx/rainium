@@ -56,7 +56,7 @@
   .muted { color: var(--haze); }
 
   /* The selection look, after the game: black type pierced by two wedges, points first.
-     The red wedge (80% opacity) is the white one's twin, sitting a touch higher, mostly hidden until it beats: a slow swell that drifts a random way.
+     The red wedge (80% opacity) is the white one's twin, sitting a touch higher, mostly hidden until it beats: a quick swell that drifts a random way.
      Both points stop at the end of the words; the blunt ends may reach past the start.
      The white wedge drifts gently on its own.
      It tints whatever is behind it, so the moving water still shows through.
@@ -676,8 +676,8 @@ document.querySelectorAll(".pick").forEach((el) => {
   r.className = "r"; r.setAttribute("aria-hidden", "true"); r.textContent = el.textContent;
   el.append(r);
 });
-// The red wedge beats every second or so: a slow swell out from behind the white one, drifting a random way
-const BEAT = 650;
+// The red wedge beats every second or so: a quick swell out from behind the white one, drifting a random way
+const BEAT = 280;
 (function beatLoop() {
   setTimeout(beatLoop, BEAT + 450 + Math.random() * 650);
   if (still || !Element.prototype.animate) return;
@@ -690,7 +690,7 @@ const BEAT = 650;
         { transform: `translate(${dx}px, ${dy}px) scale(1.24)`, offset: 0.3 },
         { transform: `translate(${dx * 0.6}px, ${dy * 0.6}px) scale(1.07)`, offset: 0.65 },
         { transform: "none" },
-      ], { duration: BEAT, easing: "ease-in-out", pseudoElement: "::before" });
+      ], { duration: BEAT, easing: "ease-out", pseudoElement: "::before" });
     } catch (e) {}
   });
 })();
