@@ -175,9 +175,12 @@
   .home { position: absolute; inset: 0; overflow: hidden; }
   .strip { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: clamp(200px, 23vw, 400px); background: var(--paper);
     clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%); }
-  .vname { position: absolute; z-index: 3; left: clamp(60px, 8vw, 150px); bottom: 2vh; margin: 0; writing-mode: vertical-rl; transform: rotate(180deg);
-    font-size: clamp(8rem, 23vh, 15rem); color: var(--ink); line-height: 0.78; pointer-events: none; }
-  .vname .echo { position: absolute; inset: 0; transform: translate(0.08em, -0.06em); color: transparent; -webkit-text-stroke: 2px #9aa3c2; z-index: -1; }
+  /* RAINIUM fills the white band: the whole page height, as thick as the band is wide at the top, cut off by the band's slope.
+     It's an SVG stretched to fit (see fitName below); the real heading stays for screen readers and phones. */
+  .strip svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+  .strip text { font-family: "Archivo", system-ui, sans-serif; font-style: italic; font-weight: 900; font-stretch: 62%; font-size: 100px; fill: var(--ink); }
+  .strip text.echo { fill: none; stroke: #9aa3c2; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+  .vname { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   .hero { position: absolute; z-index: 4; left: 9vw; top: 0; bottom: 0; width: 40vw; pointer-events: none; }
   .hero .ph { width: 100%; height: 100%; aspect-ratio: auto; clip-path: polygon(14% 0, 100% 0, 78% 100%, 0 100%); outline-offset: -10px;
@@ -187,9 +190,24 @@
   .hero .ph.has img { object-fit: contain; object-position: center bottom; }
   /* The character recorded in game. When it loads, it replaces the picture slot. */
   .hero-model { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; }
-  .hero-model canvas { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; aspect-ratio: 682 / 960; transform: translate(-50%, -50%); }
+  /* Each clip's size and place are set by the script (CLIPS below) */
+  .hero-model .stage { position: absolute; inset: 0; transition: opacity 0.22s ease-out, transform 0.22s ease-out; }
+  .hero-model.out .stage { opacity: 0; transform: translateX(var(--dx, 0)); transition-timing-function: ease-in; }
+  .hero-model canvas, .hero-model img { position: absolute; max-width: none; }
   .hero-model.video img { display: none; }
-  .hero-model img { position: absolute; left: 50%; top: 52%; height: min(66vh, 94%); width: auto; max-width: none; transform: translate(-50%, -50%); }
+  .hero-model:not(.video) canvas { display: none; }
+  /* Gallery arrows: step through the recorded characters, round and round */
+  .hero-nav { position: absolute; z-index: 6; top: 87%; width: 44px; height: 58px; margin-top: -29px; padding: 0; border: 0; background: none;
+    cursor: pointer; pointer-events: auto; transition: transform 0.15s; }
+  .hero-nav.prev { left: 27%; } .hero-nav.next { right: 33%; }
+  .hero-nav::before, .hero-nav::after { content: ""; position: absolute; inset: 0; clip-path: polygon(100% 0, 0 50%, 100% 100%, 68% 50%); }
+  .hero-nav::after { background: var(--menu); transition: background 0.15s; }
+  .hero-nav::before { background: var(--ink); transform: translate(5px, 5px); }
+  .hero-nav.next::before, .hero-nav.next::after { clip-path: polygon(0 0, 100% 50%, 0 100%, 32% 50%); }
+  .hero-nav:hover, .hero-nav:focus-visible { transform: scale(1.12); outline: none; }
+  .hero-nav:hover::after, .hero-nav:focus-visible::after { background: var(--red); }
+  .hero-nav:active { transform: scale(0.94); }
+  .hero-nav[hidden] { display: none; }
   .hero-model .f { opacity: 0; }
   .hero.has-model .hero-model { opacity: 1; }
   .hero.has-model .ph { display: none; }
@@ -418,8 +436,9 @@
 
     .home { position: relative; inset: auto; min-height: 100%; display: flex; flex-direction: column; padding: 112px 16px 32px; }
     .strip, .chips, .command { display: none; }
-    .vname { position: relative; left: auto; bottom: auto; writing-mode: horizontal-tb; transform: none; font-size: 24vw; color: var(--paper); text-shadow: 5px 5px 0 var(--ink); order: 1; }
+    .vname { position: relative; width: auto; height: auto; overflow: visible; clip-path: none; font-size: 24vw; color: var(--paper); text-shadow: 5px 5px 0 var(--ink); order: 1; }
     .vname .echo { display: none; }
+    .hero-nav.prev { left: 0; } .hero-nav.next { right: 0; }
     .wallet { left: 16px; top: 20px; }
     .tagline-m { display: block !important; order: 2; margin-top: 10px; font-weight: 600; }
     .menu { position: relative; left: auto; top: auto; transform: rotate(-7deg); order: 3; margin: 40px 0 36px 6px; align-self: flex-start; }
@@ -458,12 +477,14 @@
 <!-- ================= HOME ================= -->
 <section class="page on" id="pg-home" data-page="home" aria-label="Rainium">
   <div class="home">
-    <div class="strip" aria-hidden="true"></div>
+    <div class="strip" aria-hidden="true"><svg id="sname" preserveAspectRatio="none"><g transform="rotate(-90)"><text class="echo" x="3" y="-2">RAINIUM</text><text>RAINIUM</text></g></svg></div>
     <h1 class="vname d">Rainium<span class="echo" aria-hidden="true">Rainium</span></h1>
     <p class="tagline-m" hidden>Wear any model in Minecraft.</p>
 
     <div class="hero" id="hero">
-      <div class="hero-model" id="heroModel" role="img" aria-label="A player wearing the Gold halo, swaying gently"><img class="b" alt=""><img class="f" alt=""></div>
+      <div class="hero-model" id="heroModel" role="img" aria-label="A player wearing Rainium cosmetics"><div class="stage"><img class="b" alt=""><img class="f" alt=""></div></div>
+      <button class="hero-nav prev" id="heroPrev" type="button" aria-label="Previous character" hidden></button>
+      <button class="hero-nav next" id="heroNext" type="button" aria-label="Next character" hidden></button>
       <figure class="ph" data-img="img/hero.png"><span>Your character art: a player wearing Rainium cosmetics, cut out on a transparent background</span><code>docs/img/hero.png</code></figure>
     </div>
 
@@ -908,19 +929,62 @@ function md(src) {
 </script>
 
 <script>
-/* ---------- Home: the player and halo, recorded in game ----------
-   hero/sway.mp4 (or .webm) is a 50.8 s loop at 30 fps: frames 5–132 of the in-game recording played about 6× slower,
-   forward then backward (ping-pong, easing to a stop at each end, so there is no jump from the last frame to the first),
-   with in-between frames made by optical flow so it stays smooth; with the picture in the top half and its
-   transparency in the bottom half (so it works in every browser); WebGL puts them back together.
-   If video or WebGL isn't available, every 4th frame (hero/00–31.webp) cross-fades instead, also ping-pong at the slowed speed. */
+/* ---------- Home: RAINIUM stretched to fill the white band ----------
+   The word is measured once the font is in, then the SVG's viewBox is set to its exact outline, so with
+   preserveAspectRatio="none" it fills the band edge to edge; the band's clip-path cuts it along the slope. */
+(function fitName() {
+  const svg = document.getElementById("sname");
+  if (!svg) return;
+  const fit = () => {
+    const text = svg.querySelector("text:not(.echo)");
+    const box = text.getBBox();
+    if (!box.width) return;
+    const cs = getComputedStyle(text), ctx = document.createElement("canvas").getContext("2d");
+    ctx.font = `${cs.fontStyle} ${cs.fontWeight} 100px ${cs.fontFamily}`;
+    const m = ctx.measureText("RAINIUM");
+    const A = m.actualBoundingBoxAscent || 72, D = m.actualBoundingBoxDescent || 0;
+    // rotate(-90): the word's length runs up the page, its letter height across the band
+    svg.setAttribute("viewBox", `${-A} ${-(box.x + box.width)} ${A + D} ${box.width}`);
+  };
+  fit();
+  if (document.fonts) document.fonts.ready.then(fit);
+})();
+</script>
+
+<script>
+/* ---------- Home: characters recorded in game, as a gallery that goes round and round ----------
+   Each clip lives in hero/<id>/ and is made by hero/tools/make_clip.py from an in-game recording:
+   clip.mp4 / clip.webm play the recording slowed down, forward then backward (ping-pong), with the picture in the
+   top half and its transparency in the bottom half (so it works in every browser); WebGL puts them back together.
+   If video or WebGL isn't available, 00–31.webp cross-fade instead, also ping-pong.
+   w/h: the clip's size (as printed by make_clip.py). Optional: k scales it on screen, x/y place its centre (0–1 of the area).
+   A visitor gets a random one; the arrows step through the rest. */
+const CLIPS = [
+  { id: "sway", w: 682, h: 960, label: "A player wearing the Gold halo, swaying gently" },
+];
 window.startHero = (function () {
   let started = false;
   const onHome = () => document.body.dataset.page === "home" && !document.hidden;
-  function videoPlayer(host, hero, still) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 682; canvas.height = 960;
-    const gl = canvas.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false });
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let host, hero, stage, back, front, canvas, gl, video, cur = 0, mode = "video";
+  let fb = null; // the running still-picture fallback, if any
+
+  // Size and place the current clip. Sizes are relative to the first clip, which fills min(66vh, 94%) of the area.
+  function layout() {
+    const c = CLIPS[cur], W = hero.clientWidth, H = hero.clientHeight;
+    const base = Math.min(innerHeight * 0.66, H * 0.94);
+    let h = base * (c.h / 960) * (c.k || 1);
+    h = Math.min(h, H * 0.98);
+    const w = h * c.w / c.h, left = W * (c.x ?? 0.5) - w / 2, top = H * (c.y ?? 0.52) - h / 2;
+    for (const el of [canvas, back, front]) {
+      if (!el) continue;
+      el.style.left = left + "px"; el.style.top = top + "px"; el.style.width = w + "px"; el.style.height = h + "px";
+    }
+  }
+
+  function setupGL() {
+    canvas = document.createElement("canvas");
+    gl = canvas.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false });
     if (!gl) return false;
     const vs = "attribute vec2 p; varying vec2 uv; void main(){ uv = vec2(p.x * 0.5 + 0.5, 0.5 - p.y * 0.5); gl_Position = vec4(p, 0.0, 1.0); }";
     const fs = "precision mediump float; varying vec2 uv; uniform sampler2D t; void main(){ vec3 c = texture2D(t, vec2(uv.x, uv.y * 0.5)).rgb; float a = texture2D(t, vec2(uv.x, 0.5 + uv.y * 0.5)).r; gl_FragColor = vec4(c * a, a); }";
@@ -940,48 +1004,53 @@ window.startHero = (function () {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.clearColor(0, 0, 0, 0);
 
-    const video = document.createElement("video");
+    video = document.createElement("video");
     video.muted = true; video.loop = true; video.playsInline = true; video.preload = "auto";
     video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
-    video.src = video.canPlayType('video/mp4; codecs="avc1.640028"') ? "hero/sway.mp4" : "hero/sway.webm";
-    let shown = false;
     const draw = () => {
       if (video.readyState < 2) return;
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      if (!shown) { shown = true; host.classList.add("video"); hero.classList.add("has-model"); }
     };
     const loop = () => { draw(); schedule(); };
     const schedule = () => (video.requestVideoFrameCallback ? video.requestVideoFrameCallback(loop) : requestAnimationFrame(loop));
-    video.addEventListener("loadeddata", () => { draw(); if (!still) schedule(); }, { once: true });
-    video.addEventListener("error", () => { canvas.remove(); host.classList.remove("video"); fallback(host, hero, still); }, { once: true });
-    const sync = () => { if (still) return; onHome() ? video.play().catch(() => {}) : video.pause(); };
-    new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ["data-page"] });
-    document.addEventListener("visibilitychange", sync);
-    host.prepend(canvas);
-    if (!still) sync();
+    video.addEventListener("loadeddata", () => { draw(); reveal(); if (!still) { schedule(); sync(); } });
+    video.addEventListener("error", () => { if (mode === "video") { mode = "stills"; host.classList.remove("video"); load(); } });
+    stage.prepend(canvas);
     return true;
   }
-  function fallback(host, hero, still) {
-    const back = host.querySelector(".b"), front = host.querySelector(".f");
-    const N = 32, STEP = 800;
+  const sync = () => {
+    if (mode !== "video" || still) return;
+    onHome() ? video.play().catch(() => {}) : video.pause();
+  };
+  const mp4 = () => document.createElement("video").canPlayType('video/mp4; codecs="avc1.640028"');
+
+  function reveal() {
+    hero.classList.add("has-model");
+    host.classList.remove("out");
+  }
+
+  // Still pictures, cross-faded forward then backward
+  function stills(c) {
+    const N = 32, STEP = 800, token = {};
+    fb = token;
     const order = [...Array(N).keys(), ...Array.from({ length: N - 2 }, (_, k) => N - 2 - k)]; // 0…31…1
-    const src = (i) => "hero/" + String(i).padStart(2, "0") + ".webp";
     const frames = [];
     for (let i = 0; i < N; i++) {
       const im = new Image();
-      im.onload = () => { if (i === 0) { back.src = im.src; hero.classList.add("has-model"); } };
-      im.src = src(i);
+      im.onload = () => { if (i === 0 && fb === token) { back.src = im.src; front.style.opacity = 0; reveal(); } };
+      im.src = `hero/${c.id}/${String(i).padStart(2, "0")}.webp`;
       frames.push(im);
     }
     if (still) return;
     let i = 0, t0 = 0;
     const loaded = (k) => frames[k].complete && frames[k].naturalWidth > 0;
+    const at = (k) => frames[order[k % order.length]];
     function tick(now) {
+      if (fb !== token) return;
       requestAnimationFrame(tick);
       if (!onHome()) { t0 = 0; return; }
-      const at = (k) => frames[order[k % order.length]];
       const next = (i + 1) % order.length;
       if (!loaded(order[i]) || !loaded(order[next])) return;
       if (!t0) { t0 = now; back.src = at(i).src; front.src = at(next).src; }
@@ -991,14 +1060,56 @@ window.startHero = (function () {
     }
     requestAnimationFrame(tick);
   }
+
+  function load() {
+    const c = CLIPS[cur];
+    host.setAttribute("aria-label", c.label);
+    fb = null;
+    if (mode === "video") {
+      canvas.width = c.w; canvas.height = c.h; gl.viewport(0, 0, c.w, c.h);
+      video.src = `hero/${c.id}/clip.${mp4() ? "mp4" : "webm"}`;
+      video.load();
+    } else {
+      stills(c);
+    }
+    layout();
+  }
+
+  // Step to another clip: slide the current one out, swap, and fade the new one in when it's ready
+  let busy = false;
+  function go(dir) {
+    if (busy) return;
+    busy = true;
+    host.style.setProperty("--dx", (dir > 0 ? -40 : 40) + "px");
+    host.classList.add("out");
+    setTimeout(() => {
+      cur = (cur + dir + CLIPS.length) % CLIPS.length;
+      host.style.setProperty("--dx", (dir > 0 ? 40 : -40) + "px");
+      load();
+      busy = false;
+    }, still ? 0 : 230);
+  }
+
   return function startHero() {
     if (started) return;
     started = true;
-    const host = document.getElementById("heroModel"), hero = document.getElementById("hero");
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    host = document.getElementById("heroModel"); hero = document.getElementById("hero");
+    stage = host.querySelector(".stage"); back = host.querySelector(".b"); front = host.querySelector(".f");
+    cur = Math.floor(Math.random() * CLIPS.length);
     let ok = false;
-    try { ok = videoPlayer(host, hero, still); } catch (e) { ok = false; }
-    if (!ok) fallback(host, hero, still);
+    try { ok = setupGL(); } catch (e) { ok = false; }
+    if (ok) host.classList.add("video"); else { mode = "stills"; canvas = null; }
+    host.classList.add("out");
+    load();
+    addEventListener("resize", layout);
+    new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ["data-page"] });
+    document.addEventListener("visibilitychange", sync);
+    if (CLIPS.length > 1) {
+      const prev = document.getElementById("heroPrev"), next = document.getElementById("heroNext");
+      prev.hidden = next.hidden = false;
+      prev.addEventListener("click", () => go(-1));
+      next.addEventListener("click", () => go(1));
+    }
   };
 })();
 // With no intro to wait for, start straight away
