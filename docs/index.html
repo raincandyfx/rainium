@@ -292,6 +292,8 @@
   .tile-card:nth-child(3) { transform: rotate(1deg); }
   .tile-card:nth-child(4) { transform: rotate(-1.5deg) translateY(10px); }
   .tile-card .ph { aspect-ratio: auto; height: clamp(80px, 17vh, 190px); margin-bottom: 10px; }
+  .tile-card .ph.clips { padding: 0; outline: 0; background: linear-gradient(180deg, #e3ebff, #c9d8ff); display: block; }
+  .tile-card .ph.clips canvas { position: absolute; display: block; }
   .tile-card h2, .tile-card p { padding: 0 16px; }
   .tile-card h2 { font-size: 1.35rem; }
   .tile-card p { color: var(--grey); font-size: 0.95rem; margin-top: 2px; }
@@ -312,6 +314,13 @@
   #pg-download .save .btn { color: var(--paper); }
   .save .btn:hover { background: var(--sea); }
   .save .btn small { color: var(--haze); }
+  .vers { display: flex; align-items: center; gap: 12px; margin-top: 2.4vh; }
+  .vers label { font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.95rem; }
+  .vers .sel { position: relative; display: inline-block; }
+  .vers .sel::after { content: ""; position: absolute; right: 13px; top: 50%; width: 8px; height: 8px; margin-top: -6px; border: solid var(--ink); border-width: 0 3px 3px 0; transform: rotate(45deg); pointer-events: none; }
+  .vers select { appearance: none; font: inherit; font-weight: 700; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 0; padding: 8px 40px 8px 14px; min-width: 15rem; cursor: pointer; box-shadow: 4px 4px 0 var(--cyan); }
+  .vers select:disabled { opacity: 0.6; cursor: default; }
+  .vers select:focus-visible { outline: 3px solid var(--sea); outline-offset: 3px; }
   .status { margin-top: 12px; color: var(--grey); font-size: 0.9rem; }
   .ribbons { list-style: none; padding: 0; margin: 0; counter-reset: n; }
   .ribbons li { counter-increment: n; position: relative; padding: 14px 24px 16px 80px; margin-bottom: 12px; background: var(--ink); color: var(--paper); clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%); }
@@ -326,6 +335,14 @@
   /* ============ GUIDE ============ */
   .guide { display: grid; grid-template-columns: auto 1fr; gap: clamp(20px, 3vw, 48px); align-items: center; }
   .vtitle { writing-mode: vertical-rl; transform: rotate(180deg); font-size: clamp(5rem, 22vh, 11rem); text-shadow: -5px 5px 0 var(--ink); }
+  .video { min-width: 0; }
+  .vid { --ar: 16 / 9; width: min(100%, 118vh); max-height: 70vh; margin: 0 auto; box-shadow: 8px 8px 0 var(--ink); }
+  .vid iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+  .vid-play { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 84px; height: 60px; margin: 0 auto 10px; background: var(--paper); color: var(--ink); transform: skewX(-8deg); box-shadow: 5px 5px 0 var(--ink); }
+  .vid-play svg { width: 30px; height: 30px; fill: currentColor; transform: skewX(8deg); }
+  .vid-play:not(:disabled) { cursor: pointer; }
+  .vid-play:not(:disabled):hover { background: var(--cyan); }
+  .vid-play:focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
   .steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; position: relative; }
   .steps::before { content: ""; position: absolute; left: 0; right: 0; top: clamp(30px, 6vh, 50px); height: 4px; background: repeating-linear-gradient(90deg, var(--cyan) 0 16px, transparent 16px 28px); }
   .steps li:nth-child(even) { margin-top: 5vh; }
@@ -379,6 +396,7 @@
   .log-list { list-style: none; padding: 0; margin: 0; position: sticky; top: var(--top); }
   .log-list button { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; width: 100%;
     padding: 8px 18px 8px 14px; margin-bottom: 6px; color: var(--menu); }
+  .log-list .bt { font-style: normal; font-weight: 700; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; margin-left: 8px; padding: 2px 6px; background: var(--cyan); color: var(--ink); }
   .log-list b { font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 2.2rem; line-height: 1; }
   .log-list span { font-size: 0.8rem; font-weight: 600; font-stretch: 85%; letter-spacing: 0.04em; text-transform: uppercase; color: var(--haze); }
   .log-list button:hover b { color: var(--paper); }
@@ -391,6 +409,8 @@
   .tags { display: flex; gap: 8px; margin: 10px 0 14px; flex-wrap: wrap; }
   .tag-chip { font-weight: 700; font-stretch: 85%; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 10px; background: var(--ink); color: var(--paper); }
   .tag-chip.latest { background: var(--red); }
+  .tag-chip.beta { background: var(--cyan); color: var(--ink); }
+  .beta-note { margin: 10px 0 0; color: var(--grey); font-size: 0.9rem; }
   .md { overflow-wrap: anywhere; color: #29325f; }
   .md ul { padding-left: 20px; margin: 6px 0; }
   .md li { margin: 4px 0; }
@@ -569,13 +589,13 @@
         <p class="lede">Every part is yours to tune in an in-game editor, with a live preview. Wear it on your body, head, arms or legs.</p>
       </div>
       <div class="tiles">
-        <div class="card tile-card"><figure class="ph" data-img="img/capture.png"><span>A transparent picture of a player in their cosmetics</span><code>docs/img/capture.png</code></figure>
+        <div class="card tile-card"><figure class="ph" data-clips="pod"><span>A player with a floating robot pod</span></figure>
           <h2 class="h">Pictures and clips</h2><p>Transparent PNGs and smooth recordings.</p></div>
         <div class="card tile-card"><figure class="ph" data-img="img/textures.png"><span>One model, three textures</span><code>docs/img/textures.png</code></figure>
           <h2 class="h">Any texture</h2><p>Any PNG, any hue, any opacity.</p></div>
         <div class="card tile-card"><figure class="ph" data-img="img/glow.png"><span>A halo glowing in a dark cave</span><code>docs/img/glow.png</code></figure>
           <h2 class="h">Real glow</h2><p>Glowing parts ignore world light.</p></div>
-        <div class="card tile-card"><figure class="ph" data-img="img/players.png"><span>Cosmetics on friends and an armor stand</span><code>docs/img/players.png</code></figure>
+        <div class="card tile-card"><figure class="ph" data-clips="halo,wings"><span>Two players, one with a halo and one with wings</span></figure>
           <h2 class="h">On anyone</h2><p>You, friends, everyone, armor stands.</p></div>
       </div>
     </div>
@@ -591,6 +611,7 @@
         <p class="bigver" id="bigVer" aria-hidden="true">0.4.0</p>
         <p class="cap" id="bigCap">Latest release for Minecraft 26.3</p>
         <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
+        <div class="vers"><label for="verSel">Version</label><span class="sel"><select id="verSel" disabled><option>Latest</option></select></span></div>
         <p class="status" id="status" aria-live="polite"></p>
       </div>
       <div>
@@ -610,18 +631,13 @@
   <div class="fit">
     <div class="guide">
       <h1 class="vtitle d slam" id="t-guide" tabindex="-1">Guide</h1>
-      <div>
-        <ol class="steps">
-          <li><div class="n" aria-hidden="true">1</div><figure class="ph" data-img="img/guide-editor.png"><span>The editor over the game</span><code>docs/img/guide-editor.png</code></figure>
-            <h2 class="h">Open the editor</h2><p>Press <kbd>K</kbd> in game.</p></li>
-          <li><div class="n" aria-hidden="true">2</div><figure class="ph" data-img="img/guide-halo.png"><span>The example halo, on</span><code>docs/img/guide-halo.png</code></figure>
-            <h2 class="h">Try the halo</h2><p>Switch on Gold halo in the layer list.</p></li>
-          <li><div class="n" aria-hidden="true">3</div><figure class="ph" data-img="img/guide-import.png"><span>Importing with the live preview</span><code>docs/img/guide-import.png</code></figure>
-            <h2 class="h">Add your model</h2><p>Drop it in the rainium folder, then pick it on the Add tab.</p></li>
-          <li><div class="n" aria-hidden="true">4</div><figure class="ph" data-img="img/guide-edit.png"><span>The Edit tab</span><code>docs/img/guide-edit.png</code></figure>
-            <h2 class="h">Make it yours</h2><p>Texture, glow, size, sway and who wears it.</p></li>
-        </ol>
-        <p class="hint" style="margin-top:4vh">Hover any setting for help. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes anything.</p>
+      <div class="video">
+        <div class="ph vid" id="guideVid">
+          <button type="button" class="vid-play" id="guidePlay" aria-label="Guide video coming soon" disabled>
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3l12 7-12 7z"/></svg>
+          </button>
+          <span id="guideCap">Guide video coming soon</span>
+        </div>
       </div>
     </div>
   </div>
@@ -899,15 +915,23 @@ function render(releases) {
   if (!REL.length) { $("relStatus").innerHTML = `Nothing released yet.`; return; }
 
   const latest = REL[0];
-  $("bigVer").textContent = latest.version;
-  $("bigCap").textContent = `For Minecraft ${latest.mc}, released ${fmtDate(latest.date)}`;
-  $("mainDl").href = latest.jar.browser_download_url;
-  $("mainDlLabel").textContent = `Download ${latest.version}`;
-  $("mainDlSub").textContent = `${latest.jar.name}, ${fmtSize(latest.jar.size)}`;
+  const showVer = (i) => {
+    const x = REL[i];
+    $("bigVer").textContent = x.version;
+    $("bigCap").textContent = `${i === 0 ? "Latest release for" : "For"} Minecraft ${x.mc}, released ${fmtDate(x.date)}`;
+    $("mainDl").href = x.jar.browser_download_url;
+    $("mainDlLabel").textContent = `Download ${x.version}`;
+    $("mainDlSub").textContent = `${x.jar.name}, ${fmtSize(x.jar.size)}`;
+  };
+  showVer(0);
+  const sel = $("verSel");
+  sel.innerHTML = REL.map((x, i) => `<option value="${i}">${esc(x.version)}, Minecraft ${esc(x.mc)}${i === 0 ? " (latest)" : ""}</option>`).join("");
+  sel.disabled = REL.length < 2;
+  sel.addEventListener("change", () => showVer(+sel.value));
   $("walletVer").textContent = latest.version;
   if ((Date.now() - latest.date) / 86400000 <= 14 && store.get("rainium-seen") !== latest.version) $("walletNew").hidden = false;
 
-  $("logList").innerHTML = REL.map((x, i) => `<li><button role="tab" id="tab-${i}" aria-selected="${i === 0}" aria-controls="logDetail" tabindex="${i === 0 ? 0 : -1}" data-i="${i}"><b>${esc(x.version)}</b><span>${fmtDate(x.date)}</span></button></li>`).join("");
+  $("logList").innerHTML = REL.map((x, i) => `<li><button role="tab" id="tab-${i}" aria-selected="${i === 0}" aria-controls="logDetail" tabindex="${i === 0 ? 0 : -1}" data-i="${i}"><b>${esc(x.version)}${isBeta(x) ? '<em class="bt">Beta</em>' : ""}</b><span>${fmtDate(x.date)}</span></button></li>`).join("");
   const tabs = [...$("logList").querySelectorAll("button")];
   tabs.forEach((t) => t.addEventListener("click", () => openRel(+t.dataset.i)));
   $("logList").addEventListener("keydown", (e) => {
@@ -928,11 +952,13 @@ function openRel(i) {
   $("logDetail").setAttribute("aria-labelledby", "tab-" + i);
   $("logDetail").innerHTML = `
     <h2>${esc(x.version)}</h2>
-    <div class="tags">${i === 0 ? '<span class="tag-chip latest">Latest</span>' : ""}<span class="tag-chip">Minecraft ${esc(x.mc)}</span><span class="tag-chip">${fmtDate(x.date)}</span></div>
+    <div class="tags">${i === 0 ? '<span class="tag-chip latest">Latest</span>' : ""}${isBeta(x) ? '<span class="tag-chip beta">Beta</span>' : ""}<span class="tag-chip">Minecraft ${esc(x.mc)}</span><span class="tag-chip">${fmtDate(x.date)}</span></div>
+    ${isBeta(x) ? '<p class="beta-note">Rainium is in beta. Settings and features can change between 0.x versions.</p>' : ""}
     ${x.r.body ? `<div class="md">${md(x.r.body)}</div>` : ""}
     <a class="get" href="${x.jar.browser_download_url}">Download ${esc(x.jar.name)}</a> <span style="color:var(--grey);font-size:.875rem">${fmtSize(x.jar.size)}</span>`;
 }
 
+function isBeta(x) { return /^0\./.test(x.version); }
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function fmtDate(d) { return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }); }
 function fmtSize(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
@@ -1204,6 +1230,99 @@ window.startHero();
   addEventListener("keydown", go, true);
 })();
 
+/* ---------- Features: the first and last tiles play the recorded clips ----------
+   Same clip files as the home gallery (picture on top, transparency below). Each frame is put back together on a small canvas.
+   Only runs while the Features page is showing. */
+(function () {
+  const webm = !!document.createElement("video").canPlayType('video/webm; codecs="vp9"');
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const items = [...document.querySelectorAll("#pg-features .ph[data-clips]")].map((fig) => {
+    const parts = fig.dataset.clips.split(",").map((id) => CLIPS.find((c) => c.id === id)).filter(Boolean).map((c) => {
+      const cv = document.createElement("canvas");
+      cv.setAttribute("role", "img"); cv.setAttribute("aria-label", c.label);
+      const v = document.createElement("video");
+      v.muted = true; v.loop = true; v.playsInline = true; v.preload = "none";
+      return { c, cv, v, ctx: cv.getContext("2d"), off: document.createElement("canvas"), failed: false };
+    });
+    fig.replaceChildren(...parts.map((p) => p.cv));
+    fig.classList.add("clips");
+    return { fig, parts, w: 0, h: 0, loaded: false };
+  });
+  if (!items.length) return;
+
+  const fallback = (p) => {
+    p.failed = true;
+    const img = new Image();
+    img.onload = () => p.ctx.drawImage(img, 0, 0, p.cv.width, p.cv.height);
+    img.src = `hero/${p.c.id}/00.webp`;
+  };
+  const size = (it) => {
+    const W = it.fig.clientWidth, H = it.fig.clientHeight;
+    if (!W || !H || (W === it.w && H === it.h)) return;
+    it.w = W; it.h = H;
+    const gap = 4, n = it.parts.length, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let u = (H - 6) / Math.max(...it.parts.map((p) => p.c.f * p.c.k));
+    const cw = it.parts.reduce((t, p) => t + p.c.w * p.c.k * u, 0), avail = W - gap * (n - 1);
+    if (cw > avail) u *= avail / cw;
+    let x = (W - (it.parts.reduce((t, p) => t + p.c.w * p.c.k * u, 0) + gap * (n - 1))) / 2;
+    for (const p of it.parts) {
+      const cssW = p.c.w * p.c.k * u, cssH = p.c.h * p.c.k * u;
+      p.cv.width = Math.max(1, Math.round(cssW * dpr)); p.cv.height = Math.max(1, Math.round(cssH * dpr));
+      Object.assign(p.cv.style, { width: cssW + "px", height: cssH + "px", left: x + "px", bottom: (6 - (p.c.h - p.c.f) * p.c.k * u) + "px" });
+      x += cssW + gap;
+      if (p.failed) fallback(p);
+    }
+  };
+  const draw = (p) => {
+    const v = p.v, w = p.cv.width, h = p.cv.height;
+    if (p.failed || v.readyState < 2) return;
+    const o = p.off;
+    if (o.width !== w || o.height !== h * 2) { o.width = w; o.height = h * 2; }
+    const octx = o.getContext("2d", { willReadFrequently: true });
+    octx.drawImage(v, 0, 0, w, h * 2);
+    const src = octx.getImageData(0, 0, w, h * 2).data, out = p.ctx.createImageData(w, h), d = out.data, n = w * h * 4;
+    for (let i = 0; i < n; i += 4) { d[i] = src[i]; d[i + 1] = src[i + 1]; d[i + 2] = src[i + 2]; d[i + 3] = src[n + i]; }
+    p.ctx.putImageData(out, 0, 0);
+  };
+  const load = (it) => {
+    it.loaded = true;
+    for (const p of it.parts) {
+      p.v.addEventListener("error", () => fallback(p));
+      p.v.addEventListener("loadeddata", () => draw(p));
+      p.v.preload = "auto"; p.v.src = `hero/${p.c.id}/clip.${webm ? "webm" : "mp4"}`;
+    }
+  };
+  const tick = () => {
+    const on = document.body.dataset.page === "features" && !document.hidden;
+    for (const it of items) {
+      if (on) { size(it); if (!it.loaded) load(it); }
+      for (const p of it.parts) {
+        if (!it.loaded || p.failed) continue;
+        if (on && !still) { if (p.v.paused) p.v.play().catch(() => {}); draw(p); }
+        else if (!p.v.paused) p.v.pause();
+      }
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+})();
+
+/* ---------- Guide: a YouTube video. Put the video's ID here (the part after v= in its address) and the button starts working.
+   Nothing from YouTube loads until someone presses play, and it uses the no-cookie embed. ---------- */
+(function () {
+  const GUIDE_VIDEO = "";
+  const box = document.getElementById("guideVid"), btn = document.getElementById("guidePlay"), cap = document.getElementById("guideCap");
+  if (!GUIDE_VIDEO) return;
+  btn.disabled = false; btn.setAttribute("aria-label", "Play the guide video"); cap.textContent = "Play the guide video";
+  btn.addEventListener("click", () => {
+    if (window.musicPause) window.musicPause();
+    const f = document.createElement("iframe");
+    f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(GUIDE_VIDEO)}?autoplay=1&rel=0`;
+    f.title = "Rainium guide video"; f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen"; f.allowFullscreen = true;
+    box.replaceChildren(f); box.classList.add("has");
+  });
+})();
+
 /* ---------- Music: starts on the first click or key (the intro one), then plays on every page ---------- */
 (function () {
   const SONG = "https://soundcloud.com/asfsdfgj/color-your-night";
@@ -1245,6 +1364,7 @@ window.startHero();
   addEventListener("pointerdown", first, true);
   addEventListener("keydown", first, true);
   window.musicStart = () => first({ target: document });
+  window.musicPause = pause;
 })();
 </script>
 </body>
