@@ -295,7 +295,7 @@
   .claims li { font-size: clamp(2.4rem, 8vh, 4.8rem); text-shadow: 4px 4px 0 var(--ink); }
   .claims li:nth-child(even) { color: var(--menu); padding-left: 0.5em; }
   .feat .lede { margin-top: 2.4vh; font-size: 1.2rem; font-weight: 500; max-width: 30ch; }
-  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 2.6vh, 26px) 24px; }
+  .tiles { display: grid; align-items: start; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 2.6vh, 26px) 24px; }
   .tile-card { padding: 0 0 14px; }
   .tile-card:nth-child(1) { transform: rotate(-2deg); }
   .tile-card:nth-child(2) { transform: rotate(1.5deg) translateY(10px); }
@@ -310,6 +310,7 @@
   .tile-card:has(.clips) h2, .tile-card:has(.clips) p { position: relative; z-index: 1; }
   .tile-card .ph.clips { padding: 0; outline: 0; background: none; display: block; overflow: visible; clip-path: inset(-100vh -100vw 0 -100vw); }
   .tile-card .ph.clips canvas { position: absolute; display: block; filter: drop-shadow(5px 5px 0 rgba(5,11,51,0.55)); }
+  .tile-card .ph[data-img$="glow.png"] { height: auto; aspect-ratio: 1372 / 759; }
   .tile-card h2, .tile-card p { padding: 0 16px; }
   .tile-card h2 { font-size: 1.35rem; }
   .tile-card p { color: var(--grey); font-size: 0.95rem; margin-top: 2px; }
