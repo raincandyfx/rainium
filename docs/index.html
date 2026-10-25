@@ -591,14 +591,14 @@
         <p class="lede">Every part is yours to tune in an in-game editor, with a live preview. Wear it on your body, head, arms or legs.</p>
       </div>
       <div class="tiles">
-        <div class="card tile-card"><figure class="ph" data-clips="pod"><span>A player with a floating robot pod</span></figure>
-          <h2 class="h">Pictures and clips</h2><p>Transparent PNGs and smooth recordings.</p></div>
+        <div class="card tile-card"><figure class="ph" data-clips="halo,wings"><span>Two players, one with a halo and one with wings</span></figure>
+          <h2 class="h">On anyone</h2><p>You, friends, everyone, armor stands.</p></div>
         <div class="card tile-card"><figure class="ph" data-img="img/textures.png"><span>One model, three textures</span><code>docs/img/textures.png</code></figure>
           <h2 class="h">Any texture</h2><p>Any PNG, any hue, any opacity.</p></div>
         <div class="card tile-card"><figure class="ph" data-img="img/glow.png"><span>A halo glowing in a dark cave</span><code>docs/img/glow.png</code></figure>
           <h2 class="h">Real glow</h2><p>Glowing parts ignore world light.</p></div>
-        <div class="card tile-card"><figure class="ph" data-clips="halo,wings"><span>Two players, one with a halo and one with wings</span></figure>
-          <h2 class="h">On anyone</h2><p>You, friends, everyone, armor stands.</p></div>
+        <div class="card tile-card"><figure class="ph" data-clips="pod"><span>A player with a floating robot pod</span></figure>
+          <h2 class="h">Pictures and clips</h2><p>Transparent PNGs and smooth recordings.</p></div>
       </div>
     </div>
   </div>
@@ -1279,7 +1279,7 @@ window.startHero();
       const c = p.c, mid = geo[i].mid;
       const cssW = c.w * u, cssH = c.h * u;
       p.cv.width = Math.max(1, Math.round(cssW * dpr)); p.cv.height = Math.max(1, Math.round(cssH * dpr));
-      Object.assign(p.cv.style, { width: cssW + "px", height: cssH + "px", left: (W * (xs[i] ?? 0.5) - cssW / 2) + "px", top: (H - mid * u) + "px" });
+      Object.assign(p.cv.style, { width: cssW + "px", height: cssH + "px", left: (W * (xs[i] ?? 0.5) - cssW / 2) + "px", top: (H - mid * u) + "px", zIndex: c.id === "halo" ? 2 : 1 });
       if (p.failed) fallback(p);
     });
   };
