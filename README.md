@@ -5,8 +5,7 @@
 <h1 align="center">Rainium</h1>
 
 <p align="center">
-  Wings, halos, tails, capes, anything you can model, worn on your player.<br>
-  A client-side Fabric mod for Minecraft 26.3, set up entirely in an in-game editor.
+  Any 3D model- objs, gltf, glb- now in Minecraft as a cosmetic. Away with painful blockbench conversions and import anything, with textures, materials, glows, and particles. Completely client side and customizable, for Fabric on the latest version.
 </p>
 
 <p align="center">
