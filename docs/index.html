@@ -283,9 +283,7 @@
   .chip .bar i { display: block; height: 100%; width: var(--v, 50%); background: linear-gradient(90deg, var(--cyan), #c8fbff); }
 
   .command { position: absolute; z-index: 5; right: 0; bottom: 22px; text-align: right; }
-  .command .about { margin: 0 0 14px auto; padding-right: var(--gutter); max-width: calc(clamp(22rem, 28vw, 44rem) + 50px); font-family: "Inter", system-ui, sans-serif; font-weight: 400; font-stretch: 100%; font-style: normal; color: #bcc4dc; font-size: clamp(0.82rem, 1.9vh, 1rem); line-height: 1.5; letter-spacing: 0.005em; text-shadow: 0 1px 8px rgba(5,11,51,0.45); }
-  .command .say { padding-right: var(--gutter); font-style: italic; font-weight: 800; font-stretch: 75%; font-size: clamp(1.6rem, 3.6vh, 2.3rem); line-height: 1.05; }
-  .command .tag { padding-right: var(--gutter); font-style: italic; font-weight: 700; font-size: 0.78rem; color: var(--haze); margin-top: 2px; }
+  .command .about { margin: 0 0 10px auto; padding-right: var(--gutter); max-width: calc(clamp(22rem, 28vw, 44rem) + 50px); font-family: "Inter", system-ui, sans-serif; font-weight: 400; font-stretch: 100%; font-style: normal; color: #bcc4dc; font-size: clamp(0.82rem, 1.9vh, 1rem); line-height: 1.5; letter-spacing: 0.005em; text-shadow: 0 1px 8px rgba(5,11,51,0.45); }
   .command .line { width: min(560px, 46vw); margin-left: auto; height: 2px; background: var(--paper); margin-top: 4px; margin-bottom: 8px; }
   .command .keys { padding-right: var(--gutter); display: flex; gap: 20px; justify-content: flex-end; font-style: italic; font-weight: 800; font-stretch: 75%; font-size: 1.35rem; }
   .command .keys span { display: inline-flex; align-items: center; gap: 7px; }
@@ -525,7 +523,7 @@
     :root { --top: 70px; --bottom: 56px; }
     .page:not(#pg-home) { overflow-y: auto; overflow-x: hidden; }
     .page:not(#pg-home) .fit { height: auto; min-height: 100%; justify-content: flex-start; gap: 18px; padding-bottom: 72px; }
-    .command .say, .command .tag, .command .about { display: none; }
+    .command .about { display: none; }
   }
   @media (max-width: 560px) { .tiles, .steps { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) {
@@ -580,20 +578,18 @@
 
     <nav class="menu" aria-label="Pages">
       <ol>
-        <li style="--x:1.25em;--y:0;--r:-2deg;--s:0.86"><a class="d pick" href="#features" data-say="What Rainium can do">Features</a></li>
-        <li style="--x:0.05em;--y:-0.02em;--r:1.5deg;--s:1.05"><a class="d pick" href="#download" data-say="Get the latest version">Download</a></li>
-        <li style="--x:1em;--y:-0.06em;--r:-3.5deg;--s:0.9"><a class="d pick" href="#guide" data-say="Four steps to wearing your model">Guide</a></li>
-        <li style="--x:0.3em;--y:-0.04em;--r:0.5deg;--s:1.08"><a class="d pick" href="#particles" data-say="Sparkles, embers and hearts">Particles</a></li>
-        <li style="--x:1.6em;--y:-0.08em;--r:2.5deg;--s:0.84"><a class="d pick" href="#models" data-say="OBJ, glTF and GLB">Models</a></li>
-        <li style="--x:0.55em;--y:-0.03em;--r:-1.5deg;--s:1"><a class="d pick" href="#updates" data-say="What changed in each release">Updates</a></li>
-        <li style="--x:1.15em;--y:-0.05em;--r:1deg;--s:0.95"><a class="d pick" href="#questions" data-say="Servers, privacy and files">Questions</a></li>
+        <li style="--x:1.25em;--y:0;--r:-2deg;--s:0.86"><a class="d pick" href="#features">Features</a></li>
+        <li style="--x:0.05em;--y:-0.02em;--r:1.5deg;--s:1.05"><a class="d pick" href="#download">Download</a></li>
+        <li style="--x:1em;--y:-0.06em;--r:-3.5deg;--s:0.9"><a class="d pick" href="#guide">Guide</a></li>
+        <li style="--x:0.3em;--y:-0.04em;--r:0.5deg;--s:1.08"><a class="d pick" href="#particles">Particles</a></li>
+        <li style="--x:1.6em;--y:-0.08em;--r:2.5deg;--s:0.84"><a class="d pick" href="#models">Models</a></li>
+        <li style="--x:0.55em;--y:-0.03em;--r:-1.5deg;--s:1"><a class="d pick" href="#updates">Updates</a></li>
+        <li style="--x:1.15em;--y:-0.05em;--r:1deg;--s:0.95"><a class="d pick" href="#questions">Questions</a></li>
       </ol>
     </nav>
 
     <div class="command">
       <p class="about">Any 3D model- objs, gltf, glb- now in Minecraft as a cosmetic. Away with painful blockbench conversions and import anything, with textures, materials, glows, and particles. Completely client side and customizable, for Fabric on the latest version.</p>
-      <p class="say" id="say" aria-hidden="true">Wear any model in Minecraft</p>
-      <p class="tag" aria-hidden="true">Command</p>
       <div class="line" aria-hidden="true"></div>
       <div class="keys" aria-hidden="true"><span><span class="key">↑↓</span>Select</span><span><span class="key">↵</span>Confirm</span></div>
     </div>
@@ -830,14 +826,12 @@ const BEAT = 280;
 })();
 function select(a) {
   menuLinks.forEach((l) => l.classList.toggle("sel", l === a));
-  $("say").textContent = a.dataset.say;
 }
 menuLinks.forEach((a) => {
   a.addEventListener("mouseenter", () => select(a));
   a.addEventListener("focus", () => select(a));
 });
 select(menuLinks[0]);
-$("say").textContent = "Wear any model in Minecraft";
 
 document.addEventListener("keydown", (e) => {
   if (e.altKey || e.ctrlKey || e.metaKey) return;
