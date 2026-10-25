@@ -1368,7 +1368,8 @@ window.startHero();
   let w = null, ready = false, wantPlay = false, touched = false;
 
   const paint = (on) => { box.dataset.playing = on; btn.setAttribute("aria-pressed", on); btn.setAttribute("aria-label", on ? "Pause music" : "Play music"); sub.textContent = on ? "Playing" : "Paused"; };
-  const play = () => { wantPlay = true; if (w && ready) w.play(); };
+  const VOL = 25; // percent of full volume
+  const play = () => { wantPlay = true; if (w && ready) { w.setVolume(VOL); w.play(); } };
   const pause = () => { wantPlay = false; if (w && ready) w.pause(); paint(false); };
 
   const load = document.createElement("script");
@@ -1378,9 +1379,11 @@ window.startHero();
     w = SC.Widget(frame);
     w.bind(SC.Widget.Events.READY, () => {
       ready = true; box.hidden = false;
+      w.setVolume(VOL);
       w.getCurrentSound((s) => { if (s && s.title) nameEl.firstChild.textContent = s.title; });
       if (wantPlay) w.play();
     });
+    w.bind(SC.Widget.Events.PLAY, () => w.setVolume(VOL));
     w.bind(SC.Widget.Events.PLAY, () => paint(true));
     w.bind(SC.Widget.Events.PAUSE, () => paint(false));
     w.bind(SC.Widget.Events.PLAY_PROGRESS, (e) => bar.style.setProperty("--v", Math.round(e.relativePosition * 100) + "%"));
