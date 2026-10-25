@@ -252,8 +252,9 @@
   @keyframes hintIn { to { opacity: 0.85; } }
   @keyframes hintPulse { 50% { opacity: 0.4; } }
   .intro.panning .intro-hint { animation: none; opacity: 0; transition: opacity 0.15s; }
-  /* The pan off to the home page */
-  .intro.panning { transform: translateX(-104%); transition: transform 0.8s cubic-bezier(.7,0,.2,1); pointer-events: none; }
+  /* The white page stays put while the water rises over it */
+  .intro.panning { pointer-events: none; }
+  .tide { position: fixed; inset: 0; z-index: 60; width: 100%; height: 100%; pointer-events: none; transition: opacity 0.4s ease-out; }
 
 
   .menu { position: absolute; z-index: 5; left: 33vw; top: 51%; transform: translateY(-50%) rotate(-11deg); }
@@ -1219,7 +1220,66 @@ window.startHero = (function () {
 // Start straight away, even behind the intro, so the first character is loaded and the rest download while it shows
 window.startHero();
 
-/* ---------- Intro: any click or key slides the white page away to reveal the home page ---------- */
+/* ---------- Intro wipe: blue water rises over the white page, with jagged pale streaks and bubbles ---------- */
+function tide(covered) {
+  const cv = document.createElement("canvas"); cv.className = "tide"; cv.setAttribute("aria-hidden", "true");
+  document.body.appendChild(cv);
+  const dpr = Math.min(devicePixelRatio || 1, 1.5);
+  const W = innerWidth, H = innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  const R = (a, b) => a + Math.random() * (b - a);
+  const k = W / 1440;
+  // Four layers, front to back: the pale streaks lead, the deep blue follows
+  const layers = [
+    { c: "#d4f8ff", d: 0,    spike: H * 0.55 },
+    { c: "#69d6ff", d: 0.07, spike: H * 0.42 },
+    { c: "#2487ff", d: 0.14, spike: H * 0.28 },
+    { c: "#0a33d6", d: 0.22, spike: H * 0.16 },
+  ].map((L) => {
+    const pts = []; let x = -60;
+    while (x < W + 60) {
+      const w = R(18, 120) * Math.max(k, 0.55), up = Math.pow(Math.random(), 0.7) * L.spike, slant = Math.random() < 0.5 ? R(0.04, 0.2) : R(0.8, 0.96);
+      pts.push([x, 0], [x + slant * w, -up]);
+      x += w;
+    }
+    pts.push([x, 0]);
+    return { ...L, pts };
+  });
+  const bubbles = Array.from({ length: 46 }, () => ({ x: R(0, W), off: R(-0.05, 0.5) * H, r: R(5, 26) * Math.max(k, 0.6), lag: R(0, 0.12) }));
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const DUR = 1150, t0 = performance.now();
+  let done = false;
+  const frame = (now) => {
+    const p = Math.min((now - t0) / DUR, 1);
+    g.clearRect(0, 0, W, H);
+    for (const L of layers) {
+      const r = ease(Math.min(Math.max((p - L.d) / (1 - L.d), 0), 1));
+      const base = H + 10 - r * (H + L.spike + 20);
+      g.fillStyle = L.c; g.beginPath(); g.moveTo(-60, H + 20);
+      for (const [x, o] of L.pts) g.lineTo(x, base + o);
+      g.lineTo(W + 60, H + 20); g.closePath(); g.fill();
+    }
+    // Bubbles ride just ahead of the water
+    const lead = ease(Math.min(p / 0.9, 1));
+    g.lineWidth = 2;
+    for (const b of bubbles) {
+      const y = H - lead * (H + 0.55 * H) + b.off + b.lag * H * (1 - p);
+      if (y < -b.r * 2 || y > H + b.r) continue;
+      g.fillStyle = "rgba(140,232,255,0.75)"; g.strokeStyle = "rgba(255,255,255,0.9)";
+      g.beginPath(); g.arc(b.x, y, b.r, 0, 7); g.fill(); g.stroke();
+    }
+    if (p < 1) { requestAnimationFrame(frame); return; }
+    // Everything is blue: settle into the home page's colours, then lift away
+    const grad = g.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "#35b8ff"); grad.addColorStop(1, "#0a2bc4");
+    g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    if (!done) { done = true; covered(); requestAnimationFrame(() => { cv.style.opacity = "0"; setTimeout(() => cv.remove(), 450); }); }
+  };
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Intro: any click or key starts the water wipe, which reveals the home page ---------- */
 (function () {
   const html = document.documentElement, intro = document.getElementById("intro");
   if (!html.classList.contains("intro-on")) return;
@@ -1237,7 +1297,7 @@ window.startHero();
     window.startHero();
     if (still) return;
     intro.classList.add("panning");
-    setTimeout(() => intro.classList.remove("panning"), 850);
+    tide(() => intro.classList.remove("panning"));
   };
   intro.addEventListener("pointerdown", go);
   addEventListener("keydown", go, true);
