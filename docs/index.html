@@ -1264,6 +1264,7 @@ window.startHero();
   };
   // Show each character from the top of the head down to its middle: the middle sits on the bottom edge of the frame
   // and the head pokes out above the top. Halo and spear lose their 0.75 here so the pair matches.
+  const FADE = 0.32;           // the fade at the bottom is this many frame heights tall
   const SPILL = 1.035;          // the head-to-middle half is this many frame heights tall
   const XS = { 1: [0.5], 2: [0.3, 0.72] };
   const size = (it) => {
@@ -1277,6 +1278,9 @@ window.startHero();
       const cssW = c.w * u, cssH = c.h * u;
       p.cv.width = Math.max(1, Math.round(cssW * dpr)); p.cv.height = Math.max(1, Math.round(cssH * dpr));
       Object.assign(p.cv.style, { width: cssW + "px", height: cssH + "px", left: (W * (xs[i] ?? 0.5) - cssW / 2) + "px", top: (H - mid * u) + "px", zIndex: c.id === "halo" ? 2 : 1 });
+      // Fade out over the last stretch before the crop line (the character's middle) instead of cutting hard
+      const a = Math.max(0, (mid * u - FADE * H) / cssH * 100), z = mid * u / cssH * 100;
+      p.cv.style.webkitMaskImage = p.cv.style.maskImage = `linear-gradient(to bottom, #000 ${a}%, transparent ${z}%)`;
       if (p.failed) fallback(p);
     });
   };
