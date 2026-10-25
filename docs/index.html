@@ -293,7 +293,7 @@
   .tile-card:nth-child(4) { transform: rotate(-1.5deg) translateY(10px); }
   .tile-card .ph { aspect-ratio: auto; height: clamp(80px, 17vh, 190px); margin-bottom: 10px; }
   /* Let the characters in the clip tiles poke out above the card (the card's cut corner stays) */
-  .tile-card:has(.clips) { clip-path: polygon(0 -80%, 100% -80%, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
+  .tile-card:has(.clips) { clip-path: polygon(-30% -80%, 130% -80%, 130% 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 0, -30% 0); }
   .tile-card .ph.clips { padding: 0; outline: 0; background: none; display: block; overflow: visible; clip-path: inset(-100vh -100vw 0 -100vw); }
   .tile-card .ph.clips canvas { position: absolute; display: block; }
   .tile-card h2, .tile-card p { padding: 0 16px; }
@@ -1260,23 +1260,16 @@ window.startHero();
   };
   // Show each character from the top of the head down to its middle: the middle sits on the bottom edge of the frame
   // and the head pokes out above the top. Halo and spear lose their 0.75 here so the pair matches.
-  const SPILL = 1.12;          // the head-to-middle half is this many frame heights tall
-  const ROOM = 0.3;            // how far above the frame anything may reach, in frame heights
+  const SPILL = 1.15;          // the head-to-middle half is this many frame heights tall
   const XS = { 1: [0.5], 2: [0.3, 0.72] };
   const size = (it) => {
     const W = it.fig.clientWidth, H = it.fig.clientHeight;
     if (!W || !H || (W === it.w && H === it.h)) return;
     it.w = W; it.h = H;
     const dpr = Math.min(window.devicePixelRatio || 1, 2), xs = XS[it.parts.length] || XS[1];
-    // One scale for every character in the tile: the head-to-middle half is a little taller than the frame,
-    // but nothing (wings, halo) rises more than ROOM frame heights above it.
-    const geo = it.parts.map((p) => {
-      const c = p.c, kb = /^(halo|spear)$/.test(c.id) ? c.k / 0.75 : c.k, tall = 764 / kb;
-      return { mid: c.mid ?? (c.f - tall / 2), tall };
-    });
-    const u = Math.min(...geo.map((g) => Math.min((H * SPILL) / (g.tall / 2), (H * (1 + ROOM)) / g.mid)));
     it.parts.forEach((p, i) => {
-      const c = p.c, mid = geo[i].mid;
+      const c = p.c, kb = /^(halo|spear)$/.test(c.id) ? c.k / 0.75 : c.k, tall = 764 / kb;
+      const mid = c.mid ?? (c.f - tall / 2), u = (H * SPILL) / (tall / 2);
       const cssW = c.w * u, cssH = c.h * u;
       p.cv.width = Math.max(1, Math.round(cssW * dpr)); p.cv.height = Math.max(1, Math.round(cssH * dpr));
       Object.assign(p.cv.style, { width: cssW + "px", height: cssH + "px", left: (W * (xs[i] ?? 0.5) - cssW / 2) + "px", top: (H - mid * u) + "px", zIndex: c.id === "halo" ? 2 : 1 });
