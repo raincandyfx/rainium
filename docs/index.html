@@ -283,6 +283,7 @@
   .chip .bar i { display: block; height: 100%; width: var(--v, 50%); background: linear-gradient(90deg, var(--cyan), #c8fbff); }
 
   .command { position: absolute; z-index: 5; right: 0; bottom: 22px; text-align: right; }
+  .command .about { margin: 0 0 14px auto; padding-right: var(--gutter); max-width: clamp(20rem, 26vw, 32rem); font-weight: 600; font-size: clamp(0.82rem, 1.9vh, 1rem); line-height: 1.4; text-shadow: 0 1px 8px rgba(5,11,51,0.45); }
   .command .say { padding-right: var(--gutter); font-style: italic; font-weight: 800; font-stretch: 75%; font-size: clamp(1.6rem, 3.6vh, 2.3rem); line-height: 1.05; }
   .command .tag { padding-right: var(--gutter); font-style: italic; font-weight: 700; font-size: 0.78rem; color: var(--haze); margin-top: 2px; }
   .command .line { width: min(560px, 46vw); margin-left: auto; height: 2px; background: var(--paper); margin-top: 4px; margin-bottom: 8px; }
@@ -524,7 +525,7 @@
     :root { --top: 70px; --bottom: 56px; }
     .page:not(#pg-home) { overflow-y: auto; overflow-x: hidden; }
     .page:not(#pg-home) .fit { height: auto; min-height: 100%; justify-content: flex-start; gap: 18px; padding-bottom: 72px; }
-    .command .say, .command .tag { display: none; }
+    .command .say, .command .tag, .command .about { display: none; }
   }
   @media (max-width: 560px) { .tiles, .steps { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) {
@@ -589,11 +590,12 @@
       </ol>
     </nav>
 
-    <div class="command" aria-hidden="true">
-      <p class="say" id="say">Wear any model in Minecraft</p>
-      <p class="tag">Command</p>
-      <div class="line"></div>
-      <div class="keys"><span><span class="key">↑↓</span>Select</span><span><span class="key">↵</span>Confirm</span></div>
+    <div class="command">
+      <p class="about">Wings, halos, tails, capes, anything you can model, worn on your player. A client&#8209;side Fabric mod for Minecraft 26.3, set up entirely in an in-game editor.</p>
+      <p class="say" id="say" aria-hidden="true">Wear any model in Minecraft</p>
+      <p class="tag" aria-hidden="true">Command</p>
+      <div class="line" aria-hidden="true"></div>
+      <div class="keys" aria-hidden="true"><span><span class="key">↑↓</span>Select</span><span><span class="key">↵</span>Confirm</span></div>
     </div>
   </div>
 </section>
