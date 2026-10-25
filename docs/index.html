@@ -191,7 +191,7 @@
   /* The character recorded in game. When it loads, it replaces the picture slot. */
   .hero-model { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; }
   /* Each clip's size and place are set by the script (CLIPS below) */
-  .hero-model .stage { position: absolute; inset: 0; transition: opacity 0.22s ease-out, transform 0.22s ease-out; }
+  .hero-model .stage { filter: drop-shadow(7px 7px 0 rgba(5,11,51,0.55)); position: absolute; inset: 0; transition: opacity 0.22s ease-out, transform 0.22s ease-out; }
   .hero-model.out .stage { opacity: 0; transform: translateX(var(--dx, 0)); transition-timing-function: ease-in; }
   .hero-model canvas, .hero-model img { position: absolute; max-width: none; }
   .hero-model.video img { display: none; }
@@ -293,7 +293,7 @@
   .tile-card:nth-child(4) { transform: rotate(-1.5deg) translateY(10px); }
   .tile-card .ph { aspect-ratio: auto; height: clamp(80px, 17vh, 190px); margin-bottom: 10px; }
   /* Let the characters in the clip tiles poke out above the card (the card's cut corner stays) */
-  .tile-card:has(.clips) { position: relative; z-index: 3; clip-path: polygon(-30% -80%, 130% -80%, 130% 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 0, -30% 0); }
+  .tile-card:has(.clips) { position: relative; z-index: 3; clip-path: polygon(-200% -400%, 300% -400%, 300% 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 0, -200% 0); }
   .tile-card .ph.clips { padding: 0; outline: 0; background: none; display: block; overflow: visible; clip-path: inset(-100vh -100vw 0 -100vw); }
   .tile-card .ph.clips canvas { position: absolute; display: block; }
   .tile-card h2, .tile-card p { padding: 0 16px; }
