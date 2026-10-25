@@ -213,8 +213,18 @@
   .hero.has-model .ph { display: none; }
 
 
+
+  /* Phones are for landscape: upright, a full-screen prompt asks for the phone to be turned */
+  .rotate { display: none; position: fixed; inset: 0; z-index: 200; place-content: center; justify-items: center; gap: 22px; text-align: center; padding: 24px; background: var(--paper); color: var(--ink); }
+  .rotate svg { width: 92px; height: 92px; fill: none; stroke: var(--ink); stroke-width: 3; animation: turn 2.4s ease-in-out infinite; }
+  .rotate p { margin: 0; font-style: italic; font-weight: 900; font-size: 1.8rem; line-height: 1.05; text-transform: uppercase; }
+  .rotate small { display: block; margin-top: 8px; font-style: normal; font-weight: 500; font-size: 0.95rem; text-transform: none; color: var(--grey); }
+  @keyframes turn { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+  @media (orientation: portrait) and (pointer: coarse) and (max-width: 820px) { .rotate { display: grid; } }
+  @media (prefers-reduced-motion: reduce) { .rotate svg { animation: none; } }
+
   /* ============ MUSIC ============ */
-  .music { position: fixed; z-index: 11; right: var(--gutter); top: 138px; }
+  .music { position: fixed; z-index: 11; right: var(--gutter); top: 124px; }
   .music[hidden] { display: none; }
   .music .tile { cursor: pointer; padding: 0; color: var(--paper); font: inherit; }
   .music .tile:hover { background: var(--cyan); color: var(--ink); }
@@ -245,12 +255,13 @@
   /* The pan off to the home page */
   .intro.panning { transform: translateX(-104%); transition: transform 0.8s cubic-bezier(.7,0,.2,1); pointer-events: none; }
 
-  .wallet { position: absolute; z-index: 5; left: clamp(84px, 8vw, 150px); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
+  .wallet { position: absolute; z-index: 5; right: var(--gutter); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
     padding: 6px 18px 6px 12px; min-width: 170px; text-decoration: none; }
   .wallet b { display: block; font-weight: 600; font-stretch: 90%; font-size: 1.7rem; line-height: 1; letter-spacing: -0.01em; }
   .wallet span { font-style: italic; font-size: 0.72rem; font-weight: 600; }
-  .wallet .new { position: absolute; right: -12px; top: -12px; background: var(--red); color: var(--paper); padding: 1px 8px; transform: rotate(8deg);
+  .wallet .new { position: absolute; left: -12px; top: -12px; background: var(--red); color: var(--paper); padding: 1px 8px; transform: rotate(-8deg);
     font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 0.9rem; }
+  .wallet .wbeta { position: absolute; right: 8px; top: 8px; background: var(--cyan); color: var(--ink); padding: 1px 7px; font-style: normal; font-weight: 700; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
   .menu { position: absolute; z-index: 5; left: 33vw; top: 51%; transform: translateY(-50%) rotate(-11deg); }
   .menu ol { list-style: none; margin: 0; padding: 0; }
@@ -261,7 +272,6 @@
   .menu a.sel { transform: rotate(calc(var(--r, 0deg) - 3deg)) scale(calc(var(--s, 1) * 1.2)); }
   .menu a:focus-visible { outline: none; }
 
-  .chips { position: absolute; z-index: 4; right: var(--gutter); top: 30px; display: flex; flex-direction: column; gap: 18px; align-items: flex-end; }
   .chip { display: grid; grid-template-columns: auto 74px; grid-template-rows: 74px auto; gap: 0 10px; align-items: center; }
   .chip .lab { text-align: right; font-style: italic; font-weight: 900; font-stretch: 72%; font-size: 1.15rem; line-height: 1; text-transform: uppercase; text-shadow: 2px 2px 0 var(--ink); }
   .chip .lab small { display: block; font-weight: 700; font-size: 0.8rem; color: var(--cyan); margin-top: 3px; }
@@ -327,6 +337,8 @@
   .vers select { appearance: none; font: inherit; font-weight: 700; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 0; padding: 8px 40px 8px 14px; min-width: 15rem; cursor: pointer; box-shadow: 4px 4px 0 var(--cyan); }
   .vers select:disabled { opacity: 0.6; cursor: default; }
   .vers select:focus-visible { outline: 3px solid var(--sea); outline-offset: 3px; }
+  .betanote { margin: 10px 0 0; max-width: 46ch; font-size: 0.9rem; color: var(--grey); }
+  .betanote b { display: inline-block; margin-right: 8px; padding: 1px 8px; background: var(--ink); color: var(--cyan); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: 1px; }
   .status { margin-top: 12px; color: var(--grey); font-size: 0.9rem; }
   .ribbons { list-style: none; padding: 0; margin: 0; counter-reset: n; }
   .ribbons li { counter-increment: n; position: relative; padding: 14px 24px 16px 80px; margin-bottom: 12px; background: var(--ink); color: var(--paper); clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%); }
@@ -464,7 +476,7 @@
   html:not(.js) .topbar, html:not(.js) .wipe, html:not(.js) .prompts { display: none; }
 
   /* ============ Narrow screens scroll, everything stacks ============ */
-  @media (max-width: 860px) {
+  @media (max-width: 860px) and (min-height: 521px) {
     :root { --top: 80px; --bottom: 40px; }
     .page { overflow-y: auto; overflow-x: hidden; }
     .fit { height: auto; min-height: 100%; justify-content: flex-start; gap: 22px; }
@@ -488,7 +500,7 @@
     .bigver { font-size: 26vw; }
 
     .home { position: relative; inset: auto; min-height: 100%; display: flex; flex-direction: column; padding: 112px 16px 32px; }
-    .strip, .chips, .command { display: none; }
+    .strip, .command { display: none; }
     body .music { top: 14px; grid-template-columns: auto 46px; grid-template-rows: 46px; }
     body .music .tile { width: 46px; height: 46px; border-width: 2px; }
     body .music .tile svg { width: 22px; height: 22px; }
@@ -496,12 +508,19 @@
     .vname { position: relative; width: auto; height: auto; overflow: visible; clip-path: none; font-size: 24vw; color: var(--paper); text-shadow: 5px 5px 0 var(--ink); order: 1; }
     .vname .echo { display: none; }
     .hero-nav.prev { left: 0; } .hero-nav.next { left: auto; right: 0; }
-    .wallet { left: 16px; top: 20px; }
+    .wallet { right: 16px; top: 20px; }
     .tagline-m { display: block !important; order: 2; margin-top: 10px; font-weight: 600; }
     .menu { position: relative; left: auto; top: auto; transform: rotate(-7deg); order: 3; margin: 40px 0 36px 6px; align-self: flex-start; }
     .menu a { font-size: clamp(2.6rem, 13vw, 3.6rem); }
     .menu li { margin-left: calc(var(--x) * 0.6); }
     .hero { position: relative; left: auto; top: auto; bottom: auto; width: 100%; height: 70vh; order: 4; }
+  }
+  /* Phones on their side are short: the home page keeps its layout, the other pages scroll instead of being cut off */
+  @media (max-height: 520px) {
+    :root { --top: 70px; --bottom: 56px; }
+    .page:not(#pg-home) { overflow-y: auto; overflow-x: hidden; }
+    .page:not(#pg-home) .fit { height: auto; min-height: 100%; justify-content: flex-start; gap: 18px; padding-bottom: 72px; }
+    .command .say, .command .tag { display: none; }
   }
   @media (max-width: 560px) { .tiles, .steps { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) {
@@ -552,7 +571,7 @@
       <figure class="ph" data-img="img/hero.png"><span>Character recording</span><code>docs/hero/</code></figure>
     </div>
 
-    <a class="wallet" href="#updates"><b id="walletVer">0.4.0</b><span>latest version</span><i class="new" id="walletNew" hidden>New!</i></a>
+    <a class="wallet" href="#updates"><b id="walletVer">&hellip;</b><span>latest version</span><i class="wbeta" id="walletBeta" hidden>Beta</i><i class="new" id="walletNew" hidden>New!</i></a>
 
     <nav class="menu" aria-label="Pages">
       <ol>
@@ -565,14 +584,6 @@
         <li style="--x:1.15em;--y:-0.05em;--r:1deg;--s:0.95"><a class="d pick" href="#questions" data-say="Servers, privacy and files">Questions</a></li>
       </ol>
     </nav>
-
-    <div class="chips" aria-label="Today">
-      <div class="chip">
-        <span class="lab" id="dayLab"></span>
-        <span class="tile"><b id="dayNum"></b></span>
-        <span class="bar" title="How far through the month"><i id="monthBar"></i></span>
-      </div>
-    </div>
 
     <div class="command" aria-hidden="true">
       <p class="say" id="say">Wear any model in Minecraft</p>
@@ -614,8 +625,9 @@
     <div class="save">
       <div>
         <h1 class="ptitle d pick sel slam" id="t-download" tabindex="-1">Download</h1>
-        <p class="bigver" id="bigVer" aria-hidden="true">0.4.0</p>
+        <p class="bigver" id="bigVer" aria-hidden="true">&hellip;</p>
         <p class="cap" id="bigCap">Latest release for Minecraft 26.3</p>
+        <p class="betanote" id="betaNote" hidden><b>Beta</b> Rainium is in beta. Settings and features can change between 0.x versions.</p>
         <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
         <div class="vers"><label for="verSel">Version</label><span class="sel"><select id="verSel" disabled><option>Latest</option></select></span></div>
         <p class="status" id="status" aria-live="polite"></p>
@@ -715,7 +727,7 @@
         <span class="who">Rainium</span>
         <div class="box" aria-live="polite"><p id="answer" class="show">No. Only you see your cosmetics. To share a look, send a friend an exported zip.</p></div>
         <div class="legal">
-          <p>MIT License. <a href="https://github.com/raincandyfx/rainium">Source</a> and <a href="https://github.com/raincandyfx/rainium/issues">issues</a>. Water by <a href="https://github.com/paper-design/shaders">Paper Shaders</a>.</p>
+          <p>MIT License. <a href="https://github.com/raincandyfx/rainium">Source</a> and <a href="https://github.com/raincandyfx/rainium/issues">issues</a>. Water by <a href="https://github.com/paper-design/shaders">Paper Shaders</a>. Music: &ldquo;Color Your Night&rdquo; by Lotus Juice, played from <a href="https://soundcloud.com/asfsdfgj/color-your-night">SoundCloud</a>. All rights belong to the artist and the uploader.</p>
           <details>
             <summary>Credits and disclaimer</summary>
             <p>The characters on the home page wear models based on other works: the Gold halo and red wings on <i>Genshin Impact</i> (HoYoverse), the pod on <i>NieR:Automata</i> (Square Enix), the spear is &ldquo;<a href="https://skfb.ly/6Rxyq">Lance of Longinus</a>&rdquo; by Mr. The Rich (<a href="http://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>) from <i>Neon Genesis Evangelion</i> (khara), and the doll is a MySekai item from <i>Hatsune Miku: Colorful Stage!</i> (SEGA, Colorful Palette; Hatsune Miku by Crypton Future Media). Their animations are emotes by Milyan-SPEmotes, played with <a href="https://modrinth.com/mod/emotecraft">Emotecraft</a>. One is based on the dance from the <i>Colorful Stage!</i> version of &ldquo;Heat Abnormal&rdquo; (song by Iyowa). Rainium is not affiliated with any of them; all rights belong to their owners. Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</p>
@@ -725,6 +737,8 @@
     </div>
   </div>
 </section>
+
+<div class="rotate" role="alert"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="19" y="6" width="26" height="52" rx="5"/><circle cx="32" cy="50" r="2"/></svg><p>Turn your phone sideways<small>Rainium is made to be seen in landscape.</small></p></div>
 
 <div class="intro" id="intro" role="button" tabindex="0" aria-label="Enter the Rainium site">
   <p class="intro-hint">Click or press any key</p>
@@ -889,15 +903,6 @@ document.querySelectorAll(".ph[data-img]").forEach((fig) => {
   img.src = fig.dataset.img;
 });
 
-/* ---------- Today's date ---------- */
-(function () {
-  const now = new Date();
-  const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  $("dayNum").textContent = now.getDate();
-  $("dayLab").innerHTML = `${now.toLocaleDateString("en", { weekday: "short" })}<small>${now.toLocaleDateString("en", { month: "long" })}</small>`;
-  $("monthBar").style.setProperty("--v", Math.round((now.getDate() / days) * 100) + "%");
-})();
-
 /* ---------- Releases, read live from GitHub. Main releases only. ---------- */
 const REPO = "raincandyfx/rainium", RELEASES = `https://github.com/${REPO}/releases`;
 const JAR = /^rainium-([^+]+)\+([0-9][0-9.]*)\.jar$/;
@@ -925,6 +930,7 @@ function render(releases) {
     const x = REL[i];
     $("bigVer").textContent = x.version;
     $("bigCap").textContent = `${i === 0 ? "Latest release for" : "For"} Minecraft ${x.mc}, released ${fmtDate(x.date)}`;
+    $("betaNote").hidden = !isBeta(x);
     $("mainDl").href = x.jar.browser_download_url;
     $("mainDlLabel").textContent = `Download ${x.version}`;
     $("mainDlSub").textContent = `${x.jar.name}, ${fmtSize(x.jar.size)}`;
@@ -935,6 +941,7 @@ function render(releases) {
   sel.disabled = REL.length < 2;
   sel.addEventListener("change", () => showVer(+sel.value));
   $("walletVer").textContent = latest.version;
+  $("walletBeta").hidden = !isBeta(latest);
   if ((Date.now() - latest.date) / 86400000 <= 14 && store.get("rainium-seen") !== latest.version) $("walletNew").hidden = false;
 
   $("logList").innerHTML = REL.map((x, i) => `<li><button role="tab" id="tab-${i}" aria-selected="${i === 0}" aria-controls="logDetail" tabindex="${i === 0 ? 0 : -1}" data-i="${i}"><b>${esc(x.version)}${isBeta(x) ? '<em class="bt">Beta</em>' : ""}</b><span>${fmtDate(x.date)}</span></button></li>`).join("");
@@ -1031,7 +1038,7 @@ function md(src) {
 const CLIPS = [
   { id: "halo", w: 770, h: 1078, f: 1056, mid: 686, k: 0.773, t: 5.5, label: "A player wearing the Gold halo" },
   { id: "wings", w: 662, h: 1142, f: 1127, k: 1.07, t: 6.4, label: "A player with dark red wings" },
-  { id: "pod", w: 786, h: 1064, f: 1051, k: 0.896, t: 5.8, label: "A player with a floating robot pod" },
+  { id: "pod", w: 786, h: 1064, f: 1051, k: 0.896, t: 11.5, label: "A player with a floating robot pod" },
   { id: "spear", w: 992, h: 1054, f: 944, k: 0.946, t: 3.2, label: "A player holding a long red spear" },
   { id: "doll", w: 1000, h: 1140, f: 1085, k: 0.868, t: 10.3, label: "A player with a small doll sitting on their head" },
 ];
@@ -1227,6 +1234,7 @@ window.startHero();
     removeEventListener("keydown", go, true);
     html.classList.remove("intro-on");
     if (window.musicStart) window.musicStart();
+    try { screen.orientation.lock("landscape").catch(() => {}); } catch (e) {}
     window.startHero();
     if (still) return;
     intro.classList.add("panning");

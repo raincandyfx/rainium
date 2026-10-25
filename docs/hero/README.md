@@ -19,3 +19,7 @@ Each folder here is one character, recorded in game with Rainium's recorder. All
 3. It prints a line like `{ id: "name", w: 748, h: 1326, label: "" }`. Add that to `CLIPS` in `docs/index.html`, fill in `label` (what the character looks like, for screen readers), add `k` to size it like the others (about 900 ÷ h), and `t:` the loop length in seconds it printed. Optional: `x` / `y` (where its centre sits, 0–1 across and down the area).
 
 `make_clip.py` is the older tool that slowed 30 fps recordings down with made-up in-between frames; it's no longer used.
+
+## The pod clip plays forwards, then backwards
+
+The pod recording never repeated, so `pod/clip.mp4`, `clip.webm` and the stills were built from its frames played forwards and then backwards (no frames are invented). `t` for it in `CLIPS` is the length of the whole there-and-back run.
