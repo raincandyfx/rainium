@@ -165,7 +165,7 @@
   .ph code { display: block; margin-top: 6px; font-size: 0.7rem; background: none; border: 0; opacity: 0.75; }
   .card .ph { background: repeating-linear-gradient(-50deg, rgba(20,54,201,0.08) 0 2px, transparent 2px 14px), #eef2ff; outline-color: #9fb0e6; color: var(--ink); }
   .ph.has { padding: 0; outline: 0; background: none; display: block; }
-  .ph.has img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ph.has img, .ph.has video { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   .btn { display: inline-flex; flex-direction: column; gap: 2px; text-decoration: none; padding: 12px 40px 12px 22px; line-height: 1;
     clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%); font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 2rem; text-transform: uppercase; }
@@ -667,7 +667,7 @@
     <h1 class="ptitle d pick sel slam" id="t-particles" tabindex="-1">Particles</h1>
     <div class="px">
       <ul class="presets" aria-label="Presets"><li class="d">Sparkles</li><li class="d">Embers</li><li class="d">Hearts</li><li class="d">Trail</li><li class="d">Aura</li></ul>
-      <figure class="ph" data-img="img/particles.png"><span>Embers trailing a running player</span><code>docs/img/particles.png</code></figure>
+      <figure class="ph" data-video="img/particles"><span>Sparkles around a running player</span></figure>
       <dl class="knobs">
         <div><dt>Picture</dt><dd>Minecraft's particles or your own PNG</dd></div>
         <div><dt>When</dt><dd>Always, moving, standing still, or by speed</dd></div>
@@ -892,6 +892,12 @@ choices.forEach((b, i) => {
 })();
 
 /* ---------- Picture slots: a real file replaces the frame ---------- */
+document.querySelectorAll(".ph[data-video]").forEach((fig) => {
+  const v = document.createElement("video");
+  v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true; v.setAttribute("aria-label", fig.querySelector("span")?.textContent || "");
+  for (const [ext, type] of [["webm", "video/webm"], ["mp4", "video/mp4"]]) { const src = document.createElement("source"); src.src = `${fig.dataset.video}.${ext}`; src.type = type; v.appendChild(src); }
+  v.addEventListener("loadeddata", () => { fig.replaceChildren(v); fig.classList.add("has"); v.play().catch(() => {}); });
+});
 document.querySelectorAll(".ph[data-img]").forEach((fig) => {
   const img = new Image();
   img.onload = () => {
