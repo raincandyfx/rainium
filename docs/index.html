@@ -251,6 +251,11 @@
     opacity: 0; animation: hintIn 0.6s 0.4s both, hintPulse 2.4s 1s ease-in-out infinite; }
   @keyframes hintIn { to { opacity: 0.85; } }
   @keyframes hintPulse { 50% { opacity: 0.4; } }
+  .intro-load { position: absolute; left: 50%; top: 50%; width: 150px; height: 4px; margin: -2px 0 0 -75px; background: rgba(5,11,51,0.12); transition: opacity 0.25s; }
+  .intro-load b { display: block; height: 100%; width: calc(var(--p, 0) * 100%); background: var(--ink); transition: width 0.25s ease-out; }
+  .intro:not(.loading) .intro-load { opacity: 0; }
+  .intro.loading { cursor: progress; }
+  .intro.loading .intro-hint { animation: none; opacity: 0; }
   .intro.panning .intro-hint { animation: none; opacity: 0; transition: opacity 0.15s; }
   /* The pan off to the home page */
   .intro.panning { transform: translateX(-104%); transition: transform 0.8s cubic-bezier(.7,0,.2,1); pointer-events: none; }
@@ -733,7 +738,8 @@
 
 <div class="rotate" role="alert"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="19" y="6" width="26" height="52" rx="5"/><circle cx="32" cy="50" r="2"/></svg><p>Turn your phone sideways<small>Rainium is made to be seen in landscape.</small></p></div>
 
-<div class="intro" id="intro" role="button" tabindex="0" aria-label="Enter the Rainium site">
+<div class="intro loading" id="intro" role="button" tabindex="0" aria-label="Enter the Rainium site">
+  <i class="intro-load" aria-hidden="true"><b></b></i>
   <p class="intro-hint">Click or press any key</p>
 </div>
 
@@ -1158,9 +1164,16 @@ window.startHero = (function () {
   const clipUrl = (c) => `hero/${c.id}/clip.${mp4() ? "mp4" : "webm"}`;
   async function preload() {
     const order = CLIPS.map((_, i) => CLIPS[(cur + i) % CLIPS.length]);
+    const extra = [`img/particles.${mp4() ? "mp4" : "webm"}`];
+    const total = order.length + extra.length;
+    let done = 0;
+    const tick = () => { done++; window.loadProgress = done / total; document.dispatchEvent(new Event("rainium-load")); };
     for (const c of order) {
       try { const r = await fetch(clipUrl(c)); if (r.ok) ready[c.id] = URL.createObjectURL(await r.blob()); } catch (e) {}
+      tick();
     }
+    for (const u of extra) { try { await (await fetch(u)).blob(); } catch (e) {} tick(); }
+    for (const u of ["img/glow.png", "img/textures.png", "img/hero.png"]) { const im = new Image(); im.src = u; }
   }
 
   function load() {
@@ -1204,7 +1217,7 @@ window.startHero = (function () {
     if (ok) host.classList.add("video"); else { mode = "stills"; canvas = null; }
     host.classList.add("out");
     load();
-    if (mode === "video") preload();
+    window.heroPreload = mode === "video" ? preload() : Promise.resolve();
     addEventListener("resize", layout);
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ["data-page"] });
     document.addEventListener("visibilitychange", sync);
@@ -1225,10 +1238,20 @@ window.startHero();
   if (!html.classList.contains("intro-on")) return;
   intro.focus({ preventScroll: true });
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let started = false;
+  let started = false, loaded = false;
+  // A short wait first, so every clip is already in memory when the page opens
+  const t0 = performance.now(), bar = intro.querySelector(".intro-load");
+  const paint = () => bar.style.setProperty("--p", window.loadProgress || 0.05);
+  document.addEventListener("rainium-load", paint); paint();
+  const open = () => {
+    if (loaded) return;
+    loaded = true; intro.classList.remove("loading");
+  };
+  Promise.race([window.heroPreload || Promise.resolve(), new Promise((r) => setTimeout(r, 12000))])
+    .then(() => setTimeout(open, Math.max(0, 700 - (performance.now() - t0))));
   const go = (e) => {
     if (e) { e.preventDefault(); e.stopImmediatePropagation(); }
-    if (started) return;
+    if (started || !loaded) return;
     started = true;
     removeEventListener("keydown", go, true);
     html.classList.remove("intro-on");
@@ -1307,7 +1330,7 @@ window.startHero();
     for (const p of it.parts) {
       p.v.addEventListener("error", () => fallback(p));
       p.v.addEventListener("loadeddata", () => draw(p));
-      p.v.preload = "auto"; p.v.src = `hero/${p.c.id}/clip.${webm ? "webm" : "mp4"}`;
+      p.v.preload = "auto"; p.v.src = `hero/${p.c.id}/clip.${document.createElement("video").canPlayType('video/mp4; codecs="avc1.640028"') ? "mp4" : "webm"}`;
     }
   };
   const tick = () => {
