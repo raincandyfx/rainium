@@ -293,7 +293,7 @@
   .tile-card:nth-child(4) { transform: rotate(-1.5deg) translateY(10px); }
   .tile-card .ph { aspect-ratio: auto; height: clamp(80px, 17vh, 190px); margin-bottom: 10px; }
   /* Let the characters in the clip tiles poke out above the card (the card's cut corner stays) */
-  .tile-card:has(.clips) { clip-path: polygon(-30% -80%, 130% -80%, 130% 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 0, -30% 0); }
+  .tile-card:has(.clips) { position: relative; z-index: 3; clip-path: polygon(-30% -80%, 130% -80%, 130% 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 0, -30% 0); }
   .tile-card .ph.clips { padding: 0; outline: 0; background: none; display: block; overflow: visible; clip-path: inset(-100vh -100vw 0 -100vw); }
   .tile-card .ph.clips canvas { position: absolute; display: block; }
   .tile-card h2, .tile-card p { padding: 0 16px; }
@@ -1260,7 +1260,7 @@ window.startHero();
   };
   // Show each character from the top of the head down to its middle: the middle sits on the bottom edge of the frame
   // and the head pokes out above the top. Halo and spear lose their 0.75 here so the pair matches.
-  const SPILL = 1.15;          // the head-to-middle half is this many frame heights tall
+  const SPILL = 1.035;          // the head-to-middle half is this many frame heights tall
   const XS = { 1: [0.5], 2: [0.3, 0.72] };
   const size = (it) => {
     const W = it.fig.clientWidth, H = it.fig.clientHeight;
