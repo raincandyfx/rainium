@@ -224,7 +224,7 @@
   @media (prefers-reduced-motion: reduce) { .rotate svg { animation: none; } }
 
   /* ============ MUSIC ============ */
-  .music { position: fixed; z-index: 11; right: var(--gutter); top: 124px; }
+  .music { position: fixed; z-index: 11; right: var(--gutter); top: 30px; }
   .music[hidden] { display: none; }
   .music .tile { cursor: pointer; padding: 0; color: var(--paper); font: inherit; }
   .music .tile:hover { background: var(--cyan); color: var(--ink); }
@@ -255,13 +255,6 @@
   /* The pan off to the home page */
   .intro.panning { transform: translateX(-104%); transition: transform 0.8s cubic-bezier(.7,0,.2,1); pointer-events: none; }
 
-  .wallet { position: absolute; z-index: 5; right: var(--gutter); top: 30px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink);
-    padding: 6px 18px 6px 12px; min-width: 170px; text-decoration: none; }
-  .wallet b { display: block; font-weight: 600; font-stretch: 90%; font-size: 1.7rem; line-height: 1; letter-spacing: -0.01em; }
-  .wallet span { font-style: italic; font-size: 0.72rem; font-weight: 600; }
-  .wallet .new { position: absolute; left: -12px; top: -12px; background: var(--red); color: var(--paper); padding: 1px 8px; transform: rotate(-8deg);
-    font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 0.9rem; }
-  .wallet .wbeta { position: absolute; right: 8px; top: 8px; background: var(--cyan); color: var(--ink); padding: 1px 7px; font-style: normal; font-weight: 700; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
   .menu { position: absolute; z-index: 5; left: 33vw; top: 51%; transform: translateY(-50%) rotate(-11deg); }
   .menu ol { list-style: none; margin: 0; padding: 0; }
@@ -511,7 +504,6 @@
     .vname { position: relative; width: auto; height: auto; overflow: visible; clip-path: none; font-size: 24vw; color: var(--paper); text-shadow: 5px 5px 0 var(--ink); order: 1; }
     .vname .echo { display: none; }
     .hero-nav.prev { left: 0; } .hero-nav.next { left: auto; right: 0; }
-    .wallet { right: 16px; top: 20px; }
     .tagline-m { display: block !important; order: 2; margin-top: 10px; font-weight: 600; }
     .menu { position: relative; left: auto; top: auto; transform: rotate(-7deg); order: 3; margin: 40px 0 36px 6px; align-self: flex-start; }
     .menu a { font-size: clamp(2.6rem, 13vw, 3.6rem); }
@@ -573,8 +565,6 @@
       <button class="hero-nav next" id="heroNext" type="button" aria-label="Next character" hidden></button>
       <figure class="ph" data-img="img/hero.png"><span>Character recording</span><code>docs/hero/</code></figure>
     </div>
-
-    <a class="wallet" href="#updates"><b id="walletVer">&hellip;</b><span>latest version</span><i class="wbeta" id="walletBeta" hidden>Beta</i><i class="new" id="walletNew" hidden>New!</i></a>
 
     <nav class="menu" aria-label="Pages">
       <ol>
@@ -952,9 +942,6 @@ function render(releases) {
   sel.innerHTML = REL.map((x, i) => `<option value="${i}">${esc(x.version)}, Minecraft ${esc(x.mc)}${i === 0 ? " (latest)" : ""}</option>`).join("");
   sel.disabled = REL.length < 2;
   sel.addEventListener("change", () => showVer(+sel.value));
-  $("walletVer").textContent = latest.version;
-  $("walletBeta").hidden = !isBeta(latest);
-  if ((Date.now() - latest.date) / 86400000 <= 14 && store.get("rainium-seen") !== latest.version) $("walletNew").hidden = false;
 
   $("logList").innerHTML = REL.map((x, i) => `<li><button role="tab" id="tab-${i}" aria-selected="${i === 0}" aria-controls="logDetail" tabindex="${i === 0 ? 0 : -1}" data-i="${i}"><b>${esc(x.version)}${isBeta(x) ? '<em class="bt">Beta</em>' : ""}</b><span>${fmtDate(x.date)}</span></button></li>`).join("");
   const tabs = [...$("logList").querySelectorAll("button")];
