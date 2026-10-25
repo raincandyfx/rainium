@@ -212,6 +212,26 @@
   .hero.has-model .hero-model { opacity: 1; }
   .hero.has-model .ph { display: none; }
 
+
+  /* ============ MUSIC ============ */
+  .music { position: fixed; z-index: 11; right: var(--gutter); top: 138px; }
+  .music[hidden] { display: none; }
+  .music .tile { cursor: pointer; padding: 0; color: var(--paper); font: inherit; }
+  .music .tile:hover { background: var(--cyan); color: var(--ink); }
+  .music .tile:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+  .music .tile svg { width: 34px; height: 34px; fill: currentColor; }
+  .music .ic-pause, .music[data-playing="true"] .ic-play { display: none; }
+  .music[data-playing="true"] .ic-pause { display: inline; }
+  .music .lab { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .music-frame { position: fixed; left: -9999px; top: 0; width: 300px; height: 120px; border: 0; opacity: 0; pointer-events: none; }
+  /* Off the home page the player shrinks to a button in the corner */
+  body:not([data-page="home"]) .music { top: 14px; grid-template-columns: auto 46px; grid-template-rows: 46px; }
+  body:not([data-page="home"]) .music .tile { width: 46px; height: 46px; border-width: 2px; }
+  body:not([data-page="home"]) .music .tile svg { width: 22px; height: 22px; }
+  body:not([data-page="home"]) .music .lab, body:not([data-page="home"]) .music .bar { display: none; }
+  body:not([data-page="home"]) .music .tile { background: var(--sea); }
+  .intro-on .music { visibility: hidden; }
+
   /* ============ INTRO: a blank white page with a prompt, until the visitor clicks or presses a key ============ */
   .intro { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; cursor: pointer; outline: none; background: var(--paper); color: var(--ink); overflow: hidden; }
   .intro-on .intro, .intro.panning { display: grid; }
@@ -443,6 +463,10 @@
 
     .home { position: relative; inset: auto; min-height: 100%; display: flex; flex-direction: column; padding: 112px 16px 32px; }
     .strip, .chips, .command { display: none; }
+    body .music { top: 14px; grid-template-columns: auto 46px; grid-template-rows: 46px; }
+    body .music .tile { width: 46px; height: 46px; border-width: 2px; }
+    body .music .tile svg { width: 22px; height: 22px; }
+    body .music .lab, body .music .bar { display: none; }
     .vname { position: relative; width: auto; height: auto; overflow: visible; clip-path: none; font-size: 24vw; color: var(--paper); text-shadow: 5px 5px 0 var(--ink); order: 1; }
     .vname .echo { display: none; }
     .hero-nav.prev { left: 0; } .hero-nav.next { left: auto; right: 0; }
@@ -478,6 +502,16 @@
 </header>
 <div class="prompts" id="prompts"><div class="line"></div><nav aria-label="Page navigation" id="promptNav"></nav></div>
 
+<!-- Music: one SoundCloud player that lives outside the pages, so it keeps playing as you move around -->
+<div class="music chip" id="music" hidden>
+  <span class="lab" id="musName">Music<small id="musSub">Paused</small></span>
+  <button class="tile" id="musBtn" type="button" aria-label="Play music" aria-pressed="false">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ic-play" d="M5 3l12 7-12 7z"/><path class="ic-pause" d="M4 3h4v14H4zM12 3h4v14h-4z"/></svg>
+  </button>
+  <span class="bar" title="Track progress"><i id="musBar"></i></span>
+</div>
+<iframe class="music-frame" id="musFrame" title="SoundCloud player" allow="autoplay" tabindex="-1" aria-hidden="true"></iframe>
+
 <!-- ================= HOME ================= -->
 <section class="page on" id="pg-home" data-page="home" aria-label="Rainium">
   <div class="home">
@@ -511,11 +545,6 @@
         <span class="lab" id="dayLab"></span>
         <span class="tile"><b id="dayNum"></b></span>
         <span class="bar" title="How far through the month"><i id="monthBar"></i></span>
-      </div>
-      <div class="chip">
-        <span class="lab"><span id="phaseName"></span><small id="phaseLit"></small></span>
-        <span class="tile"><svg viewBox="-10 -10 20 20" aria-hidden="true"><circle r="9" fill="rgba(5,11,51,0.6)" stroke="#fff" stroke-width="1"/><path id="lit" fill="#fff"/></svg></span>
-        <span class="bar" title="Moon illumination"><i id="moonBar"></i></span>
       </div>
     </div>
 
@@ -838,23 +867,13 @@ document.querySelectorAll(".ph[data-img]").forEach((fig) => {
   img.src = fig.dataset.img;
 });
 
-/* ---------- Today's date and tonight's moon ---------- */
+/* ---------- Today's date ---------- */
 (function () {
   const now = new Date();
   const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   $("dayNum").textContent = now.getDate();
   $("dayLab").innerHTML = `${now.toLocaleDateString("en", { weekday: "short" })}<small>${now.toLocaleDateString("en", { month: "long" })}</small>`;
   $("monthBar").style.setProperty("--v", Math.round((now.getDate() / days) * 100) + "%");
-  const syn = 29.530588853, ref = Date.UTC(2000, 0, 6, 18, 14) / 86400000;
-  let p = ((now.getTime() / 86400000 - ref) % syn) / syn; if (p < 0) p += 1;
-  const names = ["New moon", "Waxing crescent", "First quarter", "Waxing gibbous", "Full moon", "Waning gibbous", "Last quarter", "Waning crescent"];
-  const lit = Math.round(((1 - Math.cos(2 * Math.PI * p)) / 2) * 100);
-  $("phaseName").textContent = names[Math.round(p * 8) % 8];
-  $("phaseLit").textContent = lit + "% lit";
-  $("moonBar").style.setProperty("--v", lit + "%");
-  const r = 9, rx = Math.abs(r * Math.cos(2 * Math.PI * p)), waxing = p < 0.5, q = waxing ? p : p - 0.5;
-  $("lit").setAttribute("d", `M0,${-r} A${r},${r} 0 0 1 0,${r} A${rx},${r} 0 0 ${q < 0.25 ? 0 : 1} 0,${-r} Z`);
-  if (!waxing) $("lit").setAttribute("transform", "scale(-1,1)");
 })();
 
 /* ---------- Releases, read live from GitHub. Main releases only. ---------- */
@@ -1175,6 +1194,7 @@ window.startHero();
     started = true;
     removeEventListener("keydown", go, true);
     html.classList.remove("intro-on");
+    if (window.musicStart) window.musicStart();
     window.startHero();
     if (still) return;
     intro.classList.add("panning");
@@ -1182,6 +1202,49 @@ window.startHero();
   };
   intro.addEventListener("pointerdown", go);
   addEventListener("keydown", go, true);
+})();
+
+/* ---------- Music: starts on the first click or key (the intro one), then plays on every page ---------- */
+(function () {
+  const SONG = "https://on.soundcloud.com/RdjCRJHfCfdNDP8h2N";
+  const box = document.getElementById("music"), btn = document.getElementById("musBtn"), frame = document.getElementById("musFrame");
+  const nameEl = document.getElementById("musName"), sub = document.getElementById("musSub"), bar = document.getElementById("musBar");
+  let w = null, ready = false, wantPlay = false, touched = false;
+
+  const paint = (on) => { box.dataset.playing = on; btn.setAttribute("aria-pressed", on); btn.setAttribute("aria-label", on ? "Pause music" : "Play music"); sub.textContent = on ? "Playing" : "Paused"; };
+  const play = () => { wantPlay = true; if (w && ready) w.play(); };
+  const pause = () => { wantPlay = false; if (w && ready) w.pause(); paint(false); };
+
+  const load = document.createElement("script");
+  load.src = "https://w.soundcloud.com/player/api.js";
+  load.onload = () => {
+    frame.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(SONG) + "&auto_play=false&hide_related=true&show_comments=false&show_user=false&visual=false";
+    w = SC.Widget(frame);
+    w.bind(SC.Widget.Events.READY, () => {
+      ready = true; box.hidden = false;
+      w.getCurrentSound((s) => { if (s && s.title) nameEl.firstChild.textContent = s.title; });
+      if (wantPlay) w.play();
+    });
+    w.bind(SC.Widget.Events.PLAY, () => paint(true));
+    w.bind(SC.Widget.Events.PAUSE, () => paint(false));
+    w.bind(SC.Widget.Events.PLAY_PROGRESS, (e) => bar.style.setProperty("--v", Math.round(e.relativePosition * 100) + "%"));
+    w.bind(SC.Widget.Events.FINISH, () => { w.seekTo(0); w.play(); });
+  };
+  document.head.appendChild(load);
+
+  btn.addEventListener("click", () => { touched = true; box.dataset.playing === "true" ? pause() : play(); });
+
+  // First interaction anywhere (the intro screen, or the page itself when a link skips the intro) starts it
+  const first = (e) => {
+    if (touched) return;
+    touched = true;
+    removeEventListener("pointerdown", first, true); removeEventListener("keydown", first, true);
+    if (e.target.closest && e.target.closest("#music")) return;
+    play();
+  };
+  addEventListener("pointerdown", first, true);
+  addEventListener("keydown", first, true);
+  window.musicStart = () => first({ target: document });
 })();
 </script>
 </body>
