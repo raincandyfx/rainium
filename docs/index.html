@@ -292,10 +292,14 @@
   .tile-card:nth-child(3) { transform: rotate(1deg); }
   .tile-card:nth-child(4) { transform: rotate(-1.5deg) translateY(10px); }
   .tile-card .ph { aspect-ratio: auto; height: clamp(80px, 17vh, 190px); margin-bottom: 10px; }
-  /* Let the characters in the clip tiles poke out above the card (the card's cut corner stays) */
-  .tile-card:has(.clips) { position: relative; z-index: 3; clip-path: polygon(-200% -400%, 300% -400%, 300% 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 0, -200% 0); }
+  /* Clip tiles: the card's white and cut corner move to ::before, so the characters can spill past every edge,
+     and each character carries its own shadow (a shadow on the whole card would be hidden behind the white). */
+  .tile-card:has(.clips) { position: relative; z-index: 3; clip-path: none; filter: none; background: none; }
+  .tile-card:has(.clips)::before { content: ""; position: absolute; inset: 0; z-index: 0; background: var(--paper);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
+  .tile-card:has(.clips) h2, .tile-card:has(.clips) p { position: relative; z-index: 1; }
   .tile-card .ph.clips { padding: 0; outline: 0; background: none; display: block; overflow: visible; clip-path: inset(-100vh -100vw 0 -100vw); }
-  .tile-card .ph.clips canvas { position: absolute; display: block; }
+  .tile-card .ph.clips canvas { position: absolute; display: block; filter: drop-shadow(5px 5px 0 rgba(5,11,51,0.55)); }
   .tile-card h2, .tile-card p { padding: 0 16px; }
   .tile-card h2 { font-size: 1.35rem; }
   .tile-card p { color: var(--grey); font-size: 0.95rem; margin-top: 2px; }
