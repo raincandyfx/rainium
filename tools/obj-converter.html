@@ -1,5 +1,4 @@
 <title>OBJ to Rainium</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -500,7 +499,7 @@ function run() {
   const prev = result.json.length > 3000 ? result.json.slice(0, 3000) + " …" : result.json;
   $("jsonPreview").textContent = prev;
   $("layerPreview").textContent = layerEntry();
-  $("saveBtn").disabled = !downloads; $("copyBtn").disabled = false;
+  $("saveBtn").disabled = $("copyBtn").disabled = false;
   $("copyFallback").hidden = true;
   draw();
 }
@@ -556,23 +555,15 @@ for (const id of ids) { $(id).addEventListener("input", update); $(id).addEventL
 $("outName").addEventListener("input", () => { if (result) $("layerPreview").textContent = layerEntry(); });
 
 // ------------------------------------------------------------------ save / copy
-let downloads = null;
 $("saveBtn").disabled = true;
-if (window.claude && typeof window.claude.use === "function") {
-  window.claude.use("downloads").then((d) => { downloads = d; $("saveBtn").disabled = !d || !result; if (!d) $("saveBtn").hidden = true; }, () => { $("saveBtn").hidden = true; });
-} else { $("saveBtn").hidden = true; }
-
-$("saveBtn").addEventListener("click", async () => {
-  if (!downloads || !result) return;
-  $("status").textContent = "";
-  try {
-    await downloads.save({ filename: outFile(), data: new Blob([result.json], { type: "application/json" }) });
-    $("status").textContent = "Saved " + outFile();
-  } catch (e) {
-    const c = e && e.code;
-    $("status").textContent = c === "declined" ? "Save cancelled." : c === "rate_limited" ? "A save prompt is already open." : "Saving isn't available here. Use Copy JSON instead.";
-    if (c && c !== "declined" && c !== "rate_limited") $("saveBtn").hidden = true;
-  }
+$("saveBtn").addEventListener("click", () => {
+  if (!result) return;
+  const url = URL.createObjectURL(new Blob([result.json], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = outFile();
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  $("status").textContent = "Saved " + outFile();
 });
 function copyText(text, label) {
   const fallback = () => {
