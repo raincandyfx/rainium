@@ -771,6 +771,8 @@ function swap(key) {
   document.body.dataset.page = key;
   $("pg-" + key).scrollTop = 0;
   current = key;
+  // Anything sized while its page was hidden (the RAINIUM band, the character) measured zero; re-fit now it shows
+  requestAnimationFrame(() => dispatchEvent(new Event("resize")));
   if (key === "home") {
     const a = lastFrom && menuLinks.find((l) => l.hash === "#" + lastFrom);
     if (a) { select(a); a.focus({ preventScroll: true }); }
