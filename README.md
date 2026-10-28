@@ -30,8 +30,8 @@
 
 ## Installing
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 26.3, plus [Fabric API](https://modrinth.com/mod/fabric-api).
-2. Download `rainium-<version>+26.3.jar` from the [latest release](https://github.com/raincandyfx/rainium/releases/latest) and put it in your `.minecraft/mods` folder.
+1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft **26.3** or **1.21.11**, plus [Fabric API](https://modrinth.com/mod/fabric-api).
+2. From the [latest release](https://github.com/raincandyfx/rainium/releases/latest), download the jar for your Minecraft version, `rainium-<version>+26.3.jar` or `rainium-<version>+1.21.11.jar`, and put it in your `.minecraft/mods` folder. (The `-sources` jars are source code, not the mod.)
 3. Launch the game and press <kbd>K</kbd>.
 
 [Mod Menu](https://modrinth.com/mod/modmenu) is optional; with it, Rainium's **Configure** button opens the editor too.

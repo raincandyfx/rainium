@@ -1,0 +1,21 @@
+# Name changes applied to the shared sources (../../src/main/java) when building for 1.21.11.
+# Files with their own copy in src/main/java here are not taken from the shared sources at all.
+#
+# Each rule:   <file name or *>  ||  <Java regex>  ||  <replacement ($1 = first group)>
+# Blocks marked "// @port <name> begin" ... "// @port <name> end" in a shared file are replaced
+# with regions/<name>.java.
+
+# Screens: 26.x renamed GuiGraphics and the render methods; the screen lives on Minecraft itself.
+*                     ||  \bGuiGraphicsExtractor\b                 ||  GuiGraphics
+RainiumScreen.java    ||  \bg\.text\(                              ||  g.drawString(
+RainiumScreen.java    ||  \bg\.outline\(                           ||  g.renderOutline(
+RainiumScreen.java    ||  \bg\.entity\(                            ||  g.submitEntityRenderState(
+RainiumScreen.java    ||  \bextractRenderState\(                   ||  render(
+RainiumScreen.java    ||  \bextractBackground\(                    ||  renderBackground(
+*                     ||  \.gui\.setScreen\(                       ||  .setScreen(
+*                     ||  \.gui\.screen\(\)                        ||  .screen
+
+# Rendering
+*                     ||  \bgameRenderer\.mainCamera\(\)           ||  gameRenderer.getMainCamera()
+*                     ||  (\w+)\.rotateDegrees\((Axis\.[XYZ]P), (.*)\);  ||  $1.mulPose($2.rotationDegrees($3));
+MeshRenderLayer.java  ||  RenderTypes\.entityTranslucentCull\(     ||  RenderTypes.itemEntityTranslucentCull(

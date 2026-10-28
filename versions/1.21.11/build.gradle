@@ -1,0 +1,107 @@
+plugins {
+    // Loom for obfuscated Minecraft (1.21.x): Mojang's mappings, remapped to intermediary for release.
+    id 'fabric-loom' version "${loom_version}"
+}
+
+// The mod version comes from the main gradle.properties, so both Minecraft versions release together.
+def shared = new Properties()
+file('../../gradle.properties').withInputStream { shared.load(it) }
+def modVersion = project.findProperty('mod_version_override') ?: shared.getProperty('mod_version')
+
+// Jars are named rainium-<version>+<minecraft>.jar; the in-game updater picks releases by that name.
+version = "${modVersion}+${project.minecraft_version}"
+group = shared.getProperty('maven_group')
+base { archivesName = shared.getProperty('archives_base_name') }
+
+repositories {
+    exclusiveContent {
+        forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    modCompileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
+}
+
+// ------------------------------------------------------------------ shared sources
+// Everything in ../../src/main/java is used, except files with their own copy here, after the
+// name changes in port.rules and the blocks in regions/ (see port.rules).
+def sharedSrc = file('../../src/main/java')
+def ownSrc = file('src/main/java')
+def portedDir = layout.buildDirectory.dir('ported/java')
+
+def portShared = tasks.register('portShared') {
+    inputs.dir sharedSrc
+    inputs.dir ownSrc
+    inputs.file 'port.rules'
+    inputs.dir 'regions'
+    outputs.dir portedDir
+    doLast {
+        def out = portedDir.get().asFile
+        project.delete(out)
+        def rules = []
+        file('port.rules').eachLine('UTF-8') { line ->
+            if (!line.trim() || line.trim().startsWith('#')) return
+            def p = line.split('\\|\\|')*.trim()
+            rules << [file: p[0], pattern: java.util.regex.Pattern.compile(p[1]), replacement: p[2], hits: 0]
+        }
+        def region = java.util.regex.Pattern.compile('[ \\t]*// @port (\\w+) begin.*?// @port \\1 end[^\\n]*\\n', java.util.regex.Pattern.DOTALL)
+        sharedSrc.eachFileRecurse(groovy.io.FileType.FILES) { f ->
+            if (!f.name.endsWith('.java')) return
+            def rel = sharedSrc.toPath().relativize(f.toPath()).toString()
+            if (new File(ownSrc, rel).exists()) return
+            def text = f.getText('UTF-8')
+            def m = region.matcher(text)
+            def sb = new StringBuffer()
+            while (m.find()) m.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(file("regions/${m.group(1)}.java").getText('UTF-8')))
+            m.appendTail(sb)
+            text = sb.toString()
+            rules.each { r ->
+                if (r.file != '*' && r.file != f.name) return
+                def rm = r.pattern.matcher(text)
+                while (rm.find()) r.hits++
+                text = rm.replaceAll(r.replacement)
+            }
+            def dst = new File(out, rel)
+            dst.parentFile.mkdirs()
+            dst.setText(text, 'UTF-8')
+        }
+        rules.findAll { it.hits == 0 }.each { logger.warn("port.rules: never matched: ${it.file} ${it.pattern}") }
+    }
+}
+
+sourceSets.main.java.srcDir(portedDir)
+tasks.named('compileJava') { dependsOn portShared }
+tasks.matching { it.name == 'sourcesJar' }.configureEach { dependsOn portShared }
+
+processResources {
+    inputs.property 'version', project.version
+    // the shared resources, with this version's own fabric.mod.json
+    from('../../src/main/resources') {
+        exclude 'fabric.mod.json'
+    }
+    from('../../tools/mesh_convert.py') { into 'assets/rainium/defaults' }
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+jar {
+    inputs.property 'archivesName', project.base.archivesName
+    from('../../LICENSE') { rename { "${it}_${project.base.archivesName.get()}" } }
+}

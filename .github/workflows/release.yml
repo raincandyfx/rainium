@@ -1,7 +1,9 @@
 name: Build & release
 
-# Every push to main is built. When the push carries a version (mod_version in
-# gradle.properties) that has no release yet, that version is published:
+# Every push to main is built, for every supported Minecraft version (26.3 from the root project,
+# the others from versions/<minecraft>). When the push carries a version (mod_version in
+# gradle.properties) that has no release yet, that version is published with one jar per
+# Minecraft version:
 #   x.y.0  -> a normal release: what players get, including through the in-game updater
 #   x.y.1+ -> a pre-release marked "dev build": downloadable for testing, never auto-installed
 # Pushing a tag like v0.3.0 by hand publishes that version too.
@@ -49,13 +51,22 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build
+      - name: Build for Minecraft 26.3
         shell: bash
         run: |
           set -o pipefail
           if ! ./gradlew build -Pmod_version="${{ steps.v.outputs.version }}" 2>&1 | tee build.log; then
             # surface the cause as annotations, which show on the run page without opening the log
             grep -E -A8 "What went wrong|error:|Could not" build.log | head -60 | while IFS= read -r l; do echo "::error::$l"; done
+            exit 1
+          fi
+
+      - name: Build for Minecraft 1.21.11
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! ./gradlew -p versions/1.21.11 build -Pmod_version_override="${{ steps.v.outputs.version }}" 2>&1 | tee build-1.21.11.log; then
+            grep -E -A8 "What went wrong|error:|Could not" build-1.21.11.log | head -60 | while IFS= read -r l; do echo "::error::$l"; done
             exit 1
           fi
 
@@ -82,4 +93,5 @@ jobs:
           # rainium-<version>+<minecraft>.jar: the in-game updater looks for exactly this name
           files: |
             build/libs/rainium-*.jar
+            versions/*/build/libs/rainium-*.jar
           fail_on_unmatched_files: true
