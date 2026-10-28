@@ -1434,6 +1434,7 @@ public final class RainiumScreen extends Screen {
         return false;
     }
 
+    // @port keys begin  (the 1.21.11 build swaps this block for GLFW key codes)
     // SDL scancodes (Minecraft 26.x reports physical keys as SDL scancodes)
     private static final int SC_A = 4, SC_Z = 29, SC_1 = 30, SC_0 = 39, SC_ENTER = 40, SC_ESC = 41, SC_BACKSPACE = 42,
         SC_SPACE = 44, SC_MINUS = 45, SC_COMMA = 54, SC_PERIOD = 55, SC_DELETE = 76, SC_KP_MINUS = 86, SC_KP_ENTER = 88,
@@ -1443,6 +1444,14 @@ public final class RainiumScreen extends Screen {
     private static boolean down(int sc) {
         try { return InputConstants.isKeyDown(sc); } catch (Throwable t) { return false; }
     }
+
+    /** The digit a key types (number row or keypad), or 0. */
+    private static char digit(int k) {
+        if (k >= SC_1 && k <= SC_0) return k == SC_0 ? '0' : (char) ('1' + (k - SC_1));
+        if (k >= SC_KP_1 && k <= SC_KP_0) return k == SC_KP_0 ? '0' : (char) ('1' + (k - SC_KP_1));
+        return 0;
+    }
+    // @port keys end
 
     @Override
     public boolean keyPressed(KeyEvent event) {
@@ -1457,8 +1466,7 @@ public final class RainiumScreen extends Screen {
                 return true;
             }
             char c = 0;
-            if (k >= SC_1 && k <= SC_0) c = k == SC_0 ? '0' : (char) ('1' + (k - SC_1));
-            else if (k >= SC_KP_1 && k <= SC_KP_0) c = k == SC_KP_0 ? '0' : (char) ('1' + (k - SC_KP_1));
+            if (digit(k) != 0) c = digit(k);
             else if (k == SC_PERIOD || k == SC_KP_PERIOD || k == SC_COMMA) c = editNumeric ? '.' : (k == SC_COMMA ? ',' : '.');
             else if (k == SC_MINUS || k == SC_KP_MINUS) c = shift && !editNumeric ? '_' : '-';
             else if (!editNumeric && k >= SC_A && k <= SC_Z) c = (char) ((shift ? 'A' : 'a') + (k - SC_A));
