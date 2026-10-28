@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.6.0
+
+- **Minecraft 1.21.11** is supported alongside 26.3, with every feature, including pictures and recordings. Each release has a jar for each version (`rainium-<version>+26.3.jar` and `rainium-<version>+1.21.11.jar`), and the in-game updater picks the one for your game.
+
 ## 0.5.1 (dev build)
 
 - **Minecraft 1.21.11** is supported alongside 26.3, with every feature, including pictures and recordings. Each release now has a jar for each version (`+26.3` and `+1.21.11`), and the in-game updater picks the one for your game.
