@@ -102,6 +102,6 @@ LAYER OPTIONS (each entry of "layers")
               { "shape": point|sphere|box|ring, "area": 0.25, "rate": 8, "when": always|moving|still|speed,
                 "life": 1.5, "size": 0.08, "end_size": 0.03, "speed": 0.3,
                 "direction": up|down|out|back|forward|random, "spread": 30, "gravity": 0,
-                "drag": 0.5, "spin": 0, "fade": true, "follow": false }
+                "drag": 0.5, "spin": 0, "fade": true, "follow": false, "upright": false }
               "texture" can be a PNG here or a Minecraft particle like
               "minecraft:textures/particle/flame.png".

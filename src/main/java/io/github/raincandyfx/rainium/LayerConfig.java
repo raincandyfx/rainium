@@ -575,6 +575,7 @@ final class LayerConfig {
         float spin = 0f;              // degrees per second
         boolean fade = true;
         boolean follow = false;       // true: particles move with you; false: they stay where they spawned (a trail)
+        boolean upright = false;      // true: every particle starts upright; false: at a random angle
 
         Map<String, Object> toJson() {
             Map<String, Object> m = new java.util.LinkedHashMap<>();
@@ -593,6 +594,7 @@ final class LayerConfig {
             m.put("spin", (double) spin);
             m.put("fade", fade);
             m.put("follow", follow);
+            if (upright) m.put("upright", true);
             return m;
         }
 
@@ -613,6 +615,7 @@ final class LayerConfig {
             p.spin = clamp(f(m, "spin", p.spin), -720f, 720f);
             p.fade = bool(m, "fade", true);
             p.follow = bool(m, "follow", false);
+            p.upright = bool(m, "upright", false);
             return p;
         }
 

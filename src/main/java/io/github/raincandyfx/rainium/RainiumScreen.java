@@ -170,7 +170,7 @@ public final class RainiumScreen extends Screen {
             say(Lang.t("update.ready", Updater.detail()), ACCENT);
         }
         try {
-            LocalPlayer me = Minecraft.getInstance().player;
+            net.minecraft.world.entity.player.Player me = Self.previewPlayer();   // not the replay camera
             if (me != null) Privacy.ingameName = me.getName().getString();
         } catch (Throwable ignored) { }
         editRect = null;
@@ -1178,7 +1178,7 @@ public final class RainiumScreen extends Screen {
         g.fillGradient(x, y, x + w, y + h, 0x2A000000, 0x6A000000);
         hits.add(new Hit(x, y, w, h - 20, () -> dragging = true, d -> previewZoom = clampF(previewZoom * (d > 0 ? 1.1f : 1 / 1.1f), 0.4f, 4f)));
         Minecraft mc = Minecraft.getInstance();
-        LocalPlayer player = mc.player;
+        net.minecraft.world.entity.player.Player player = Self.previewPlayer();   // the recorded player when watching a replay
         if (player == null) {
             String s = fit(Lang.t("preview.no_world"), w - 8);
             g.text(font, s, x + (w - font.width(Component.literal(s))) / 2, y + h / 2 - 4, MUTED, false);
@@ -1782,6 +1782,7 @@ public final class RainiumScreen extends Screen {
         y = stepper(g, mx, my, x, y, w, "p_drag", fmt(p.drag), d -> { p.drag = clampF(p.drag + d * 0.1f, 0, 10); save(); });
         exact(v -> { p.spin = clampF((float) v, -720, 720); save(); });
         y = stepper(g, mx, my, x, y, w, "p_spin", fmt(p.spin) + "°/s", d -> { p.spin = clampF(p.spin + d * 15, -720, 720); save(); });
+        y = cycle(g, mx, my, x, y, w, "p_angle", Lang.t(p.upright ? "value.p_angle.upright" : "value.p_angle.random"), d -> { p.upright = !p.upright; save(); });
         return y;
     }
 

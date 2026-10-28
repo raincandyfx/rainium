@@ -93,7 +93,7 @@ final class ParticleSim {
             vx[i] = dir[0] * s.speed; vy[i] = dir[1] * s.speed; vz[i] = dir[2] * s.speed;
             age[i] = 0;
             life[i] = s.life * (0.75f + rnd.nextFloat() * 0.5f);
-            rot[i] = rnd.nextFloat() * 360f;
+            rot[i] = s.upright ? 0f : rnd.nextFloat() * 360f;
         }
 
         private void remove(int i) {

@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.6.2 (dev build)
+
+- **Flashback replays:** layers set to **Just me** now show on the recorded player instead of the replay camera. Rainium finds you by your account name, or else as the only player whose hotbar was recorded, or else as the player nearest the camera when the replay starts. The editor's preview shows that player too.
+- **Start angle** for particle layers: every particle can start upright, or at a random angle as before (the default).
+
 ## 0.6.1 (dev build)
 
 - **Tint**, next to Hue on the Edit tab: colours a whole layer towards any colour. Click the colour strip to pick one and set the strength (Off keeps the original colours). Hue shifts the texture first, then Tint colours the result; a tint keeps its colour when you change the hue.
