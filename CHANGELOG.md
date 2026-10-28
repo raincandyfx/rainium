@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.6.1 (dev build)
+
+- **Tint**, next to Hue on the Edit tab: colours a whole layer towards any colour. Click the colour strip to pick one and set the strength (Off keeps the original colours). Hue shifts the texture first, then Tint colours the result; a tint keeps its colour when you change the hue.
+
 ## 0.6.0
 
 - **Minecraft 1.21.11** is supported alongside 26.3, with every feature, including pictures and recordings. Each release has a jar for each version (`rainium-<version>+26.3.jar` and `rainium-<version>+1.21.11.jar`), and the in-game updater picks the one for your game.

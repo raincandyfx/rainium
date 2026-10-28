@@ -561,6 +561,7 @@ public final class RainiumScreen extends Screen {
         }
         y = cycle(g, mx, my, x, y, w, "style", styleName(l.render), d -> { l.render = cyc(LayerConfig.Render.values(), l.render, d); save(); });
         y = hue(g, mx, my, x, y, w, l);
+        y = tint(g, mx, my, x, y, w, l);
         int alpha = (l.color >>> 24) & 0xFF;
         exact(v -> { int a = clamp((int) Math.round(v * 2.55), 0, 255); l.color = (a << 24) | (l.color & 0xFFFFFF); save(); });
         y = stepper(g, mx, my, x, y, w, "opacity", Math.round(alpha * 100f / 255f) + "%", d -> {
@@ -1800,6 +1801,43 @@ public final class RainiumScreen extends Screen {
         int mxk = bx + Math.round(bw * (Hue.normalize(l.hue) + 180f) / 360f);
         g.fill(mxk - 1, sy - 1, mxk + 1, sy + sh + 1, TEXT);
         return sy + sh + GAP + 1;
+    }
+
+    private float lastTintHue = 0f;   // the tint colour to bring back when a tint is turned up from Off
+
+    /** Tint: how strongly the layer is coloured towards a colour, and a strip to pick the colour. */
+    private int tint(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Layer l) {
+        float[] t = Hue.tintOf(l.color);
+        if (t[1] > 0) lastTintHue = t[0];
+        final float hue = t[1] > 0 ? t[0] : lastTintHue;
+        int pct = Math.round(t[1] * 100f);
+        exact(v -> { setTint(l, hue, clamp((int) Math.round(v), 0, 100) / 100f); save(); });
+        y = stepper(g, mx, my, x, y, w, "tint", pct == 0 ? Lang.t("value.off") : pct + "%", d -> {
+            setTint(l, hue, clamp(Math.round(Hue.tintOf(l.color)[1] * 100f) + d * 10, 0, 100) / 100f);
+            save();
+        });
+        // the strip shows the colours to tint towards; a click picks one (at 60% if the tint was off)
+        int lw = labelWidth(w), bx = x + lw, bw = w - lw, n = 24, sy = y - GAP, sh = 4;
+        for (int i = 0; i < n; i++) {
+            int x0 = bx + bw * i / n, x1 = bx + bw * (i + 1) / n;
+            final float h = 360f * (i + 0.5f) / n;
+            g.fill(x0, sy, x1, sy + sh, 0xFF000000 | Hue.tintRgb(h, 1f));
+            hits.add(new Hit(x0, sy - 1, x1 - x0, sh + 2, () -> {
+                float s0 = Hue.tintOf(l.color)[1];
+                lastTintHue = Math.round(h / 15f) * 15f;
+                setTint(l, lastTintHue, s0 > 0 ? s0 : 0.6f);
+                save();
+            }, null));
+        }
+        if (pct > 0) {
+            int mxk = bx + Math.round(bw * hue / 360f);
+            g.fill(mxk - 1, sy - 1, mxk + 1, sy + sh + 1, TEXT);
+        }
+        return sy + sh + GAP + 1;
+    }
+
+    private static void setTint(LayerConfig.Layer l, float hue, float strength) {
+        l.color = (l.color & 0xFF000000) | Hue.tintRgb(hue, strength);
     }
 
     private static String hueText(float h) {
