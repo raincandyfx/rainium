@@ -626,7 +626,7 @@
         <p class="cap" id="bigCap">Latest release for Minecraft 26.3</p>
         <p class="betanote" id="betaNote" hidden><b>Beta</b> Rainium is in beta. Settings and features can change between 0.x versions.</p>
         <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
-        <div class="vers"><label for="verSel">Version</label><span class="sel"><select id="verSel" disabled><option>Latest</option></select></span></div>
+        <div class="vers"><label for="verSel">Minecraft</label><span class="sel"><select id="verSel" disabled><option>Latest</option></select></span></div>
         <p class="dlcount" id="dlCount" hidden></p>
         <p class="status" id="status" aria-live="polite"></p>
       </div>
@@ -929,11 +929,23 @@ function render(releases) {
   }).filter(Boolean).sort((a, b) => b.date - a.date);
   if (!REL.length) { $("relStatus").innerHTML = `Nothing released yet.`; return; }
 
+  // The dropdown: one entry per Minecraft version. Each uses the newest main release for that
+  // version, or the newest dev build when no main release supports it yet.
+  const mcCmp = (a, b) => { const p = a.split(".").map(Number), q = b.split(".").map(Number);
+    for (let i = 0; i < Math.max(p.length, q.length); i++) if ((p[i] || 0) !== (q[i] || 0)) return (q[i] || 0) - (p[i] || 0); return 0; };
+  const builds = releases.filter((r) => !r.draft).flatMap((r) => (r.assets || []).filter((a) => JAR.test(a.name)).map((jar) => {
+    const [, version, mc] = jar.name.match(JAR);
+    return { r, jar, version, mc, date: new Date(r.published_at), dev: !!r.prerelease };
+  })).sort((a, b) => (a.dev - b.dev) || (b.date - a.date));
+  const DL = [];
+  for (const x of builds) if (!DL.some((d) => d.mc === x.mc)) DL.push(x);
+  DL.sort((a, b) => mcCmp(a.mc, b.mc));
+
   const latest = REL[0];
   const showVer = (i) => {
-    const x = REL[i];
+    const x = DL[i];
     $("bigVer").textContent = x.version;
-    $("bigCap").textContent = `${i === 0 ? "Latest release for" : "For"} Minecraft ${x.mc}, released ${fmtDate(x.date)}`;
+    $("bigCap").textContent = `${x.jar.name === latest.jar.name ? "Latest release for" : x.dev ? "Dev build for" : "For"} Minecraft ${x.mc}, released ${fmtDate(x.date)}`;
     $("betaNote").hidden = !isBeta(x);
     $("mainDl").href = x.jar.browser_download_url;
     $("mainDlLabel").textContent = `Download ${x.version}`;
@@ -941,12 +953,12 @@ function render(releases) {
     const n = (v) => v.toLocaleString("en-US");
     const total = ALL.reduce((t, a) => t + (a.download_count || 0), 0);
     $("dlCount").hidden = total <= 0;
-    $("dlCount").innerHTML = `<b>${n(total)}</b> download${total === 1 ? "" : "s"} in total` + (REL.length > 1 ? `, ${n(x.jar.download_count || 0)} of ${esc(x.version)}` : "");
+    $("dlCount").innerHTML = `<b>${n(total)}</b> download${total === 1 ? "" : "s"} in total` + (DL.length > 1 ? `, ${n(x.jar.download_count || 0)} of ${esc(x.version)}` : "");
   };
   showVer(0);
   const sel = $("verSel");
-  sel.innerHTML = REL.map((x, i) => `<option value="${i}">${esc(x.version)}, Minecraft ${esc(x.mc)}${i === 0 ? " (latest)" : ""}</option>`).join("");
-  sel.disabled = REL.length < 2;
+  sel.innerHTML = DL.map((x, i) => `<option value="${i}">${esc(x.mc)}</option>`).join("");
+  sel.disabled = DL.length < 2;
   sel.addEventListener("change", () => showVer(+sel.value));
 
   $("logList").innerHTML = REL.map((x, i) => `<li><button role="tab" id="tab-${i}" aria-selected="${i === 0}" aria-controls="logDetail" tabindex="${i === 0 ? 0 : -1}" data-i="${i}"><b>${esc(x.version)}${isBeta(x) ? '<em class="bt">Beta</em>' : ""}</b><span>${fmtDate(x.date)}</span></button></li>`).join("");
