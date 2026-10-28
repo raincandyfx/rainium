@@ -74,7 +74,7 @@ Besides models, a layer can be a **particle emitter**. On the **Add** tab, start
 - **Picture:** one of Minecraft's particles (flame, sparkle, heart, note, smoke, petal and more) or any PNG you put in the rainium folder. Style, hue, tint and opacity work like on models.
 - **When and how many:** always, only while moving, only while standing still, or more the faster you move; how many per second and how long each lasts.
 - **Where they appear:** a point, a ball, a box or a ring around the attachment point, at any size. Attach emitters to your body, head, arms or legs like any layer.
-- **How they move:** direction, speed, spread, gravity (negative floats up), drag and spin, plus size over time and fading out.
+- **How they move:** direction, speed, spread, gravity (negative floats up), drag and spin, plus size over time and fading out. **Start angle** makes every particle start upright, or at a random angle.
 - **Move with me:** particles either travel along with you or stay where they appeared, leaving a trail.
 
 ## Presets
@@ -128,6 +128,9 @@ No. Rainium is a personal, client-side cosmetic, so only you see what you set up
 On your screen, yes. In **Settings > Visibility**, **Show on** can include everyone, other players, or a list of player names, and **Armor stands** shows them on armor stands with a name tag you choose (for screenshots and displays). Nobody else sees this.
 
 Each layer and folder can also choose for itself under **Shown on** on the Edit tab, for example wings just on you and a halo on an armor stand named "Display". Left on **Default**, it follows its folder, then Settings.
+
+**Does it work in Flashback replays?**
+Yes. In a replay, **Just me** means the recorded player, not the replay camera: the player with your account name, or else the only player whose hotbar was recorded, or else the player nearest the camera when the replay starts.
 
 **Does it work on servers?**
 Yes. It only runs on your side, so it works on any server and nothing needs to be installed there.

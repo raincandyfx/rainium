@@ -44,7 +44,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         if (preview != null) layers.add(preview);
         if (layers.isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
-        boolean self = mc.player == null || mc.player.getId() == state.id;   // no player (e.g. menus) -> treat as self
+        boolean self = Self.is(state.id);   // the local player, or the recorded player in a replay
         String[] name = {null};   // looked up only if a layer needs it
 
         Sway.Pose sp = Sway.Pose.REST;
