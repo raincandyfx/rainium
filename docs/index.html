@@ -1410,6 +1410,21 @@ window.startHero();
   window.musicStart = () => first({ target: document });
   window.musicPause = pause;
 })();
+
+/* ---------- Keep casual visitors from right-clicking or opening the source/devtools.
+   This is a deterrent, not real protection: anyone who knows the Network tab or
+   view-source: still gets the page, and the repo is public anyway. ---------- */
+(function () {
+  addEventListener("contextmenu", (e) => e.preventDefault());
+  addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    const blocked =
+      k === "f12" ||
+      (e.ctrlKey && !e.altKey && k === "u") ||
+      ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(k));
+    if (blocked) e.preventDefault();
+  });
+})();
 </script>
 </body>
 </html>
