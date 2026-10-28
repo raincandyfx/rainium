@@ -8,7 +8,7 @@ IN-GAME EDITOR: press K (rebindable under Controls > Rainium), run /rainium, or 
                 the square on a folder shows/hides every part in it, the arrow collapses it,
                 and clicking its name opens the folder view (parts, resize/move all parts
                 together, Ungroup, Remove folder). A layer's "Folder" picker moves it in/out.
-  Edit tab:     part, model, texture, style, hue, opacity, placement, mirroring and sway,
+  Edit tab:     part, model, texture, style, hue, tint, opacity, placement, mirroring and sway,
                 shown live on your player. Duplicate / Remove sit under the layer's name.
   Add tab:      presets, mesh files in this folder, and .obj / .gltf / .glb files to import (with a live
                 preview while you adjust axes, units and size).
@@ -79,7 +79,7 @@ LAYER OPTIONS (each entry of "layers")
               | emissive (additive glow, ignores light) | translucent_emissive
   hue         shift the texture's colours around the colour wheel, in degrees (-180..180)
   color       tint: "#RRGGBB", "#AARRGGBB", [r,g,b] or [r,g,b,a] (0-1 or 0-255);
-              the editor's Opacity is this colour's alpha
+              the editor's Tint sets its colour and Opacity its alpha
   fullbright  true = ignore world lighting
   anchor      body (default, follows crouch lean) | head | root
   offset      [x,y,z] in blocks, applied after the anchor

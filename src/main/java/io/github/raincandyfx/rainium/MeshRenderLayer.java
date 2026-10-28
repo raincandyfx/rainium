@@ -131,7 +131,10 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         int overlay = emissive ? OverlayTexture.NO_OVERLAY : hurtOverlay;
         int order = l.order >= 0 ? l.order : defaultOrder(l.render);
         final Mesh.Group[] groups = r.groups();
-        final int color = l.hue == 0 ? l.color : Hue.rotateArgb(l.color, l.hue);
+        // Hue recolours the texture itself; the layer's colour (its tint) only follows the hue when the
+        // texture can't be recoloured (Minecraft's own textures, or no texture)
+        boolean recoloured = l.texture != null && !LayerConfig.isResourceId(l.texture);
+        final int color = l.hue == 0 || recoloured ? l.color : Hue.rotateArgb(l.color, l.hue);
         if (l.isParticles()) {
             String key = where.key() + "|" + st.config().layers.indexOf(l) + "|" + anchor + "|" + mirrorMode;   // survives saves (layers are rebuilt on each)
             ParticleFx.submit(key, l, ps, where.preview(), where.x(), where.y(), where.z(), collector, order, renderType(l.render, r.texture()), color, lightValue, overlay);

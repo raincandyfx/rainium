@@ -23,7 +23,7 @@
 - **Particles.** Sparkles, embers, hearts, trails and auras, or your own particles from any PNG.
 - **Pictures and recordings.** Save a transparent picture of your look, or record it as a smooth clip for videos.
 - **Group parts into folders.** A model made of several parts stays together: switch it on or off, resize it or move it in one go.
-- **Recolour with Hue.** Shift a texture's colours around the colour wheel without editing the image.
+- **Recolour with Hue and Tint.** Shift a texture's colours around the colour wheel, or tint the whole layer towards any colour, without editing the image.
 - **Share your look.** Export a folder as a zip, and a friend can add it from the editor.
 - **Just for you.** Rainium only changes what *you* see. It works on any server, and other players' setups never affect yours.
 - **Keeps itself up to date.** New versions for your Minecraft version are downloaded and installed when you close the game (you can turn this off).
@@ -48,7 +48,7 @@
 3. Click **Add as layer** (or **Add as folder** if the model has several parts).
 
 **Make it look right.** Select a layer on the left, then use the **Edit** tab:
-- **Look:** texture, style (solid, see-through, glow), hue and opacity.
+- **Look:** texture, style (solid, see-through, glow), hue, tint and opacity.
 - **Placement:** what it's attached to (body, head, body without leaning, or an arm or leg), size, position and angle.
 - **Behaviour:** a mirrored copy (model one wing, get two), swaying with movement, hiding while gliding.
 - **Shown on:** which players and armor stands this layer appears on.
@@ -71,7 +71,7 @@ Your `config/rainium` folder also has a `README.txt` with the full details: the 
 
 Besides models, a layer can be a **particle emitter**. On the **Add** tab, start from **Sparkles**, **Embers**, **Hearts**, **Trail**, **Aura** or an **Empty emitter**, then fine-tune it on the Edit tab:
 
-- **Picture:** one of Minecraft's particles (flame, sparkle, heart, note, smoke, petal and more) or any PNG you put in the rainium folder. Style, hue and opacity work like on models.
+- **Picture:** one of Minecraft's particles (flame, sparkle, heart, note, smoke, petal and more) or any PNG you put in the rainium folder. Style, hue, tint and opacity work like on models.
 - **When and how many:** always, only while moving, only while standing still, or more the faster you move; how many per second and how long each lasts.
 - **Where they appear:** a point, a ball, a box or a ring around the attachment point, at any size. Attach emitters to your body, head, arms or legs like any layer.
 - **How they move:** direction, speed, spread, gravity (negative floats up), drag and spin, plus size over time and fading out.
