@@ -61,14 +61,19 @@ jobs:
             exit 1
           fi
 
-      - name: Build for Minecraft 1.21.11
+      - name: Build for the other Minecraft versions
         shell: bash
         run: |
           set -o pipefail
-          if ! ./gradlew -p versions/1.21.11 build -Pmod_version_override="${{ steps.v.outputs.version }}" 2>&1 | tee build-1.21.11.log; then
-            grep -E -A8 "What went wrong|error:|Could not" build-1.21.11.log | head -60 | while IFS= read -r l; do echo "::error::$l"; done
-            exit 1
-          fi
+          for d in versions/*/; do
+            mc="$(basename "$d")"
+            echo "::group::Minecraft $mc"
+            if ! ./gradlew -p "$d" build -Pmod_version_override="${{ steps.v.outputs.version }}" 2>&1 | tee "build-$mc.log"; then
+              grep -E -A8 "What went wrong|error:|Could not" "build-$mc.log" | head -60 | while IFS= read -r l; do echo "::error::[$mc] $l"; done
+              exit 1
+            fi
+            echo "::endgroup::"
+          done
 
       - name: Release notes from CHANGELOG.md
         if: steps.v.outputs.publish == 'true'
