@@ -98,7 +98,7 @@ LAYER OPTIONS (each entry of "layers")
               for every layer in it): { "players": self|all|others|listed|nobody,
               "names": ["Alex"], "stands": ["Display"] }  ("stands": [] = no armor stands).
               Anything left out follows the folder, then Settings.
-              Top-level "me_uuids": ["069a79f4-44e9-4726-a5be-fca90e38aaf5"] lists players that count
+              Top-level "me_uuids": ["069a79f4-44e9-4726-a5be-fca90e38aaf5"] lists entity UUIDs that count
               as you for "self" (e.g. yourself in a Flashback replay; Settings > Visibility > Also me).
   particles   makes the layer a particle emitter instead of a model (no "mesh" needed):
               { "shape": point|sphere|box|ring, "area": 0.25, "rate": 8, "when": always|moving|still|speed,

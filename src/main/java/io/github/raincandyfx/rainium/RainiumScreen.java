@@ -1445,7 +1445,7 @@ public final class RainiumScreen extends Screen {
     // SDL scancodes (Minecraft 26.x reports physical keys as SDL scancodes)
     private static final int SC_A = 4, SC_Z = 29, SC_1 = 30, SC_0 = 39, SC_ENTER = 40, SC_ESC = 41, SC_BACKSPACE = 42,
         SC_SPACE = 44, SC_MINUS = 45, SC_COMMA = 54, SC_PERIOD = 55, SC_DELETE = 76, SC_KP_MINUS = 86, SC_KP_ENTER = 88,
-        SC_KP_1 = 89, SC_KP_0 = 98, SC_KP_PERIOD = 99, SC_Y = 28,
+        SC_KP_1 = 89, SC_KP_0 = 98, SC_KP_PERIOD = 99, SC_Y = 28, SC_V = 25,
         SC_LCTRL = 224, SC_LSHIFT = 225, SC_LGUI = 227, SC_RCTRL = 228, SC_RSHIFT = 229, SC_RGUI = 231;
 
     private static boolean down(int sc) {
@@ -1465,6 +1465,7 @@ public final class RainiumScreen extends Screen {
         int k = event.key();
         if (editId != null) {
             boolean shift = down(SC_LSHIFT) || down(SC_RSHIFT);
+            if (k == SC_V && (down(SC_LCTRL) || down(SC_RCTRL) || down(SC_LGUI) || down(SC_RGUI))) { paste(); return true; }
             if (k == SC_ENTER || k == SC_KP_ENTER) { commitEdit(); return true; }
             if (k == SC_ESC) { cancelEdit(); return true; }
             if (k == SC_BACKSPACE || k == SC_DELETE) {
@@ -1490,6 +1491,23 @@ public final class RainiumScreen extends Screen {
         if (ctrl && k == SC_Y) { redo(); return true; }
         if (k == SC_ESC) { close(); return true; }
         return super.keyPressed(event);
+    }
+
+    /** Ctrl+V while typing: adds the clipboard's text (first line, printable characters only). */
+    private void paste() {
+        String clip;
+        try { clip = Minecraft.getInstance().keyboardHandler.getClipboard(); } catch (Throwable t) { return; }
+        if (clip == null) return;
+        StringBuilder add = new StringBuilder();
+        for (char ch : clip.toCharArray()) {
+            if (ch == '\n' || ch == '\r') break;
+            if (ch >= ' ' && ch != 127 && (!editNumeric || "0123456789.-".indexOf(ch) >= 0)) add.append(ch);
+        }
+        if (add.length() == 0) return;
+        if (editReplace) editBuf.setLength(0);
+        editReplace = false;
+        int room = (editNumeric ? 40 : 200) - editBuf.length();
+        editBuf.append(add, 0, Math.max(0, Math.min(room, add.length())));
     }
 
     private void beginEdit(String id, String initial, boolean numeric, Consumer<String> commit) {
@@ -1737,8 +1755,8 @@ public final class RainiumScreen extends Screen {
         tip(mx, my, x, y, w, 11, "players_here");
         y += 12;
         for (net.minecraft.world.entity.player.Player p : ps) {
-            String uuid = p.getUUID().toString();
-            boolean me = c.meUuids.contains(uuid);
+            String uuid = p.getUUID().toString();   // the entity UUID, as Flashback shows it
+            boolean me = Self.listed(p, c);
             String chip = Lang.t(me ? "button.is_me" : "button.add_me");
             int cw = font.width(Component.literal(chip)) + 10, cx = x + w - cw;
             String label = fit(p.getName().getString() + "  " + uuid.substring(0, 8) + "…", cx - x - 6);
@@ -1746,7 +1764,11 @@ public final class RainiumScreen extends Screen {
             boolean hov = in(mx, my, cx, y, cw, 12);
             g.fill(cx, y, cx + cw, y + 12, me ? ACCENT_DIM : hov ? FIELD_HOVER : FIELD);
             g.text(font, chip, cx + 5, y + 2, me ? TEXT : MUTED, false);
-            hits.add(new Hit(cx, y, cw, 12, () -> { if (me) c.meUuids.remove(uuid); else c.meUuids.add(uuid); save(); }, null));
+            hits.add(new Hit(cx, y, cw, 12, () -> {
+                if (me) { c.meUuids.remove(uuid); try { c.meUuids.remove(p.getGameProfile().id().toString()); } catch (Throwable ignored) { } }
+                else c.meUuids.add(uuid);
+                save();
+            }, null));
             y += 13;
         }
         return y + GAP;
