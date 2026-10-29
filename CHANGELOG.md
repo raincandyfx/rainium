@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.6.3 (dev build)
+
+- **Also me** in Settings > Visibility: player UUIDs that count as you, so they get your **Just me** layers, for example yourself in a Flashback replay. **Players here** lists the players around you (in a replay, the recorded players) with a **+ Me** button for each; UUIDs can also be typed in.
+- When **Also me** is set and you're watching through a replay camera, the editor's preview shows the listed player.
+
 ## 0.6.2 (dev build)
 
 - **Flashback replays:** layers set to **Just me** now show on the recorded player instead of the replay camera. Rainium finds you by your account name, or else as the only player whose hotbar was recorded, or else as the player nearest the camera when the replay starts. The editor's preview shows that player too.

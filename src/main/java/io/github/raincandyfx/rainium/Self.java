@@ -1,6 +1,7 @@
 package io.github.raincandyfx.rainium;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
@@ -8,9 +9,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Who "me" is for Show on: Just me. Normally the local player. While watching a Flashback replay the
- * local player is the camera, so "me" is the recorded player instead (see {@link SelfPick}); the choice
- * is kept for the rest of the replay.
+ * Who "me" is for Show on: Just me. The local player, and any player whose UUID is listed under
+ * Settings > Visibility > Also me (for example yourself in a Flashback replay, where the local player
+ * is the camera). In a replay with nobody listed, "me" is guessed (see {@link SelfPick}) and kept for
+ * the rest of the replay.
  */
 final class Self {
     private Self() {}
@@ -29,20 +31,48 @@ final class Self {
     }
 
     /** Whether the entity with this id is "me". */
-    static boolean is(int entityId) {
+    static boolean is(int entityId, LayerConfig cfg) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return true;   // no player (e.g. menus): treat as me
+        if (listed(entityId, cfg)) return true;
         if (!inReplay()) return mc.player.getId() == entityId;
+        if (!cfg.meUuids.isEmpty()) return false;   // in a replay, the list decides when there is one
         Player me = replayMe();
         return me != null && me.getId() == entityId;
     }
 
-    /** The player the editor previews: the recorded player in a replay, else the local player. */
-    static Player previewPlayer() {
+    private static boolean listed(int entityId, LayerConfig cfg) {
+        if (cfg.meUuids.isEmpty()) return false;
         Minecraft mc = Minecraft.getInstance();
-        if (!inReplay()) return mc.player;
+        if (mc.level == null) return false;
+        Entity e = mc.level.getEntity(entityId);
+        return e != null && cfg.meUuids.contains(e.getUUID().toString());
+    }
+
+    /**
+     * The player the editor previews: the local player, unless it isn't "me" but a listed player is
+     * loaded (a replay camera), or a replay's recorded player.
+     */
+    static Player previewPlayer(LayerConfig cfg) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return null;
+        if (!cfg.meUuids.isEmpty() && !cfg.meUuids.contains(mc.player.getUUID().toString()) && mc.level != null) {
+            for (Player p : mc.level.players()) if (p != mc.player && cfg.meUuids.contains(p.getUUID().toString())) return p;
+        }
+        if (!inReplay() || !cfg.meUuids.isEmpty()) return mc.player;
         Player me = replayMe();
         return me != null ? me : mc.player;
+    }
+
+    /** Players loaded right now, the local player first and then the nearest others, for picking who is "me". */
+    static List<Player> nearbyPlayers(int max) {
+        Minecraft mc = Minecraft.getInstance();
+        List<Player> out = new ArrayList<>();
+        if (mc.level == null || mc.player == null) return out;
+        for (Player p : mc.level.players()) if (p != mc.player) out.add(p);
+        out.sort((a, b) -> Double.compare(a.distanceToSqr(mc.player), b.distanceToSqr(mc.player)));
+        out.add(0, mc.player);
+        return out.size() > max ? out.subList(0, max) : out;
     }
 
     private static Player replayMe() {
