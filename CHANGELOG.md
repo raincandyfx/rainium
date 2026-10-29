@@ -2,6 +2,12 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.6.4 (dev build)
+
+- **Flashback replays:** Rainium now recognises Flashback's camera ("Replay Viewer"), so working out which recorded player is you works again when **Also me** is empty.
+- **Also me** takes **entity UUIDs**, the ones Flashback shows; a pasted account UUID also matches. In a replay, **Players here** lists only the recorded players, not the camera.
+- Text fields accept pasting with **Ctrl+V**.
+
 ## 0.6.3 (dev build)
 
 - **Also me** in Settings > Visibility: player UUIDs that count as you, so they get your **Just me** layers, for example yourself in a Flashback replay. **Players here** lists the players around you (in a replay, the recorded players) with a **+ Me** button for each; UUIDs can also be typed in.

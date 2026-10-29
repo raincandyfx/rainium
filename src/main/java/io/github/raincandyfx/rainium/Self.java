@@ -24,7 +24,7 @@ final class Self {
     static boolean inReplay() {
         Minecraft mc = Minecraft.getInstance();
         try {
-            return mc.player != null && SelfPick.REPLAY_CAMERA.equals(mc.player.getName().getString());
+            return mc.player != null && SelfPick.isReplayCamera(mc.player.getName().getString());
         } catch (Throwable t) {
             return false;
         }
@@ -46,7 +46,22 @@ final class Self {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return false;
         Entity e = mc.level.getEntity(entityId);
-        return e != null && cfg.meUuids.contains(e.getUUID().toString());
+        return e != null && listed(e, cfg);
+    }
+
+    /**
+     * Whether an entity is on the Also me list: by its entity UUID (what Flashback shows), or for a
+     * player also by the account UUID in its profile, in case that's the one that was pasted.
+     */
+    static boolean listed(Entity e, LayerConfig cfg) {
+        if (cfg.meUuids.contains(e.getUUID().toString())) return true;
+        if (e instanceof Player p) {
+            try {
+                UUID id = p.getGameProfile().id();
+                return id != null && cfg.meUuids.contains(id.toString());
+            } catch (Throwable ignored) { }
+        }
+        return false;
     }
 
     /**
@@ -56,8 +71,8 @@ final class Self {
     static Player previewPlayer(LayerConfig cfg) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return null;
-        if (!cfg.meUuids.isEmpty() && !cfg.meUuids.contains(mc.player.getUUID().toString()) && mc.level != null) {
-            for (Player p : mc.level.players()) if (p != mc.player && cfg.meUuids.contains(p.getUUID().toString())) return p;
+        if (!cfg.meUuids.isEmpty() && !listed(mc.player, cfg) && mc.level != null) {
+            for (Player p : mc.level.players()) if (p != mc.player && listed(p, cfg)) return p;
         }
         if (!inReplay() || !cfg.meUuids.isEmpty()) return mc.player;
         Player me = replayMe();
@@ -71,7 +86,7 @@ final class Self {
         if (mc.level == null || mc.player == null) return out;
         for (Player p : mc.level.players()) if (p != mc.player) out.add(p);
         out.sort((a, b) -> Double.compare(a.distanceToSqr(mc.player), b.distanceToSqr(mc.player)));
-        out.add(0, mc.player);
+        if (!inReplay()) out.add(0, mc.player);   // in a replay the local player is only the camera
         return out.size() > max ? out.subList(0, max) : out;
     }
 

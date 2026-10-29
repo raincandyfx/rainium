@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Which player is "me" while watching a replay (Flashback's camera is a separate player named
- * "Replay Player"). In order: the player with your account name; else the only player whose
+ * "Replay Viewer"). In order: the player with your account name; else the only player whose
  * inventory is known (a replay keeps the recorded player's whole hotbar, but only what others
  * hold in their hands); else the player nearest the camera, since a replay starts at the
  * recorded player. No game classes here, so it can be tested on its own.
@@ -12,8 +12,10 @@ import java.util.List;
 final class SelfPick {
     private SelfPick() {}
 
-    /** The camera's own player name in Flashback replays. */
-    static final String REPLAY_CAMERA = "Replay Player";
+    /** The camera's own player name in Flashback replays (older notes called it "Replay Player"). */
+    static final String REPLAY_CAMERA = "Replay Viewer";
+
+    static boolean isReplayCamera(String name) { return REPLAY_CAMERA.equals(name) || "Replay Player".equals(name); }
 
     /** A player in the replay: name, how many inventory slots hold something, distance² to the camera. */
     record Candidate(Object key, String name, int filledSlots, double distanceSq) {}
