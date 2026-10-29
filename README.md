@@ -30,8 +30,8 @@
 
 ## Installing
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft **26.3** or **1.21.11**, plus [Fabric API](https://modrinth.com/mod/fabric-api).
-2. From the [latest release](https://github.com/raincandyfx/rainium/releases/latest), download the jar for your Minecraft version, `rainium-<version>+26.3.jar` or `rainium-<version>+1.21.11.jar`, and put it in your `.minecraft/mods` folder. (The `-sources` jars are source code, not the mod.)
+1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft **26.3**, **26.2** or **1.21.11**, plus [Fabric API](https://modrinth.com/mod/fabric-api).
+2. From the [latest release](https://github.com/raincandyfx/rainium/releases/latest), download the jar for your Minecraft version (`rainium-<version>+26.3.jar`, `rainium-<version>+26.2.jar` or `rainium-<version>+1.21.11.jar`) and put it in your `.minecraft/mods` folder. (The `-sources` jars are source code, not the mod.)
 3. Launch the game and press <kbd>K</kbd>.
 
 [Mod Menu](https://modrinth.com/mod/modmenu) is optional; with it, Rainium's **Configure** button opens the editor too.
@@ -111,7 +111,7 @@ Once per launch, Rainium checks this page's releases for a newer version made fo
 
 You can turn this off, see the status, or check right away in **Settings > Updates**. Checking means your game contacts GitHub, which can see your IP address.
 
-Only main releases (versions ending in **.0**, like 0.6.0) are installed automatically. Releases marked **dev build** (0.6.1, 0.6.2 ...) are early test versions: you can download them by hand from the releases page, or switch on **Include dev builds** in **Settings > Updates** to get them automatically too.
+Only main releases (versions ending in **.0**, like 0.7.0) are installed automatically. Releases marked **dev build** (0.7.1, 0.7.2 ...) are early test versions: you can download them by hand from the releases page, or switch on **Include dev builds** in **Settings > Updates** to get them automatically too.
 
 ## Privacy
 

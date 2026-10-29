@@ -1,0 +1,24 @@
+# Name changes applied to the shared sources (../../src/main/java) when building for 26.2.
+# Files with their own copy in src/main/java here are not taken from the shared sources at all.
+#
+# Each rule:   <file name or *>  ||  <Java regex>  ||  <replacement ($1 = first group)>
+# Blocks marked "// @port <name> begin" ... "// @port <name> end" in a shared file are replaced
+# with regions/<name>.java.
+#
+# 26.2 is close to 26.3: the differences are the graphics API's package (26.3 moved it to
+# com.mojang.renderpearl) and keyboard input (26.2 still uses GLFW key codes, see regions/keys.java).
+
+# Graphics API
+*                     ||  com\.mojang\.renderpearl\.api\.GpuFormat           ||  com.mojang.blaze3d.GpuFormat
+*                     ||  com\.mojang\.renderpearl\.api\.buffers\.           ||  com.mojang.blaze3d.buffers.
+*                     ||  com\.mojang\.renderpearl\.api\.textures\.          ||  com.mojang.blaze3d.textures.
+*                     ||  com\.mojang\.renderpearl\.api\.device\.GpuDevice   ||  com.mojang.blaze3d.systems.GpuDevice
+
+# Keyboard: GLFW key code for K, and the key type's name
+RainiumClient.java    ||  SDL scancode for K \(Minecraft 26\.x keys are SDL scancodes\)  ||  GLFW key code for K (Minecraft 26.2 keys are GLFW key codes)
+RainiumClient.java    ||  KEY_K = 14;                                        ||  KEY_K = 75;
+RainiumClient.java    ||  InputConstants\.Type\.KEYBOARD                     ||  InputConstants.Type.KEYSYM
+
+# Rendering (26.3 added these shortcuts)
+*                     ||  (\w+)\.rotateDegrees\((Axis\.[XYZ]P), (.*)\);  ||  $1.mulPose($2.rotationDegrees($3));
+MeshRenderLayer.java  ||  RenderTypes\.entityTranslucentCull\(     ||  RenderTypes.entityTranslucentCullItemTarget(

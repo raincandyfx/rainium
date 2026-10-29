@@ -37,7 +37,7 @@ def portedDir = layout.buildDirectory.dir('ported/java')
 
 def portShared = tasks.register('portShared') {
     inputs.dir sharedSrc
-    inputs.dir ownSrc
+    inputs.files(fileTree(ownSrc))   // may not exist: a version can use the shared sources unchanged
     inputs.file 'port.rules'
     inputs.dir 'regions'
     outputs.dir portedDir

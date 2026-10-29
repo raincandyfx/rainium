@@ -2,6 +2,19 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.0
+
+Everything from the 0.6.1 to 0.6.4 dev builds, plus:
+
+- **Minecraft 26.2** is supported, alongside 26.3 and 1.21.11. Each release has a jar for each version, and the in-game updater picks the one for your game.
+
+From the dev builds:
+
+- **Tint**, next to Hue on the Edit tab: colours a whole layer towards any colour, at the strength you choose. Hue shifts the texture first, then Tint colours the result.
+- **Flashback replays:** layers set to **Just me** show on you, not on the replay camera. Rainium works out which recorded player is you (your account name, the only player with a recorded hotbar, or the player nearest the camera at the start), or you can choose: **Settings > Visibility > Also me** takes entity UUIDs, and **Players here** has a **+ Me** button next to each recorded player.
+- **Start angle** for particle layers: every particle can start upright, or at a random angle (the default).
+- Text fields accept pasting with **Ctrl+V**.
+
 ## 0.6.4 (dev build)
 
 - **Flashback replays:** Rainium now recognises Flashback's camera ("Replay Viewer"), so working out which recorded player is you works again when **Also me** is empty.
