@@ -170,7 +170,7 @@ public final class RainiumScreen extends Screen {
             say(Lang.t("update.ready", Updater.detail()), ACCENT);
         }
         try {
-            net.minecraft.world.entity.player.Player me = Self.previewPlayer();   // not the replay camera
+            net.minecraft.world.entity.player.Player me = Self.previewPlayer(assets.editable());   // not the replay camera
             if (me != null) Privacy.ingameName = me.getName().getString();
         } catch (Throwable ignored) { }
         editRect = null;
@@ -1073,6 +1073,12 @@ public final class RainiumScreen extends Screen {
                 c.players.addAll(splitPlayers(v));
                 save();
             });
+        y = textRow(g, mx, my, x, y, w, "me_uuids", String.join(", ", c.meUuids), Lang.t("value.none"), v -> {
+            c.meUuids.clear();
+            for (String u : v.split("[,\\s]+")) { String n = LayerConfig.normalizeUuid(u); if (n != null && !c.meUuids.contains(n)) c.meUuids.add(n); }
+            save();
+        });
+        y = nearbyPlayers(g, mx, my, x, y, w, c);
         y = toggle(g, mx, my, x, y, w, "armor_stands", c.armorStands, () -> { c.armorStands = !c.armorStands; save(); });
         if (c.armorStands)
             y = textRow(g, mx, my, x, y, w, "stand_name", c.armorStandName, "", v -> { c.armorStandName = v.trim(); save(); });
@@ -1178,7 +1184,7 @@ public final class RainiumScreen extends Screen {
         g.fillGradient(x, y, x + w, y + h, 0x2A000000, 0x6A000000);
         hits.add(new Hit(x, y, w, h - 20, () -> dragging = true, d -> previewZoom = clampF(previewZoom * (d > 0 ? 1.1f : 1 / 1.1f), 0.4f, 4f)));
         Minecraft mc = Minecraft.getInstance();
-        net.minecraft.world.entity.player.Player player = Self.previewPlayer();   // the recorded player when watching a replay
+        net.minecraft.world.entity.player.Player player = Self.previewPlayer(assets.editable());   // the recorded player when watching a replay
         if (player == null) {
             String s = fit(Lang.t("preview.no_world"), w - 8);
             g.text(font, s, x + (w - font.width(Component.literal(s))) / 2, y + h / 2 - 4, MUTED, false);
@@ -1722,6 +1728,30 @@ public final class RainiumScreen extends Screen {
     }
 
     /** Player names: separated by commas or spaces (names can't contain spaces). */
+    /** Players loaded around you (in a replay: the recorded players), each with a button to count it as "me". */
+    private int nearbyPlayers(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig c) {
+        List<net.minecraft.world.entity.player.Player> ps;
+        try { ps = Self.nearbyPlayers(6); } catch (Throwable t) { return y; }
+        if (ps.isEmpty()) return y;
+        g.text(font, fit(Lang.t("label.players_here"), w), x, y + 2, FAINT, false);
+        tip(mx, my, x, y, w, 11, "players_here");
+        y += 12;
+        for (net.minecraft.world.entity.player.Player p : ps) {
+            String uuid = p.getUUID().toString();
+            boolean me = c.meUuids.contains(uuid);
+            String chip = Lang.t(me ? "button.is_me" : "button.add_me");
+            int cw = font.width(Component.literal(chip)) + 10, cx = x + w - cw;
+            String label = fit(p.getName().getString() + "  " + uuid.substring(0, 8) + "…", cx - x - 6);
+            g.text(font, label, x + 4, y + 2, TEXT, false);
+            boolean hov = in(mx, my, cx, y, cw, 12);
+            g.fill(cx, y, cx + cw, y + 12, me ? ACCENT_DIM : hov ? FIELD_HOVER : FIELD);
+            g.text(font, chip, cx + 5, y + 2, me ? TEXT : MUTED, false);
+            hits.add(new Hit(cx, y, cw, 12, () -> { if (me) c.meUuids.remove(uuid); else c.meUuids.add(uuid); save(); }, null));
+            y += 13;
+        }
+        return y + GAP;
+    }
+
     private static List<String> splitPlayers(String v) { return split(v, "[,\\s]+"); }
 
     /** Armor stand names: separated by commas (name tags can contain spaces). */

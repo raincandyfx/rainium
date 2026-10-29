@@ -130,7 +130,7 @@ On your screen, yes. In **Settings > Visibility**, **Show on** can include every
 Each layer and folder can also choose for itself under **Shown on** on the Edit tab, for example wings just on you and a halo on an armor stand named "Display". Left on **Default**, it follows its folder, then Settings.
 
 **Does it work in Flashback replays?**
-Yes. In a replay, **Just me** means the recorded player, not the replay camera: the player with your account name, or else the only player whose hotbar was recorded, or else the player nearest the camera when the replay starts.
+Yes. In a replay you watch through a camera, so tell Rainium which recorded player is you: open the editor during the replay, go to **Settings > Visibility**, and click **+ Me** next to yourself under **Players here** (or type your UUID into **Also me**). Players listed there get your **Just me** layers. If nobody is listed, Rainium tries to work it out (your account name, the only player with a recorded hotbar, or the player nearest the camera at the start).
 
 **Does it work on servers?**
 Yes. It only runs on your side, so it works on any server and nothing needs to be installed there.

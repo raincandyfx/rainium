@@ -220,6 +220,7 @@ final class LayerConfig {
     boolean enabled = true;
     ShowOn showOn = ShowOn.SELF;
     List<String> players = new ArrayList<>();          // for ShowOn.LISTED
+    List<String> meUuids = new ArrayList<>();          // players that also count as "me" (e.g. yourself in a Flashback replay)
     boolean armorStands = false;                       // also draw layers on armor stands named armorStandName
     String armorStandName = "Rainium";
     Privacy.Mode privacyMode = Privacy.Mode.INGAME;   // what replaces the account name in shown paths
@@ -333,6 +334,7 @@ final class LayerConfig {
         c.enabled = bool(m, "enabled", true);
         c.showOn = enumOf(ShowOn.class, m.get("show_on"), ShowOn.SELF, "show_on");
         if (m.get("players") instanceof List<?> pl) for (Object o : pl) if (o != null && !String.valueOf(o).isBlank()) c.players.add(String.valueOf(o).trim());
+        if (m.get("me_uuids") instanceof List<?> ul) for (Object o : ul) { String u = o == null ? null : normalizeUuid(String.valueOf(o)); if (u != null && !c.meUuids.contains(u)) c.meUuids.add(u); }
         if (m.get("armor_stands") instanceof Map<?, ?> am) {
             if (am.get("enabled") instanceof Boolean b) c.armorStands = b;
             if (am.get("name") instanceof String n) c.armorStandName = n;
@@ -505,6 +507,7 @@ final class LayerConfig {
         m.put("enabled", enabled);
         m.put("show_on", showOn.name().toLowerCase(Locale.ROOT));
         if (!players.isEmpty()) m.put("players", new ArrayList<Object>(players));
+        if (!meUuids.isEmpty()) m.put("me_uuids", new ArrayList<Object>(meUuids));
         Map<String, Object> as = new java.util.LinkedHashMap<>();
         as.put("enabled", armorStands);
         as.put("name", armorStandName);
@@ -622,6 +625,14 @@ final class LayerConfig {
         Particles copy() { return fromJson(toJson()); }
 
         private static float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
+    }
+
+    /** A player UUID in its usual lower-case dashed form, from any spelling with or without dashes; null if it isn't one. */
+    static String normalizeUuid(String s) {
+        if (s == null) return null;
+        String hex = s.trim().toLowerCase(Locale.ROOT).replace("-", "");
+        if (!hex.matches("[0-9a-f]{32}")) return null;
+        return hex.substring(0, 8) + "-" + hex.substring(8, 12) + "-" + hex.substring(12, 16) + "-" + hex.substring(16, 20) + "-" + hex.substring(20);
     }
 
     static Layer newParticleLayer(String name) {
