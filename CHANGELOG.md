@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.1 (dev build)
+
+- **Tutorial:** the Mods and Configure highlights are found in more ways, so they keep working if Mod Menu's labels or layout change. If neither is found, the card still says what to click.
+
 ## 0.8.0
 
 Everything from the 0.7.1 to 0.7.10 dev builds, plus:

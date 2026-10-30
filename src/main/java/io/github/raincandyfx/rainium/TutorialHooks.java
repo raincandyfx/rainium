@@ -57,7 +57,9 @@ final class TutorialHooks {
         };
     }
 
-    /** Where the buttons the tour points at are: Mods on the title screen, Configure on Mod Menu's screen. */
+    /** Where the buttons the tour points at are: Mods on the title screen, Configure on Mod Menu's screen.
+     *  Found by its translated label, else by being one of Mod Menu's own widgets, else by a label that contains the word,
+     *  so a changed label or layout only loses the highlight (the card still explains what to click). */
     private static Map<String, int[]> marks(Screen s) {
         Map<String, int[]> m = new HashMap<>();
         try {
@@ -65,13 +67,18 @@ final class TutorialHooks {
             String key = title ? "modmenu.title" : "modmenu.configure";
             String label = Component.translatable(key).getString();
             if (label.equals(key) || label.isBlank()) label = title ? "Mods" : "Configure";
+            String word = (title ? "mods" : "configur").toLowerCase(java.util.Locale.ROOT);
+            AbstractWidget byLabel = null, byClass = null, byWord = null;
             for (AbstractWidget w : Screens.getWidgets(s)) {
-                if (w == null || !w.visible || w.getMessage() == null) continue;
-                if (w.getMessage().getString().startsWith(label)) {
-                    m.put(title ? "mods" : "configure", new int[]{w.getX(), w.getY(), w.getWidth(), w.getHeight()});
-                    break;
-                }
+                if (w == null || !w.visible || w.getWidth() <= 0 || w.getMessage() == null) continue;
+                String text = w.getMessage().getString();
+                if (byLabel == null && text.startsWith(label)) byLabel = w;
+                String cls = w.getClass().getName().toLowerCase(java.util.Locale.ROOT);
+                if (byClass == null && cls.contains("modmenu") && (title || text.toLowerCase(java.util.Locale.ROOT).contains(word))) byClass = w;
+                if (byWord == null && text.toLowerCase(java.util.Locale.ROOT).contains(word)) byWord = w;
             }
+            AbstractWidget w = byLabel != null ? byLabel : byClass != null ? byClass : byWord;
+            if (w != null) m.put(title ? "mods" : "configure", new int[]{w.getX(), w.getY(), w.getWidth(), w.getHeight()});
         } catch (Throwable ignored) { }
         return m;
     }
