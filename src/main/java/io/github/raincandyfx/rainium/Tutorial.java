@@ -52,7 +52,7 @@ final class Tutorial {
     private enum Mode { NONE, INVITE, NEWS, TOUR }
 
     private static final int INK = 0xFF050B33, SEA = 0xFF1436C9, CYAN = 0xFF48E6FF, PAPER = 0xFFFFFFFF, TEXT = 0xFFF4F7FF,
-        HAZE = 0xFFC9D8FF, FAINT = 0xFF8590C4, CARD = 0xF4050B33, DIM = 0xA6030826;
+        HAZE = 0xFFC9D8FF, EMPH = 0xFF8FF0FF, FAINT = 0xFF8590C4, CARD = 0xF4050B33, DIM = 0xA6030826;
 
     private static Mode mode = Mode.NONE;
     private static int idx;
@@ -343,7 +343,7 @@ final class Tutorial {
     private record Seg(String t, boolean bold, int x) {}
 
     private static net.minecraft.network.chat.Component face(String s, boolean bold) {
-        return bold ? RainiumScreen.styled(s, true, false) : RainiumScreen.body(s);
+        return RainiumScreen.body(s);   // emphasis is a colour, not Minecraft's bold: that draws custom fonts twice and leaves gaps
     }
 
     /** Word-wraps text with **bold** parts. Lines are lists of segments with x offsets from the line start. */
@@ -510,13 +510,13 @@ final class Tutorial {
             boolean b = bullet.get(i);
             if (b) g.fill(x + pad + 1, cy + 3, x + pad + 4, cy + 6, CYAN);
             for (List<Seg> line : body.get(i)) {
-                for (Seg s : line) g.text(font, face(s.t, s.bold), x + pad + (b ? 7 : 0) + s.x, cy, s.bold ? PAPER : TEXT, false);
+                for (Seg s : line) g.text(font, face(s.t, s.bold), x + pad + (b ? 7 : 0) + s.x, cy, s.bold ? EMPH : TEXT, false);
                 cy += LH;
             }
             cy += 3;
         }
         for (List<Seg> line : noteLines) {
-            for (Seg s : line) g.text(font, face(s.t, s.bold), x + pad + s.x, cy, s.bold ? PAPER : HAZE, false);
+            for (Seg s : line) g.text(font, face(s.t, s.bold), x + pad + s.x, cy, s.bold ? EMPH : HAZE, false);
             cy += LH;
         }
         if (!noteLines.isEmpty()) cy += 3;

@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.10 (dev build)
+
+- **Tutorial text:** emphasised words are now a lighter cyan instead of Minecraft's bold, which left small gaps in the letters and uneven spacing.
+
 ## 0.7.9 (dev build)
 
 - **First-run tutorial.** The first time you start the game with Rainium, the main menu offers a short tour (skip it any time, from any step, with a confirmation). It starts on the main menu by pointing at **Mods**, follows you to Rainium, then walks through the editor in seven steps with a "Step n / 7" progress bar: finding Rainium, the editor's four areas, adding models (your own files, folders and zips, and the Gold halo), shaping and placing, managing layers, particles with Hue and Tint, and who sees it.
