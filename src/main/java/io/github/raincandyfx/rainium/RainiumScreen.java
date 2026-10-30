@@ -944,17 +944,19 @@ public final class RainiumScreen extends Screen {
         for (Presets.Info p : presetList) {
             List<String> lines = wrapLines(p.description(), w - 12 - th, 2);
             int ch = Math.max(19 + lines.size() * 10 + 3, th + 6);
-            boolean hov = in(mx, my, x, y, w, ch);
-            g.fill(x, y, x + w, y + ch, hov ? FIELD_HOVER : FIELD);
-            g.fill(x, y, x + 2, y + ch, ACCENT);
-            thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
-            g.text(font, body(fit(p.name(), w - 46 - th)), x + 7 + th, y + 5, TEXT, false);
-            for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7 + th, y + 18 + li * 10, MUTED, false);
-            String chip = Lang.t("preset.add");
+            boolean hov = in(mx, my, x, y, w, ch), ok = p.available();
+            g.fill(x, y, x + w, y + ch, ok ? (hov ? FIELD_HOVER : FIELD) : (hov ? 0xF00A1247 : 0xB0050B33));
+            g.fill(x, y, x + 2, y + ch, ok ? ACCENT : FAINT);
+            if (ok) thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
+            else g.fill(x + 5, y + (ch - Thumbs.SIZE) / 2, x + 5 + Thumbs.SIZE, y + (ch - Thumbs.SIZE) / 2 + Thumbs.SIZE, 0x30FFFFFF);   // no model to show until the mod is found
+            g.text(font, body(fit(p.name(), w - 46 - th)), x + 7 + th, y + 5, ok ? TEXT : FAINT, false);
+            for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7 + th, y + 18 + li * 10, ok ? MUTED : FAINT, false);
+            String chip = Lang.t(ok ? "preset.add" : "preset.needs_mod");
             int cwid = font.width(body(chip)) + 8;
-            g.fill(x + w - cwid - 5, y + 4, x + w - 5, y + 14, ACCENT);
-            g.text(font, body(chip), x + w - cwid - 1, y + 5, ACCENT_INK, false);
-            hits.add(new Hit(x, y, w, ch, () -> addPreset(p), null));
+            g.fill(x + w - cwid - 5, y + 4, x + w - 5, y + 14, ok ? ACCENT : 0x40FFFFFF);
+            g.text(font, body(chip), x + w - cwid - 1, y + 5, ok ? ACCENT_INK : FAINT, false);
+            if (ok) hits.add(new Hit(x, y, w, ch, () -> addPreset(p), null));
+            else hits.add(new Hit(x, y, w, ch, () -> { assets.openLink(Presets.WING_MOD_URL); say(Lang.t("msg.opening_mod_page"), MUTED); }, null));
             if (p.id().equals("halo")) mark("preset_halo", x, y, w, ch);
             y += ch + GAP;
         }

@@ -23,7 +23,12 @@ import java.util.zip.ZipFile;
  */
 final class Presets {
     /** A preset the editor can offer (only ones that can actually be installed are listed). */
-    record Info(String id, String name, String description) {}
+    record Info(String id, String name, String description, boolean available) {
+        Info(String id, String name, String description) { this(id, name, description, true); }
+    }
+
+    /** Where to get the mod Eyed wings is read from (opened when its greyed-out card is clicked). */
+    static final String WING_MOD_URL = "";
 
     static final String WINGS = "wings", HALO = "halo";
 
@@ -53,8 +58,9 @@ final class Presets {
 
     List<Info> list() {
         List<Info> out = new ArrayList<>();
-        if (wingSource() != null || Files.exists(assets.dir().resolve("presets/wings/wings_mesh.json")))
-            out.add(new Info(WINGS, displayName(WINGS), Lang.t("preset.wings.description")));
+        // always listed; greyed out (and a link to the mod) until the mod it is read from is found
+        boolean wings = wingSource() != null || Files.exists(assets.dir().resolve("presets/wings/wings_mesh.json"));
+        out.add(new Info(WINGS, displayName(WINGS), Lang.t(wings ? "preset.wings.description" : "preset.wings.needs_mod"), wings));
         out.add(new Info(HALO, displayName(HALO), Lang.t("preset.halo.description")));
         for (String id : bundledIds()) out.add(new Info(id, displayName(id), Lang.t("preset." + id + ".description")));
         return out;

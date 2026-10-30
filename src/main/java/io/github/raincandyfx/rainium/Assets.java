@@ -219,7 +219,7 @@ final class Assets {
         List<LayerConfig.Layer> layers = new ArrayList<>();
         List<String> hiddenFolders = new ArrayList<>();
         for (Presets.Info p : presets.list()) {
-            if (p.id().equals(Presets.HALO) || Presets.bundledIds().contains(p.id())) continue;   // sample models (Gold halo included) are only offered in the Add tab
+            if (!p.available() || p.id().equals(Presets.HALO) || Presets.bundledIds().contains(p.id())) continue;   // sample models (Gold halo included) are only offered in the Add tab
             try {
                 List<LayerConfig.Layer> got = presets.install(p.id());
                 layers.addAll(got);
@@ -533,6 +533,20 @@ final class Assets {
 
     /** Open the folder in the system file manager (JDK only; works on Windows, macOS and Linux desktops). */
     void openFolder() { openFolder(dir); }
+
+    /** Open a web page in the browser (JDK only, like openFolder). Only http(s) links. */
+    void openLink(String url) {
+        if (url == null || !(url.startsWith("https://") || url.startsWith("http://"))) return;
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        String[] cmd = os.contains("win") ? new String[]{"rundll32", "url.dll,FileProtocolHandler", url}
+            : os.contains("mac") ? new String[]{"open", url}
+            : new String[]{"xdg-open", url};
+        try {
+            new ProcessBuilder(cmd).start();
+        } catch (IOException e) {
+            lastError = "could not open " + url;
+        }
+    }
 
     /** Open a folder in the system file manager. */
     void openFolder(Path dir) {
