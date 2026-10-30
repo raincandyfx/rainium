@@ -17,6 +17,7 @@ import net.minecraft.resources.Identifier;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+import net.minecraft.client.gui.Font;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -334,7 +335,10 @@ public final class RainiumScreen extends Screen {
         if (compact && in(mx, my, x - 2, 5, w + 4, 16)) tipCandidate = label;
         boolean hov = enabled && in(mx, my, x - 2, 5, w + 4, 16);
         capsule(g, x, 8, kw, 11, enabled ? (hov ? CYAN : PAPER) : FAINT);
-        g.blit(RenderPipelines.GUI_TEXTURED, KEY_ICONS.get(key), x + (kw - 8) / 2, 8 + (11 - 8) / 2, 0, 0, 8, 8, 32, 32, 32, 32, INK);   // Lucide icons, centred in the key
+        g.pose().pushMatrix();
+        g.pose().translate(x + (kw - 8) / 2f, 8 + (11 - 8) / 2f);   // the key is 11 wide and tall: the 8-unit icon sits 1.5 in from each side
+        g.blit(RenderPipelines.GUI_TEXTURED, KEY_ICONS.get(key), 0, 0, 0, 0, 8, 8, 32, 32, 32, 32, INK);   // Lucide icons
+        g.pose().popMatrix();
         g.text(font, styled(l, true, true), x + kw + 3, 10, !enabled ? FAINT : hov ? CYAN : TEXT, false);
         if (enabled) hits.add(new Hit(x - 2, 5, w + 4, 16, click, null));
         return x - 10;
@@ -614,7 +618,7 @@ public final class RainiumScreen extends Screen {
         if (l.isParticles()) {
             y = particleTexture(g, mx, my, x, y, w, l);
         } else {
-        List<String> groups = assets.groupsOf(l.mesh);
+        List<String> groups = groupsOf(l.mesh);
         String part = l.groups == null ? Lang.t("value.whole_model") : String.join(", ", l.groups);
         List<String> partOpts = new ArrayList<>();
         partOpts.add("*");
@@ -1535,6 +1539,19 @@ public final class RainiumScreen extends Screen {
         refreshFiles(true);
     }
 
+    // A model's part names, checked against the file at most once a second instead of every frame.
+    private final java.util.Map<String, Object[]> groupCache = new java.util.HashMap<>();
+
+    @SuppressWarnings("unchecked")
+    private List<String> groupsOf(String mesh) {
+        long now = System.currentTimeMillis();
+        Object[] hit = mesh == null ? null : groupCache.get(mesh);
+        if (hit != null && now - (Long) hit[0] < 1000) return (List<String>) hit[1];
+        List<String> v = assets.groupsOf(mesh);
+        if (mesh != null) groupCache.put(mesh, new Object[]{now, v});
+        return v;
+    }
+
     private void refreshFiles(boolean force) {
         long now = System.currentTimeMillis();
         if (!force && now - filesCheckedAt < 2000) return;
@@ -1753,21 +1770,52 @@ public final class RainiumScreen extends Screen {
 
     /** Text styles: bold + italic means the site's display font (tabs, headings, buttons); otherwise the text font. */
     private static Component styled(String s, boolean bold, boolean italic) {
-        if (bold && italic) return Component.literal(s).withStyle(st -> st.withFont(DISPLAY));
-        MutableComponent c = body(s);
-        if (bold) return c.withStyle(ChatFormatting.BOLD);
-        return italic ? c.withStyle(ChatFormatting.ITALIC) : c;
+        // the same few labels are styled every frame, so each is built once (the results are never changed afterwards)
+        if (STYLED.size() > 3000) STYLED.clear();
+        return STYLED.computeIfAbsent((bold ? "b" : "-") + (italic ? "i" : "-") + s, k -> {
+            if (bold && italic) return Component.literal(s).withStyle(st -> st.withFont(DISPLAY));
+            MutableComponent c = body(s);
+            if (bold) return c.withStyle(ChatFormatting.BOLD);
+            return italic ? c.withStyle(ChatFormatting.ITALIC) : c;
+        });
     }
 
-    private int strongWidth(String s) { return font.width(styled(s, true, true)); }
+    private static final java.util.Map<String, Component> STYLED = new java.util.HashMap<>();
+
+    // Measured widths and shortened texts, remembered while the same font is in use.
+    private Font measuredWith;
+    private final java.util.Map<String, Integer> strongWidths = new java.util.HashMap<>();
+    private final java.util.Map<String, String> fitted = new java.util.HashMap<>();
+
+    private void checkFont() {
+        if (measuredWith != font || strongWidths.size() > 3000 || fitted.size() > 3000) {
+            measuredWith = font;
+            strongWidths.clear();
+            fitted.clear();
+        }
+    }
+
+    private int strongWidth(String s) {
+        checkFont();
+        return strongWidthRaw(s);
+    }
+
+    private int strongWidthRaw(String s) {
+        Integer w = strongWidths.get(s);
+        if (w == null) { w = font.width(styled(s, true, true)); strongWidths.put(s, w); }
+        return w;
+    }
 
     /** Like fit(), for bold text. */
     private String fitStrong(String s, int w) {
         if (s == null || w <= 0) return "";
         if (strongWidth(s) <= w) return s;
-        int n = s.length();
-        while (n > 0 && strongWidth(s.substring(0, n) + "…") > w) n--;
-        return s.substring(0, n) + "…";
+        checkFont();
+        return fitted.computeIfAbsent("S" + w + "|" + s, k -> {
+            int n = s.length();
+            while (n > 0 && strongWidthRaw(s.substring(0, n) + "…") > w) n--;
+            return s.substring(0, n) + "…";
+        });
     }
 
     private static float guiScale() {
@@ -2451,14 +2499,17 @@ public final class RainiumScreen extends Screen {
     private String fit(String s, int w) {
         if (s == null) return "";
         if (w <= 0) return "";
-        if (font.width(body(s)) <= w) return s;
-        String e = "…";
-        int lo = 0, hi = s.length();
-        while (lo < hi) {
-            int mid = (lo + hi + 1) / 2;
-            if (font.width(body(s.substring(0, mid) + e)) <= w) lo = mid; else hi = mid - 1;
-        }
-        return s.substring(0, lo) + e;
+        checkFont();
+        return fitted.computeIfAbsent("B" + w + "|" + s, k -> {
+            if (font.width(body(s)) <= w) return s;
+            String e = "…";
+            int lo = 0, hi = s.length();
+            while (lo < hi) {
+                int mid = (lo + hi + 1) / 2;
+                if (font.width(body(s.substring(0, mid) + e)) <= w) lo = mid; else hi = mid - 1;
+            }
+            return s.substring(0, lo) + e;
+        });
     }
 
     private static boolean in(double mx, double my, int x, int y, int w, int h) {

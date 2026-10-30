@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.7 (dev build)
+
+- **Showing icon** is centred in its circle (the Undo and Redo icons use the same exact centring).
+- **Caching, with no change in behaviour:** translations, shortened and measured label text, styled text, a model's part names (rechecked once a second), and the Motion presets are remembered instead of recomputed every frame. Players are no longer given a fresh copy of the layer list on every frame in the world.
+
 ## 0.7.6 (dev build)
 
 Built from 0.7.3. This replaces 0.7.4 and 0.7.5, which had performance problems in the editor.

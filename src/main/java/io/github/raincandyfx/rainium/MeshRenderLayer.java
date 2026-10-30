@@ -40,8 +40,8 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         }
         if (st == null || state.isInvisible) return;
         boolean editorPreview = state == RainiumScreen.previewState;   // the player drawn inside the editor
-        java.util.List<Assets.Resolved> layers = new java.util.ArrayList<>(st.config().enabled ? st.layers() : java.util.List.of());
-        if (preview != null) layers.add(preview);
+        java.util.List<Assets.Resolved> layers = st.config().enabled ? st.layers() : java.util.List.<Assets.Resolved>of();
+        if (preview != null) { layers = new java.util.ArrayList<>(layers); layers.add(preview); }   // the list is only copied when there's something to add
         if (layers.isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
         boolean self = Self.is(state.id, st.config());   // the local player, a player listed as "also me", or the recorded player in a replay

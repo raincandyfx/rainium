@@ -26,10 +26,17 @@ final class Motion {
     }
 
     /** Which feel the settings currently match, or -1 if they've been fine-tuned. */
+    private static LayerConfig.Physics[] presets;   // the five feels, built once
+
     static int match(LayerConfig.Physics p) {
+        LayerConfig.Physics[] all = presets;
+        if (all == null) {
+            all = new LayerConfig.Physics[NAMES.length];
+            for (int i = 0; i < all.length; i++) { all[i] = new LayerConfig.Physics(); apply(all[i], i); }
+            presets = all;
+        }
         for (int i = 0; i < NAMES.length; i++) {
-            LayerConfig.Physics t = new LayerConfig.Physics();
-            apply(t, i);
+            LayerConfig.Physics t = all[i];
             if (eq(t.lag, p.lag) && eq(t.maxLag, p.maxLag) && eq(t.yawLag, p.yawLag) && eq(t.maxYaw, p.maxYaw)
                 && eq(t.swayDeg, p.swayDeg) && eq(t.bob, p.bob) && eq(t.swayHz, p.swayHz) && eq(t.bobHz, p.bobHz)
                 && eq(t.stiffness, p.stiffness) && eq(t.damping, p.damping)) return i;
