@@ -10,10 +10,9 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 /**
- * Small preview pictures: each model is drawn in software (seen from behind and a little to the side,
- * where most cosmetics sit) into a small ARGB image. The Add tab shows shaded silhouettes; the layer
- * list shows each layer on its own with its texture, part, hue, tint and placement, and each folder
- * its enabled layers together. Pictures are made on a background thread and cached by key.
+ * Small preview pictures for the Add tab: each model is drawn in software (a shaded silhouette
+ * seen from behind and a little to the side, where most cosmetics sit) into a tiny ARGB image.
+ * Pictures are made on a background thread and cached until the file changes.
  */
 final class Thumbs {
     static final int SIZE = 22;
@@ -29,23 +28,13 @@ final class Thumbs {
     private Thumbs() {}
 
     /** The picture for key, or null while it's being made (or if the model can't be read). */
-    static int[] get(String key, Supplier<Collection<Mesh.Group>> groups) { return get(key, SIZE, groups); }
-
-    /** Same, n×n pixels: a shaded silhouette. */
-    static int[] get(String key, int n, Supplier<Collection<Mesh.Group>> groups) {
-        return make(key + "#" + n, () -> {
-            Collection<Mesh.Group> gs = groups.get();
-            return gs == null ? null : render(gs, n, 0xFFE8DBED);
-        });
-    }
-
-    private static int[] make(String key, Supplier<int[]> job) {
+    static int[] get(String key, Supplier<Collection<Mesh.Group>> groups) {
         int[] px = done.get(key);
         if (px != null || pending.putIfAbsent(key, true) != null) return px;
         worker.execute(() -> {
             try {
-                int[] out = job.get();
-                if (out != null) done.put(key, out);
+                Collection<Mesh.Group> gs = groups.get();
+                if (gs != null) done.put(key, render(gs, SIZE, 0xFFE8DBED));
             } catch (Throwable ignored) {
                 // no picture for unreadable models
             }

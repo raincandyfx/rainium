@@ -2,20 +2,15 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
-## 0.7.5 (dev build)
+## 0.7.6 (dev build)
 
-- **Smooth edges:** slanted buttons, ribbons, circles and the selection triangle are drawn with anti-aliased edges instead of stair-steps, and the editor's text is rendered at a size that matches the GUI better.
-- **No more list thumbnails:** layers and folders in the list are plain rows again (they were too small to read, and cost time every frame). The Add tab keeps its larger previews.
-- **Info buttons:** the "i" is drawn inside its circle, and hovering it shows the explanation (click it to keep it open).
-- **Header buttons** (Showing, Undo, Redo) have their symbols centred.
-- **Tab change** fades in instead of sliding with a wipe.
+Built from 0.7.3. This replaces 0.7.4 and 0.7.5, which had performance problems in the editor.
 
-## 0.7.4 (dev build)
-
-- **Dropdowns:** every list you used to step through with ‹ › (style, model, texture, step size and the rest) is now a dropdown that shows all the choices at once.
-- **Clickable info buttons:** an "i" beside a setting's name opens its explanation; hovering no longer pops it up.
-- **Bigger thumbnails:** the Add tab's pictures are larger. Each layer in the list shows that layer alone, with its assigned texture, colour and placement; a folder shows all its enabled layers together.
-- **Caustics removed** from the editor background, for speed.
+- **Dropdowns:** every setting you used to step through with ‹ › (style, model, texture, step size and the rest) is now a dropdown listing all the choices. The scroll wheel still steps through them.
+- **Info buttons:** an "i" beside a setting's name shows its explanation when you hover it; click to keep it open. These replace the old hover tooltips on those rows.
+- **Undo, Redo and Showing icons** are now proper icons (from Lucide), centred in their keys.
+- **Removed** the background caustics and the tab-change animation; tabs switch instantly.
+- No thumbnails were added.
 
 ## 0.7.3 (dev build)
 
@@ -23,6 +18,7 @@ Rainium is in beta (0.x) until 1.0.0.
 - **Lighter layer list:** the rows are the site's blue, and the selected one is brighter, so its dark letters stay readable.
 - **Capture settings moved to the Rec button:** the small arrow on Rec opens a card with Size, Frame rate, Spin and Open captures folder. They're no longer in Settings.
 - **Privacy** is folded away at the end of Settings; click its heading to open it.
+- **Livelier water:** the background caustics now shift and re-form as they drift, like the website's.
 - **Tab transition:** switching between Edit, Add and Settings slides the new tab in behind a quick white wipe.
 
 ## 0.7.2 (dev build)
