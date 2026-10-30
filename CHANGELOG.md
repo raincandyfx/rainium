@@ -4,7 +4,7 @@ Rainium is in beta (0.x) until 1.0.0.
 
 ## 0.8.4 (dev build)
 
-- **Eyed wings is always listed:** without the mod it is read from, the preset is greyed out with "Needs mod"; clicking it opens the mod's page. It ungreys as soon as the mod is found.
+- **Eyed wings is always listed:** without the mod it is read from, the preset is greyed out with "Needs mod"; clicking it opens the mod's page. Keep the mod disabled: Rainium finds it in the `mods` folder either way. It ungreys as soon as the mod is found.
 
 ## 0.8.3 (dev build)
 

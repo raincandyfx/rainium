@@ -224,7 +224,7 @@
   "rainium.preset.glow_halo": "Glow halo",
   "rainium.preset.glow_halo.description": "A soft glowing ring over the head with pink sparkles",
   "rainium.preset.wings": "Eyed wings",
-  "rainium.preset.wings.needs_mod": "The source mod is needed. Click to open its page.",
+  "rainium.preset.wings.needs_mod": "The source mod is needed, then disable it (it crashes Rainium while enabled). Click to open its page.",
   "rainium.preset.needs_mod": "Needs mod",
   "rainium.msg.opening_mod_page": "Opening the mod's page in your browser...",
   "rainium.preset.wings.description": "Feathered wings with eyes, glow and an optional aura",

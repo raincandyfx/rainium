@@ -82,7 +82,7 @@ Besides models, a layer can be a **particle emitter**. On the **Add** tab, start
 | Preset | |
 |---|---|
 | **Gold halo** | Comes with the mod. It's set up on first launch but switched off, and its rungs glow in the dark. |
-| **Eyed wings** | Greyed out (with a link to the mod's page) until a compatible wing mod is in your `mods` folder (it can be disabled). Its files are read from that mod. |
+| **Eyed wings** | Greyed out (with a link to the mod's page) until a compatible wing mod is in your `mods` folder (keep it disabled, it crashes Rainium while enabled). Its files are read from that mod. |
 
 You can add a preset again at any time from the **Add** tab, and **Reset to preset** puts a part back the way it came.
 

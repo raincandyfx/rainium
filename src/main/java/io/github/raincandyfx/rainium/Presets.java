@@ -28,7 +28,7 @@ final class Presets {
     }
 
     /** Where to get the mod Eyed wings is read from (opened when its greyed-out card is clicked). */
-    static final String WING_MOD_URL = "";
+    static final String WING_MOD_URL = "https://www.curseforge.com/minecraft/mc-mods/ronova-ruler-of-death";
 
     static final String WINGS = "wings", HALO = "halo";
 
