@@ -43,7 +43,7 @@ public final class RainiumScreen extends Screen {
     // ---- palette (ARGB): the website's (docs/index.html), after Persona 3 Reload's menus -------
     private static final int INK = 0xFF050B33, SEA = 0xFF1436C9, BRIGHT = 0xFF1F7CFF, CYAN = 0xFF48E6FF, MENU = 0xFF8FF0FF,
         HAZE = 0xFFC9D8FF, RED = 0xFFF2163A, PAPER = 0xFFFFFFFF;
-    private static final int PANEL = 0xD8050B33, PANEL_EDGE = 0xE0FFFFFF, GLASS = 0x5C1436C9, RIBBON = 0xD8050B33;
+    private static final int PANEL = 0xD8050B33, PANEL_EDGE = 0xE0FFFFFF, GLASS = 0x5C1436C9, RIBBON = 0xD81436C9;
     private static final int FIELD = 0xF2050B33, FIELD_HOVER = 0xFF1A2D86, FIELD_EDGE = 0xFF3C4C90;
     private static final int TEXT = 0xFFF4F7FF, MUTED = HAZE, FAINT = 0xFF8590C4;
     private static final int ACCENT = CYAN, ACCENT_HOVER = 0xFFA6F5FF, ACCENT_DIM = SEA, ACCENT_INK = INK;
@@ -168,16 +168,30 @@ public final class RainiumScreen extends Screen {
 
     private static final Identifier CAUSTICS = Identifier.fromNamespaceAndPath("rainium", "textures/gui/caustics.png");
 
-    /** Faint light from the water's surface: two layers of the caustics tile drifting slowly past each other. */
+    /** Faint light from the water's surface, like the site's: two layers of a looping caustics animation
+     *  (24 frames whose cells shift and re-form), each fading frame to frame and drifting a different way. */
     private void caustics(GuiGraphicsExtractor g, float strength) {
-        float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
-        causticLayer(g, 1f, t * 5.0f, t * 2.6f, Math.round(0x22 * strength));
-        causticLayer(g, 0.62f, -t * 3.4f, t * 4.1f, Math.round(0x16 * strength));
+        float t = (System.currentTimeMillis() % 3_600_000L) / 1000f, gs = guiScale();
+        causticLayer(g, 2.2f / gs, t * 4.0f, t * 2.2f, t / 9f, Math.round(0x26 * strength));
+        causticLayer(g, 1.5f / gs, -t * 3.0f, t * 3.6f, t / 6.5f + 0.37f, Math.round(0x1A * strength));
     }
 
-    private void causticLayer(GuiGraphicsExtractor g, float scale, float dx, float dy, int alpha) {
-        int tile = 256;   // the 512-pixel texture is drawn at 256 GUI units, so it stays smooth at high GUI scales
+    private static final int CAUS_FRAMES = 24, CAUS_COLS = 6, CAUS_TILE = 256, CAUS_W = 1536, CAUS_H = 1024;
+
+    /** One layer; scale = GUI units per texture pixel, phase = position in the animation loop (1 = once round). */
+    private void causticLayer(GuiGraphicsExtractor g, float scale, float dx, float dy, float phase, int alpha) {
+        float fpos = (((phase % 1f) + 1f) % 1f) * CAUS_FRAMES;
+        int f0 = (int) fpos % CAUS_FRAMES, f1 = (f0 + 1) % CAUS_FRAMES;
+        float mix = fpos - (int) fpos;
+        causticTiles(g, scale, dx, dy, f0, Math.round(alpha * (1f - mix)));
+        causticTiles(g, scale, dx, dy, f1, Math.round(alpha * mix));
+    }
+
+    private void causticTiles(GuiGraphicsExtractor g, float scale, float dx, float dy, int frame, int alpha) {
+        if (alpha <= 0) return;
+        int tile = CAUS_TILE;
         float ox = ((dx % tile) + tile) % tile, oy = ((dy % tile) + tile) % tile;
+        float u = (frame % CAUS_COLS) * tile, v = (frame / CAUS_COLS) * tile;
         g.pose().pushMatrix();
         g.pose().scale(scale, scale);
         g.pose().translate(ox - tile, oy - tile);
@@ -185,19 +199,30 @@ public final class RainiumScreen extends Screen {
         int color = (Math.min(255, alpha) << 24) | 0xFFFFFF;
         for (int i = 0; i < cols; i++)
             for (int j = 0; j < rows; j++)
-                g.blit(RenderPipelines.GUI_TEXTURED, CAUSTICS, i * tile, j * tile, 0f, 0f, tile, tile, 512, 512, 512, 512, color);
+                g.blit(RenderPipelines.GUI_TEXTURED, CAUSTICS, i * tile, j * tile, u, v, tile, tile, tile, tile, CAUS_W, CAUS_H, color);
         g.pose().popMatrix();
+    }
+
+    // ------------------------------------------------------------------- tab change
+    private Tab shownTab;
+    private long tabSince;
+
+    /** How far the tab-change transition is, 0 at the switch to 1 when done (eased out). */
+    private float tabIn() {
+        float p = Math.min(1f, (System.currentTimeMillis() - tabSince) / 240f), q = 1f - p;
+        return 1f - q * q * q;
     }
 
     /** The current tab's name, huge and faded behind everything, like the game's CONFIG and ITEM screens. */
     private void watermark(GuiGraphicsExtractor g) {
         String word = Lang.t("tab." + tab.name().toLowerCase(Locale.ROOT)).toUpperCase(Locale.ROOT);
         float s = Math.max(3f, height * 0.34f / 9f);
+        float e = tabIn();
         g.pose().pushMatrix();
-        g.pose().translate(-6f, height + s * 1.2f);
+        g.pose().translate(-6f - (1f - e) * 60f, height + s * 1.2f);
         g.pose().rotate(-0.07f);
         g.pose().scale(s, s);
-        g.text(font, styled(word, true, true), 0, -9, 0x17FFFFFF, false);
+        g.text(font, styled(word, true, true), 0, -9, (Math.round(0x17 * e) << 24) | 0xFFFFFF, false);
         g.pose().popMatrix();
     }
 
@@ -232,6 +257,7 @@ public final class RainiumScreen extends Screen {
         if (W - lw - rw - 24 < 80) rw = Math.max(136, W - lw - 24 - 80);
         int top = 30, bottom = H - 7;
 
+        if (tab != shownTab) { shownTab = tab; tabSince = System.currentTimeMillis(); }
         watermark(g);
         header(g, mx, my, W);
         layersPanel(g, mx, my, 6, top, lw, bottom - top);
@@ -240,6 +266,7 @@ public final class RainiumScreen extends Screen {
         preview(g, mx, my, pvx, top, pvw, bottom - top);
         toast(g, pvx, pvw, bottom);
         errorBanner(g, mx, my, pvx, top, pvw);
+        captureMenu(g, mx, my);
         tooltip(g, mx, my);
     }
 
@@ -251,19 +278,19 @@ public final class RainiumScreen extends Screen {
         int h = 16 + lines.size() * 10 + 4;
         g.fill(x, y, x + w, y + h, 0xF03A1838);
         g.fill(x, y, x + 2, y + h, DANGER);
-        g.text(font, fit(Lang.t("error.banner"), w - 50), x + 6, y + 4, DANGER, false);
-        for (int i = 0; i < lines.size(); i++) g.text(font, lines.get(i), x + 6, y + 15 + i * 10, TEXT, false);
+        g.text(font, body(fit(Lang.t("error.banner"), w - 50)), x + 6, y + 4, DANGER, false);
+        for (int i = 0; i < lines.size(); i++) g.text(font, body(lines.get(i)), x + 6, y + 15 + i * 10, TEXT, false);
         String rl = Lang.t("button.reload");
-        int rw = font.width(Component.literal(rl)) + 8, rx = x + w - rw - 4;
+        int rw = font.width(body(rl)) + 8, rx = x + w - rw - 4;
         boolean hov = in(mx, my, rx, y + 3, rw, 11);
         g.fill(rx, y + 3, rx + rw, y + 14, hov ? FIELD_HOVER : FIELD);
-        g.text(font, rl, rx + 4, y + 4, TEXT, false);
+        g.text(font, body(rl), rx + 4, y + 4, TEXT, false);
         hits.add(new Hit(rx, y + 3, rw, 11, () -> { assets.reload(); refreshFiles(true); currentSnapshot = assets.snapshot(); }, null));
         String cl = Lang.t("button.copy");
-        int cw = font.width(Component.literal(cl)) + 8, cx = rx - cw - 3;
+        int cw = font.width(body(cl)) + 8, cx = rx - cw - 3;
         boolean ch = in(mx, my, cx, y + 3, cw, 11);
         g.fill(cx, y + 3, cx + cw, y + 14, ch ? FIELD_HOVER : FIELD);
-        g.text(font, cl, cx + 4, y + 4, TEXT, false);
+        g.text(font, body(cl), cx + 4, y + 4, TEXT, false);
         hits.add(new Hit(cx, y + 3, cw, 11, () -> copyText(err), null));
         tip(mx, my, cx, y + 3, cw, 11, "copy_error");
     }
@@ -288,14 +315,14 @@ public final class RainiumScreen extends Screen {
         int maxW = Math.min(190, width - 20);
         List<String> lines = wrapLines(tipShown, maxW - 10, 6);
         int tw = 0;
-        for (String ln : lines) tw = Math.max(tw, font.width(Component.literal(ln)));
+        for (String ln : lines) tw = Math.max(tw, font.width(body(ln)));
         int bw = tw + 10, bh = lines.size() * 10 + 8;
         int bx = Math.min(mx + 10, width - bw - 4), by = my + 14;
         if (by + bh > height - 4) by = my - bh - 6;
         bx = Math.max(4, bx);
         g.fill(bx, by, bx + bw, by + bh, OVERLAY);
         g.outline(bx, by, bw, bh, PANEL_EDGE);
-        for (int i = 0; i < lines.size(); i++) g.text(font, lines.get(i), bx + 5, by + 5 + i * 10, TEXT, false);
+        for (int i = 0; i < lines.size(); i++) g.text(font, body(lines.get(i)), bx + 5, by + 5 + i * 10, TEXT, false);
     }
 
     // =================================================================== header
@@ -329,8 +356,8 @@ public final class RainiumScreen extends Screen {
         int full = 3 * 24 + strongWidth(Lang.t("button.redo").toUpperCase(Locale.ROOT)) + strongWidth(Lang.t("button.undo").toUpperCase(Locale.ROOT))
             + strongWidth(show.toUpperCase(Locale.ROOT));
         boolean compact = rx - full < x;   // not enough room: keys only (their labels show as tooltips)
-        rx = hint(g, mx, my, rx, "↷", Lang.t("button.redo"), !redoStack.isEmpty(), compact, this::redo);
-        rx = hint(g, mx, my, rx, "↶", Lang.t("button.undo"), !undoStack.isEmpty(), compact, this::undo);
+        rx = hint(g, mx, my, rx, "↻", Lang.t("button.redo"), !redoStack.isEmpty(), compact, this::redo);
+        rx = hint(g, mx, my, rx, "↺", Lang.t("button.undo"), !undoStack.isEmpty(), compact, this::undo);
         hint(g, mx, my, rx, c.enabled ? "●" : "○", show, true, compact,
             () -> { c.enabled = !c.enabled; save(); say(Lang.t(c.enabled ? "msg.layers_shown" : "msg.layers_hidden"), MUTED); });
         g.fill(Math.max(x, W * 11 / 20), 24, W, 25, 0xB0FFFFFF);
@@ -343,8 +370,8 @@ public final class RainiumScreen extends Screen {
         if (compact && in(mx, my, x - 2, 5, w + 4, 16)) tipCandidate = label;
         boolean hov = enabled && in(mx, my, x - 2, 5, w + 4, 16);
         capsule(g, x, 8, kw, 11, enabled ? (hov ? CYAN : PAPER) : FAINT);
-        int kx = x + (kw - font.width(Component.literal(key))) / 2 + 1;
-        g.text(font, key, kx, 10, INK, false);
+        int kx = x + (kw - font.width(body(key))) / 2 + 1;
+        g.text(font, body(key), kx, 10, INK, false);
         g.text(font, styled(l, true, true), x + kw + 3, 10, !enabled ? FAINT : hov ? CYAN : TEXT, false);
         if (enabled) hits.add(new Hit(x - 2, 5, w + 4, 16, click, null));
         return x - 10;
@@ -359,14 +386,14 @@ public final class RainiumScreen extends Screen {
         if (selectedFolder != null && cfg.members(selectedFolder).isEmpty()) selectedFolder = null;
         int tagW = nameTag(g, x, y, Lang.t("section.layers").toUpperCase(Locale.ROOT));
         String count = String.valueOf(layers.size());
-        int cw = font.width(Component.literal(count)) + 8;
+        int cw = font.width(body(count)) + 8;
         capsule(g, x + tagW + 4, y + 1, cw, 9, PAPER);
-        g.text(font, count, x + tagW + 8, y + 2, INK, false);
+        g.text(font, body(count), x + tagW + 8, y + 2, INK, false);
 
         int footer = ROW * 2 + GAP + 10;
         int listTop = y + 16, listBottom = y + h - footer;
         if (layers.isEmpty()) {
-            g.text(font, Lang.t("layers.empty"), x + PAD, listTop + 4, MUTED, false);
+            g.text(font, body(Lang.t("layers.empty")), x + PAD, listTop + 4, MUTED, false);
             wrapped(g, x + PAD, listTop + 16, w - PAD * 2, Lang.t("layers.empty_hint"), FAINT);
         }
 
@@ -415,7 +442,9 @@ public final class RainiumScreen extends Screen {
 
     /** A layer-list row: a dark ribbon; under the mouse, a cyan bar and a lighter ribbon. */
     private void ribbon(GuiGraphicsExtractor g, int rx, int ry, int rwid, int rh, boolean sel, boolean hov) {
-        slant(g, rx, ry, rwid, rh, 4, sel ? 0xF0050B33 : hov ? 0xE81A2D86 : RIBBON);
+        // the site's blues: lighter than the panels, so the selection's dark letters stay readable
+        slant(g, rx, ry, rwid, rh, 4, sel ? 0xF41F7CFF : hov ? 0xE81C5AE6 : RIBBON);
+        g.fill(rx, ry, rx + rwid - 1, ry + 1, sel ? 0x66FFFFFF : 0x2EFFFFFF);   // a thin light top edge
         if (hov && !sel) {
             for (int i = 0; i < 6; i++) g.fill(rx + 2 + i * rwid / 8, ry, rx + 2 + (i + 1) * rwid / 8, ry + rh, ((0x34 - i * 8) << 24) | 0x48E6FF);
             g.fill(rx, ry, rx + 2, ry + rh, CYAN);
@@ -425,7 +454,7 @@ public final class RainiumScreen extends Screen {
     /** A row's name: the triangle when selected, else italic. */
     private void rowName(GuiGraphicsExtractor g, String key, Object what, String name, int x, int y, int w, boolean sel, boolean on, boolean hov) {
         if (sel) selection(g, key, what, fitStrong(name, w), x, y);
-        else g.text(font, styled(fitStrong(name, w), true, true), x, y, !on ? FAINT : hov ? PAPER : MENU, false);
+        else g.text(font, styled(fitStrong(name, w), true, true), x, y, !on ? 0xFF8FA6E8 : hov ? PAPER : MENU, false);
     }
 
     private int folderRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, LayerConfig.Entry e) {
@@ -435,7 +464,9 @@ public final class RainiumScreen extends Screen {
         ribbon(g, rx, ry, rwid, rh - 2, sel, hov);
         // collapse arrow
         boolean ah = in(mx, my, rx + 2, ry, 12, rh - 2);
-        g.text(font, f.collapsed ? "▸" : "▾", rx + 5, ry + 4, ah ? PAPER : CYAN, false);
+        float ax = rx + 8f, ay = ry + 8f;   // drawn, not a font symbol: right when folded, down when open
+        if (f.collapsed) triangle(g, ax - 2f, ay - 3.5f, ax - 2f, ay + 3.5f, ax + 2.5f, ay, ah ? PAPER : CYAN);
+        else triangle(g, ax - 3.5f, ay - 2f, ax + 3.5f, ay - 2f, ax, ay + 2.5f, ah ? PAPER : CYAN);
         hits.add(new Hit(rx + 2, ry, 12, rh - 2, () -> { f.collapsed = !f.collapsed; save(); }, null));
         rowName(g, "layer", "folder:" + e.folder(), e.folder(), rx + 16, ry + 4, rwid - 38, sel, f.enabled, hov);
         visibilityBox(g, mx, my, rx + rwid - 18, ry + 4, f.enabled, () -> {
@@ -525,13 +556,27 @@ public final class RainiumScreen extends Screen {
         rightScroll = clamp(rightScroll, 0, Math.max(0, rightContent - viewH));
         int before = hits.size();
         g.enableScissor(x + 1, cTop, x + w - 1, cBottom);
+        float e = tabIn();
+        g.pose().pushMatrix();
+        g.pose().translate((1f - e) * 28f, 0f);   // a new tab's contents slide in from the right
         int cy = cTop - rightScroll, start = cy;
         cy = switch (tab) {
             case EDIT -> editTab(g, mx, my, cx, cy, cw);
             case ADD -> impFile != null ? importView(g, mx, my, cx, cy, cw) : addTab(g, mx, my, cx, cy, cw);
             case SETTINGS -> settingsTab(g, mx, my, cx, cy, cw);
         };
+        g.pose().popMatrix();
         g.disableScissor();
+        if (e < 1f) {
+            // a white slanted wipe sweeps across the panel, with a cyan one just behind it
+            float lin = Math.min(1f, (System.currentTimeMillis() - tabSince) / 240f);
+            float sx = x - 40 + (w + 80) * lin, top = y + 1, bot = y + h - 1, lean = 18f;
+            int a = Math.round(0xC8 * (1f - lin));
+            g.enableScissor(x + 1, y + 1, x + w - 1, y + h - 1);
+            fillShape(g, top, bot, yy -> { float k = (yy - top) / (bot - top) * lean; return new float[]{sx - 26 - k, sx - 18 - k}; }, (Math.round(a * 0.7f) << 24) | 0x48E6FF);
+            fillShape(g, top, bot, yy -> { float k = (yy - top) / (bot - top) * lean; return new float[]{sx - 16 - k, sx - k}; }, (a << 24) | 0xFFFFFF);
+            g.disableScissor();
+        }
         rightContent = cy - start + 6;
         for (int i = hits.size() - 1; i >= before; i--) {
             Hit hh = hits.get(i);
@@ -553,7 +598,7 @@ public final class RainiumScreen extends Screen {
         if (selectedFolder != null) return folderView(g, mx, my, x, y, w);
         List<LayerConfig.Layer> layers = assets.editable().layers;
         if (layers.isEmpty()) {
-            g.text(font, Lang.t("edit.empty"), x, y + 2, TEXT, false);
+            g.text(font, body(Lang.t("edit.empty")), x, y + 2, TEXT, false);
             y += 13;
             y = wrapped(g, x, y, w, Lang.t("edit.empty_hint"), MUTED);
             return y;
@@ -721,7 +766,7 @@ public final class RainiumScreen extends Screen {
         g.fill(dx, y, dx + dw, y + ROW, arm ? 0xFF5A2338 : dh ? FIELD_HOVER : FIELD);
         g.outline(dx, y, dw, ROW, arm ? DANGER : FIELD_EDGE);
         String dl = fit(Lang.t(arm ? "button.confirm" : "button.remove"), dw - 4);
-        g.text(font, dl, dx + (dw - font.width(Component.literal(dl))) / 2, y + 3, arm ? DANGER : TEXT, false);
+        g.text(font, body(dl), dx + (dw - font.width(body(dl))) / 2, y + 3, arm ? DANGER : TEXT, false);
         hits.add(new Hit(dx, y, dw, ROW, () -> {
             if (confirmDelete != selected) { confirmDelete = selected; keepConfirm = true; return; }
             String n = layers.remove(selected).label;
@@ -740,7 +785,7 @@ public final class RainiumScreen extends Screen {
         LayerConfig.Folder f = cfg.folder(name);
         List<LayerConfig.Layer> parts = cfg.members(name);
         textField(g, mx, my, x, y - 2, w, 12, "name:folder:" + name, name, false, TEXT, v -> renameFolder(name, v.trim()));
-        g.text(font, Lang.t(parts.size() == 1 ? "folder.count_one" : "folder.count", parts.size()), x, y + 10, FAINT, false);
+        g.text(font, body(Lang.t(parts.size() == 1 ? "folder.count_one" : "folder.count", parts.size())), x, y + 10, FAINT, false);
         y += 23;
         y = toggle(g, mx, my, x, y, w, "show_this_folder", f.enabled, () -> { f.enabled = !f.enabled; save(); });
 
@@ -750,7 +795,7 @@ public final class RainiumScreen extends Screen {
             if (hov) g.fill(x, y, x + w, y + ROW + 2, HOVER);
             boolean on = l.enabled && f.enabled;
             g.fill(x + 2, y + 3, x + 5, y + ROW - 1, on ? (l.color | 0xFF000000) : FAINT);
-            g.text(font, fit(l.label, w - 30), x + 9, y + 4, on ? TEXT : MUTED, false);
+            g.text(font, body(fit(l.label, w - 30)), x + 9, y + 4, on ? TEXT : MUTED, false);
             final int idx = cfg.layers.indexOf(l);
             hits.add(new Hit(x, y, w - 18, ROW + 2, () -> selectLayer(idx), null));
             visibilityBox(g, mx, my, x + w - 11, y + 4, l.enabled, () -> { l.enabled = !l.enabled; save(); });
@@ -819,7 +864,7 @@ public final class RainiumScreen extends Screen {
         g.fill(dx, y, dx + dw, y + ROW, confirmFolderDelete ? 0xFF5A2338 : dh ? FIELD_HOVER : FIELD);
         g.outline(dx, y, dw, ROW, confirmFolderDelete ? DANGER : FIELD_EDGE);
         String dl = fit(Lang.t(confirmFolderDelete ? "button.confirm" : "button.remove_folder"), dw - 4);
-        g.text(font, dl, dx + (dw - font.width(Component.literal(dl))) / 2, y + 3, confirmFolderDelete ? DANGER : TEXT, false);
+        g.text(font, body(dl), dx + (dw - font.width(body(dl))) / 2, y + 3, confirmFolderDelete ? DANGER : TEXT, false);
         hits.add(new Hit(dx, y, dw, ROW, () -> {
             if (!confirmFolderDelete) { confirmFolderDelete = true; keepConfirm = true; return; }
             cfg.layers.removeAll(parts);
@@ -845,12 +890,12 @@ public final class RainiumScreen extends Screen {
             g.fill(x, y, x + w, y + ch, hov ? FIELD_HOVER : FIELD);
             g.fill(x, y, x + 2, y + ch, ACCENT);
             thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
-            g.text(font, fit(p.name(), w - 46 - th), x + 7 + th, y + 5, TEXT, false);
-            for (int li = 0; li < lines.size(); li++) g.text(font, lines.get(li), x + 7 + th, y + 18 + li * 10, MUTED, false);
+            g.text(font, body(fit(p.name(), w - 46 - th)), x + 7 + th, y + 5, TEXT, false);
+            for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7 + th, y + 18 + li * 10, MUTED, false);
             String chip = Lang.t("preset.add");
-            int cwid = font.width(Component.literal(chip)) + 8;
+            int cwid = font.width(body(chip)) + 8;
             g.fill(x + w - cwid - 5, y + 4, x + w - 5, y + 14, ACCENT);
-            g.text(font, chip, x + w - cwid - 1, y + 5, ACCENT_INK, false);
+            g.text(font, body(chip), x + w - cwid - 1, y + 5, ACCENT_INK, false);
             hits.add(new Hit(x, y, w, ch, () -> addPreset(p), null));
             y += ch + GAP;
         }
@@ -920,9 +965,9 @@ public final class RainiumScreen extends Screen {
         java.nio.file.Path path = assets.dir().resolve(file);
         thumb(g, x + 1, y + 1, Thumbs.get(Thumbs.key(path), () -> assets.previewGroups(file)));
         String kindText = Lang.t("add.kind." + kind);
-        int kw = font.width(Component.literal(kindText)), tx = x + Thumbs.SIZE + 6;
-        g.text(font, fit(file, x + w - kw - 8 - tx), tx, y + (rh - 8) / 2, TEXT, false);
-        g.text(font, kindText, x + w - kw - 3, y + (rh - 8) / 2, kind.equals("import") ? ACCENT : MUTED, false);
+        int kw = font.width(body(kindText)), tx = x + Thumbs.SIZE + 6;
+        g.text(font, body(fit(file, x + w - kw - 8 - tx)), tx, y + (rh - 8) / 2, TEXT, false);
+        g.text(font, body(kindText), x + w - kw - 3, y + (rh - 8) / 2, kind.equals("import") ? ACCENT : MUTED, false);
         hits.add(new Hit(x, y, w, rh, click, null));
         return y + rh + 1;
     }
@@ -936,7 +981,7 @@ public final class RainiumScreen extends Screen {
         capsule(g, x + lw, y + 1, w - lw, ROW - 2, FIELD);
         boolean empty = value == null || value.isBlank();
         textField(g, mx, my, x + lw + 4, y + 1, w - lw - 6, ROW - 2, "text:" + id, empty ? "" : value, false, TEXT, commit);
-        if (empty && !("text:" + id).equals(editId)) g.text(font, fit(placeholder, w - lw - 8), x + lw + 4, y + 3, FAINT, false);
+        if (empty && !("text:" + id).equals(editId)) g.text(font, body(fit(placeholder, w - lw - 8)), x + lw + 4, y + 3, FAINT, false);
         return y + ROW + GAP;
     }
 
@@ -960,9 +1005,9 @@ public final class RainiumScreen extends Screen {
         boolean hov = in(mx, my, x, y, w, ROW + 2);
         if (hov) g.fill(x, y, x + w, y + ROW + 2, HOVER);
         String kindText = Lang.t("add.kind." + kind);
-        int kw = font.width(Component.literal(kindText));
-        g.text(font, fit(name, w - kw - 12), x + 3, y + 4, TEXT, false);
-        g.text(font, kindText, x + w - kw - 3, y + 4, kind.equals("import") ? ACCENT : MUTED, false);
+        int kw = font.width(body(kindText));
+        g.text(font, body(fit(name, w - kw - 12)), x + 3, y + 4, TEXT, false);
+        g.text(font, body(kindText), x + w - kw - 3, y + 4, kind.equals("import") ? ACCENT : MUTED, false);
         hits.add(new Hit(x, y, w, ROW + 2, click, null));
         return y + ROW + 3;
     }
@@ -1039,10 +1084,10 @@ public final class RainiumScreen extends Screen {
 
     private int importView(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
         boolean bh = in(mx, my, x, y, 60, ROW);
-        g.text(font, Lang.t("button.back"), x, y + 2, bh ? TEXT : MUTED, false);
+        g.text(font, body(Lang.t("button.back")), x, y + 2, bh ? TEXT : MUTED, false);
         hits.add(new Hit(x, y, 60, ROW, () -> { impFile = null; impParsed = null; impResult = null; assets.clearPreview(); rightScroll = 0; }, null));
         y += ROW + 2;
-        g.text(font, fit(impFile, w), x, y, TEXT, false);
+        g.text(font, body(fit(impFile, w)), x, y, TEXT, false);
         y += 12;
         if (impError != null) {
             String ie = impError;
@@ -1050,9 +1095,9 @@ public final class RainiumScreen extends Screen {
             y = secondaryButton(g, mx, my, x, y + 2, w, Lang.t("button.copy_error"), () -> copyText(ie));
         } else if (impResult != null) {
             double sx = impResult.max()[0] - impResult.min()[0], sy = impResult.max()[1] - impResult.min()[1], sz = impResult.max()[2] - impResult.min()[2];
-            g.text(font, fit(Lang.t("import.stats", String.format(Locale.ROOT, "%,d", impResult.quads()), fmt(sx), fmt(sy), fmt(sz)), w), x, y, MUTED, false);
+            g.text(font, body(fit(Lang.t("import.stats", String.format(Locale.ROOT, "%,d", impResult.quads()), fmt(sx), fmt(sy), fmt(sz)), w)), x, y, MUTED, false);
             y += 10;
-            g.text(font, fit(Lang.t("import.parts", String.join(", ", impResult.groups())), w), x, y, FAINT, false);
+            g.text(font, body(fit(Lang.t("import.parts", String.join(", ", impResult.groups())), w)), x, y, FAINT, false);
             y += 13;
             for (ObjImport.Warning warn : impResult.warnings()) y = wrapped(g, x, y, w, Lang.t("import.warn." + warn.key(), warn.args()), WARN);
             for (ObjImport.Warning warn : impNotes) y = wrapped(g, x, y, w, Lang.t("import.warn." + warn.key(), warn.args()), WARN);
@@ -1216,41 +1261,6 @@ public final class RainiumScreen extends Screen {
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.reload_disk"), () -> { assets.reload(); refreshFiles(true); say(Lang.t(assets.lastError() == null ? "msg.reloaded" : "msg.reloaded_problem"), assets.lastError() == null ? MUTED : DANGER); });
         y = wrapped(g, x, y + 2, w, Privacy.redact(assets.dir().toString()), FAINT);
 
-        y = section(g, x, y + 4, w, "capture");
-        y = cycle(g, mx, my, x, y, w, "capture_size", Lang.t("value.capture_size." + c.captureSize), d -> {
-            int[] o = {1, 2, 4};
-            int i = c.captureSize >= 4 ? 2 : c.captureSize >= 2 ? 1 : 0;
-            c.captureSize = o[Math.floorMod(i + d, 3)];
-            save();
-        });
-        y = cycle(g, mx, my, x, y, w, "capture_fps", Lang.t("value.capture_fps", c.captureFps), d -> {
-            int[] o = {30, 60, 120};
-            int i = c.captureFps >= 120 ? 2 : c.captureFps >= 60 ? 1 : 0;
-            c.captureFps = o[Math.floorMod(i + d, 3)];
-            save();
-        });
-        y = cycle(g, mx, my, x, y, w, "capture_spin", Lang.t("value.capture_spin." + c.captureSpin), d -> { c.captureSpin = Math.floorMod(c.captureSpin + d, 3); save(); });
-        y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.open_captures"), () -> {
-            try { java.nio.file.Files.createDirectories(capturesDir()); } catch (Exception ignored) {}
-            assets.openFolder(capturesDir());
-        });
-
-        y = section(g, x, y + 4, w, "privacy");
-        String pm = Lang.t("value.privacy." + c.privacyMode.name().toLowerCase(Locale.ROOT));
-        y = cycle(g, mx, my, x, y, w, "name_in_paths", pm, d -> { c.privacyMode = cyc(Privacy.Mode.values(), c.privacyMode, d); Privacy.mode = c.privacyMode; save(); });
-        if (c.privacyMode == Privacy.Mode.CUSTOM) {
-            int lw = labelWidth(w);
-            g.text(font, Lang.t("label.custom_name"), x, y + 3, MUTED, false);
-            tip(mx, my, x, y, lw - 2, ROW, "custom_name");
-            g.fill(x + lw, y, x + w, y + ROW, FIELD);
-            textField(g, mx, my, x + lw + 4, y + 1, w - lw - 6, ROW - 2, "name:privacy", c.privacyName.isBlank() ? "player" : c.privacyName, false, TEXT, v -> {
-                c.privacyName = v.trim();
-                Privacy.customName = c.privacyName;
-                save();
-            });
-            y += ROW + GAP;
-        }
-
         y = section(g, x, y + 4, w, "updates");
         y = toggle(g, mx, my, x, y, w, "automatic_updates", c.autoUpdate, () -> { c.autoUpdate = !c.autoUpdate; save(); Updater.recheck(c.autoUpdate, c.devUpdates); });
         if (c.autoUpdate)
@@ -1265,8 +1275,31 @@ public final class RainiumScreen extends Screen {
             y = wrapped(g, x, y + 2, w, Lang.t("settings.problem", err), DANGER);
             y = secondaryButton(g, mx, my, x, y + 2, w, Lang.t("button.copy_error"), () -> copyText(err));
         }
+
+        // privacy: folded away at the end until opened
+        y = foldSection(g, mx, my, x, y + 4, w, "privacy", privacyOpen, () -> privacyOpen = !privacyOpen);
+        if (privacyOpen) {
+            String pm = Lang.t("value.privacy." + c.privacyMode.name().toLowerCase(Locale.ROOT));
+            y = cycle(g, mx, my, x, y, w, "name_in_paths", pm, d -> { c.privacyMode = cyc(Privacy.Mode.values(), c.privacyMode, d); Privacy.mode = c.privacyMode; save(); });
+            if (c.privacyMode == Privacy.Mode.CUSTOM) {
+                int lw = labelWidth(w);
+                boolean band = rowBand(g, mx, my, x, y, w);
+                rowLabel(g, Lang.t("label.custom_name"), x, y, lw - 4, band);
+                tip(mx, my, x, y, lw - 2, ROW, "custom_name");
+                capsule(g, x + lw, y + 1, w - lw, ROW - 2, FIELD);
+                textField(g, mx, my, x + lw + 4, y + 1, w - lw - 6, ROW - 2, "name:privacy", c.privacyName.isBlank() ? "player" : c.privacyName, false, TEXT, v -> {
+                    c.privacyName = v.trim();
+                    Privacy.customName = c.privacyName;
+                    save();
+                });
+                y += ROW + GAP;
+            }
+        }
+
         return y;
     }
+
+    private static boolean privacyOpen;   // Settings > Privacy starts folded each time the game starts
 
     // =================================================================== preview
     private void preview(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, int h) {
@@ -1275,7 +1308,7 @@ public final class RainiumScreen extends Screen {
         net.minecraft.world.entity.player.Player player = Self.previewPlayer(assets.editable());   // the recorded player when watching a replay
         if (player == null) {
             String s = fit(Lang.t("preview.no_world"), w - 8);
-            g.text(font, s, x + (w - font.width(Component.literal(s))) / 2, y + h / 2 - 4, MUTED, false);
+            g.text(font, body(s), x + (w - font.width(body(s))) / 2, y + h / 2 - 4, MUTED, false);
             previewState = null;
         } else {
             try {
@@ -1312,7 +1345,7 @@ public final class RainiumScreen extends Screen {
                 if (sub != null && Recorder.capturing()) sub.submit(g, st, size, offset, rot, cam, x, y, x + w, y + h - 18, Recorder.sizeFactor());
                 else g.entity(st, size, offset, rot, cam, x, y, x + w, y + h - 18);
             } catch (Throwable t) {
-                g.text(font, Lang.t("preview.unavailable"), x + 6, y + 6, DANGER, false);
+                g.text(font, body(Lang.t("preview.unavailable")), x + 6, y + 6, DANGER, false);
             }
         }
         if (player != null && Recorder.submit != null) captureChips(g, mx, my, x, y, w);
@@ -1347,6 +1380,7 @@ public final class RainiumScreen extends Screen {
     /** Picture / Rec buttons in the preview's top-right corner; while recording, Stop with the time. */
     private void captureChips(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
         int cy = y + 4, right = x + w - 4;
+        captureAnchor = null;
         if (Recorder.mode() == Recorder.Mode.RECORDING) {
             float sec = Recorder.seconds();
             String t = Lang.t("preview.stop", String.format(Locale.ROOT, "%d:%02d", (int) sec / 60, (int) sec % 60)).toUpperCase(Locale.ROOT);
@@ -1361,7 +1395,7 @@ public final class RainiumScreen extends Screen {
         if (Recorder.capturing()) return;   // a picture is being taken this frame
         if (Recorder.pending() > 0) {       // still saving a recording
             String sv = Lang.t("preview.saving", Recorder.framesWritten());
-            g.text(font, sv, right - font.width(Component.literal(sv)), cy + 2, MUTED, false);
+            g.text(font, body(sv), right - font.width(body(sv)), cy + 2, MUTED, false);
             return;
         }
         String[] labels = {Lang.t("preview.picture"), Lang.t("preview.record")};
@@ -1369,18 +1403,92 @@ public final class RainiumScreen extends Screen {
         Runnable[] acts = {this::takePicture, this::startRecording};
         int cx = right;
         for (int i = labels.length - 1; i >= 0; i--) {
-            String lab = labels[i].toUpperCase(Locale.ROOT);
+            String lab = labels[i].replace("●", "").trim().toUpperCase(Locale.ROOT);
             boolean rec = i == 1;
-            int cw = strongWidth(lab) + (rec ? 20 : 14);
+            int menuW = rec ? 15 : 0;                       // Rec carries the capture settings: a ▼ on its right end
+            int cw = strongWidth(lab) + (rec ? 20 : 14) + menuW;
             cx -= cw;
-            boolean hov = in(mx, my, cx, cy, cw, 14);
-            slant(g, cx, cy, cw, 14, 4, rec ? (hov ? 0xFFFF4A66 : RED) : (hov ? SEA : 0xE6050B33));
+            boolean hov = in(mx, my, cx, cy, cw - menuW, 14), mh = rec && in(mx, my, cx + cw - menuW, cy, menuW, 14);
+            slant(g, cx, cy, cw, 14, 4, rec ? RED : (hov ? SEA : 0xE6050B33));
+            if (rec && hov) slant(g, cx, cy, cw - menuW, 14, 0, 0x30FFFFFF);
             if (rec) disc(g, cx + 6.5f, cy + 7f, 2.6f, PAPER);
             g.text(font, styled(lab, true, true), cx + (rec ? 12 : 5), cy + 3, PAPER, false);
-            tip(mx, my, cx, cy, cw, 14, tips[i]);
-            hits.add(new Hit(cx, cy, cw, 14, acts[i], null));
+            tip(mx, my, cx, cy, cw - menuW, 14, tips[i]);
+            hits.add(new Hit(cx, cy, cw - menuW, 14, acts[i], null));
+            if (rec) {
+                int mx0 = cx + cw - menuW;
+                g.fill(mx0, cy + 3, mx0 + 1, cy + 11, 0x99FFFFFF);
+                if (mh || captureMenu) slant(g, mx0 + 1, cy, menuW - 1, 14, 4, 0x30FFFFFF);
+                float tx = mx0 + 6.5f, ty = cy + 7f;
+                if (captureMenu) triangle(g, tx - 3f, ty + 1.8f, tx + 3f, ty + 1.8f, tx, ty - 2.2f, PAPER);
+                else triangle(g, tx - 3f, ty - 1.8f, tx + 3f, ty - 1.8f, tx, ty + 2.2f, PAPER);
+                tip(mx, my, mx0, cy, menuW, 14, "capture_menu");
+                hits.add(new Hit(mx0, cy, menuW, 14, () -> captureMenu = !captureMenu, null));
+                captureAnchor = new int[]{cx + cw, cy + 14};
+            }
             cx -= GAP;
         }
+    }
+
+
+    // ------------------------------------------------------------------- capture settings, under Rec
+    private boolean captureMenu;
+    private int[] captureAnchor;   // right edge and bottom of the Rec button this frame, or null when it isn't shown
+
+    /** Size, frame rate and spin for pictures and recordings: a white card (the site's .card) dropping from Rec. */
+    private void captureMenu(GuiGraphicsExtractor g, int mx, int my) {
+        if (captureMenu && captureAnchor == null) captureMenu = false;   // recording, saving, or no preview
+        if (!captureMenu) return;
+        LayerConfig c = assets.editable();
+        int w = 132, x = Math.max(4, captureAnchor[0] - w), y = captureAnchor[1] + 3;
+        int h = 3 * 31 + 30;
+        // anything outside closes it; nothing under it reacts
+        hits.add(new Hit(0, 0, width, height, () -> captureMenu = false, d -> { }));
+        // hard shadow, then the card with its bottom-right corner cut
+        cutBox(g, x + 4, y + 4, w, h, 0x99050B33);
+        cutBox(g, x, y, w, h, PAPER);
+        hits.add(new Hit(x, y, w, h, () -> { }, d -> { }));
+        int iy = y + 7, ix = x + 8, iw = w - 16;
+        String[] sizes = {"1×", "2×", "4×"};
+        int si = c.captureSize >= 4 ? 2 : c.captureSize >= 2 ? 1 : 0;
+        iy = choiceRow(g, mx, my, ix, iy, iw, "capture_size", sizes, si, i -> { c.captureSize = new int[]{1, 2, 4}[i]; save(); });
+        String[] fps = {"30", "60", "120"};
+        int fi = c.captureFps >= 120 ? 2 : c.captureFps >= 60 ? 1 : 0;
+        iy = choiceRow(g, mx, my, ix, iy, iw, "capture_fps", fps, fi, i -> { c.captureFps = new int[]{30, 60, 120}[i]; save(); });
+        String[] spins = {Lang.t("value.capture_spin.0"), Lang.t("value.capture_spin.1"), Lang.t("value.capture_spin.2")};
+        iy = choiceRow(g, mx, my, ix, iy, iw, "capture_spin", spins, Math.floorMod(c.captureSpin, 3), i -> { c.captureSpin = i; save(); });
+        g.fill(ix, iy + 1, ix + iw, iy + 2, 0x334B5785);
+        String open = Lang.t("button.open_captures").toUpperCase(Locale.ROOT) + " ›";
+        boolean oh = in(mx, my, ix - 2, iy + 4, iw + 4, 13);
+        g.text(font, styled(fitStrong(open, iw), true, true), ix, iy + 7, oh ? RED : SEA, false);
+        hits.add(new Hit(ix - 2, iy + 4, iw + 4, 13, () -> {
+            try { java.nio.file.Files.createDirectories(capturesDir()); } catch (Exception ignored) {}
+            assets.openFolder(capturesDir());
+        }, null));
+    }
+
+    /** One setting in the capture card: a small grey title, then its choices side by side; the chosen one is a dark slanted chip. */
+    private int choiceRow(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, String[] opts, int chosen, IntConsumer pick) {
+        g.text(font, styled(Lang.t("label." + id).toUpperCase(Locale.ROOT), true, true), x, y, 0xFF4B5785, false);
+        tip(mx, my, x, y - 1, w, 10, id);
+        int cy = y + 11, n = opts.length, gap = 3, cw = (w - gap * (n - 1)) / n;
+        for (int i = 0; i < n; i++) {
+            int cx = x + i * (cw + gap);
+            boolean on = i == chosen, hov = in(mx, my, cx, cy, cw, 13);
+            slant(g, cx, cy, cw, 13, 3, on ? INK : hov ? 0xFFC9D8FF : 0xFFE8EDFF);
+            String o = fitStrong(opts[i].toUpperCase(Locale.ROOT), cw - 6);
+            g.text(font, styled(o, true, true), cx + (cw - 2 - strongWidth(o)) / 2, cy + 3, on ? PAPER : INK, false);
+            final int k = i;
+            hits.add(new Hit(cx, cy, cw, 13, () -> pick.accept(k), null));
+        }
+        return cy + 13 + 7;
+    }
+
+    /** A filled box with its bottom-right corner cut off. */
+    private void cutBox(GuiGraphicsExtractor g, int x, int y, int w, int h, int fill) {
+        int c = 8;
+        g.fill(x, y, x + w, y + h - c, fill);
+        fillShape(g, y + h - c, y + h, yy -> new float[]{x, x + w - (yy - (y + h - c))}, fill);
     }
 
     private java.nio.file.Path capturesDir() { return assets.dir().resolve("captures"); }
@@ -1411,12 +1519,12 @@ public final class RainiumScreen extends Screen {
         long now = System.currentTimeMillis();
         if (now >= toastUntil || toast.isEmpty()) return;
         String s = fit(toast, Math.min(width - 28, 280));
-        int tw = font.width(Component.literal(s)) + 16;
+        int tw = font.width(body(s)) + 16;
         int tx = clamp(px + (pw - tw) / 2, 6, width - 6 - tw), ty = bottom - 38;
         g.fill(tx, ty, tx + tw, ty + 16, OVERLAY);
         g.outline(tx, ty, tw, 16, PANEL_EDGE);
         g.fill(tx + 1, ty + 1, tx + 3, ty + 15, toastColor);
-        g.text(font, s, tx + 9, ty + 4, TEXT, false);
+        g.text(font, body(s), tx + 9, ty + 4, TEXT, false);
     }
 
     private void say(String s, int color) {
@@ -1637,26 +1745,26 @@ public final class RainiumScreen extends Screen {
             String shown = editBuf.toString();
             boolean caret = (System.currentTimeMillis() / 500) % 2 == 0;
             String fitted = fitTail(shown, w - 8);
-            if (editReplace && !shown.isEmpty()) g.fill(x, y + 2, x + font.width(Component.literal(fitted)) + 1, y + h - 2, ACCENT_DIM);
-            g.text(font, fitted, x, y + (h - 8) / 2, TEXT, false);
-            if (caret) { int cx = x + font.width(Component.literal(fitted)) + 1; g.fill(cx, y + 2, cx + 1, y + h - 2, TEXT); }
+            if (editReplace && !shown.isEmpty()) g.fill(x, y + 2, x + font.width(body(fitted)) + 1, y + h - 2, ACCENT_DIM);
+            g.text(font, body(fitted), x, y + (h - 8) / 2, TEXT, false);
+            if (caret) { int cx = x + font.width(body(fitted)) + 1; g.fill(cx, y + 2, cx + 1, y + h - 2, TEXT); }
             editRect = new int[]{x - 2, y, w + 2, h};
             return;
         }
         boolean hov = in(mx, my, x - 2, y, w + 2, h);
         String shown = fit(value, w - (hov ? 30 : 0));
-        g.text(font, shown, x, y + (h - 8) / 2, color, false);
+        g.text(font, body(shown), x, y + (h - 8) / 2, color, false);
         if (hov) {
-            g.fill(x, y + h - 1, x + font.width(Component.literal(shown)), y + h, FAINT);
-            g.text(font, Lang.t("field.edit_hint"), x + w - font.width(Component.literal(Lang.t("field.edit_hint"))), y + (h - 8) / 2, FAINT, false);
+            g.fill(x, y + h - 1, x + font.width(body(shown)), y + h, FAINT);
+            g.text(font, body(Lang.t("field.edit_hint")), x + w - font.width(body(Lang.t("field.edit_hint"))), y + (h - 8) / 2, FAINT, false);
         }
         hits.add(new Hit(x - 2, y, w + 2, h, () -> beginEdit(id, value, numeric, commit), null));
     }
 
     private String fitTail(String s, int w) {
-        if (font.width(Component.literal(s)) <= w) return s;
+        if (font.width(body(s)) <= w) return s;
         int i = 0;
-        while (i < s.length() && font.width(Component.literal("…" + s.substring(i))) > w) i++;
+        while (i < s.length() && font.width(body("…" + s.substring(i))) > w) i++;
         return "…" + s.substring(i);
     }
 
@@ -1677,10 +1785,21 @@ public final class RainiumScreen extends Screen {
     /** The website's display font: Archivo Condensed Black Italic (SIL Open Font License; assets/rainium/font). */
     private static final FontDescription DISPLAY = new FontDescription.Resource(Identifier.fromNamespaceAndPath("rainium", "display"));
 
-    /** Text styles: bold + italic means the site's display font (tabs, headings, buttons); otherwise Minecraft's font. */
+    /** The website's text font: Inter (SIL Open Font License; assets/rainium/font). Both fonts fall back to each other before
+     *  Minecraft's, so resource packs can't mix pixel letters or symbols into the editor. */
+    private static final FontDescription BODY = new FontDescription.Resource(Identifier.fromNamespaceAndPath("rainium", "body"));
+
+    /** Text in the editor's text font. */
+    private static MutableComponent body(String s) {
+        return Component.literal(s == null ? "" : s).withStyle(st -> st.withFont(BODY));
+    }
+
+    private static Component body(Component c) { return c; }
+
+    /** Text styles: bold + italic means the site's display font (tabs, headings, buttons); otherwise the text font. */
     private static Component styled(String s, boolean bold, boolean italic) {
-        MutableComponent c = Component.literal(s);
-        if (bold && italic) return c.withStyle(st -> st.withFont(DISPLAY));
+        if (bold && italic) return Component.literal(s).withStyle(st -> st.withFont(DISPLAY));
+        MutableComponent c = body(s);
         if (bold) return c.withStyle(ChatFormatting.BOLD);
         return italic ? c.withStyle(ChatFormatting.ITALIC) : c;
     }
@@ -1857,6 +1976,22 @@ public final class RainiumScreen extends Screen {
         return y + 17;
     }
 
+    /** A section heading that folds its rows away: a click on it opens or closes them. */
+    private int foldSection(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, boolean open, Runnable flip) {
+        boolean hov = in(mx, my, x - 2, y, w + 4, 15);
+        String title = Lang.t("section." + id).toUpperCase(Locale.ROOT);
+        int tw = nameTag(g, x, y + 2, fitStrong(title, w - 46));
+        // a small triangle: pointing right when folded, down when open
+        float cx = x + tw + 7, cy = y + 7.5f;
+        int col = hov ? PAPER : CYAN;
+        if (open) triangle(g, cx - 3.5f, cy - 2f, cx + 3.5f, cy - 2f, cx, cy + 2.5f, col);
+        else triangle(g, cx - 2f, cy - 3.5f, cx - 2f, cy + 3.5f, cx + 2.5f, cy, col);
+        int lx = x + tw + 14, n = 6;
+        for (int i = 0; i < n; i++) g.fill(lx + (w - tw - 14) * i / n, y + 7, lx + (w - tw - 14) * (i + 1) / n, y + 8, ((0x80 - i * 0x14) << 24) | 0xFFFFFF);
+        hits.add(new Hit(x - 2, y, w + 4, 15, flip, null));
+        return y + 17;
+    }
+
     /** The row under the mouse, as in the game's settings: a white band with a red line under it. */
     private boolean rowBand(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
         if (!in(mx, my, x - 6, y - 1, w + 9, ROW + 2) || editId != null) return false;
@@ -1901,12 +2036,12 @@ public final class RainiumScreen extends Screen {
 
     /** ON / OFF as the game's settings show it: a dark pill with the chosen side in white. */
     private void drawSwitch(GuiGraphicsExtractor g, int x, int y, boolean on) {
-        int w = 40, h = 12, half = w / 2;
+        int w = 48, h = 12, half = w / 2;
         capsule(g, x, y, w, h, FIELD);
         capsule(g, on ? x + 1 : x + half - 1, y + 1, half, h - 2, PAPER);
         String a = Lang.t("value.on").toUpperCase(Locale.ROOT), b = Lang.t("value.off").toUpperCase(Locale.ROOT);
-        g.text(font, a, x + (half - font.width(Component.literal(a))) / 2 + 1, y + 2, on ? INK : FAINT, false);
-        g.text(font, b, x + half + (half - font.width(Component.literal(b))) / 2 - 1, y + 2, on ? FAINT : INK, false);
+        g.text(font, body(a), x + (half - font.width(body(a))) / 2 + 1, y + 2, on ? INK : FAINT, false);
+        g.text(font, body(b), x + half + (half - font.width(body(b))) / 2 - 1, y + 2, on ? FAINT : INK, false);
     }
 
     private int labelWidth(int w) { return Math.min(70, w * 2 / 5); }
@@ -1920,10 +2055,10 @@ public final class RainiumScreen extends Screen {
         int bx = x + lw, bw = w - lw;
         boolean hl = in(mx, my, bx, y, bw / 2, ROW), hr = in(mx, my, bx + bw / 2, y, bw - bw / 2, ROW);
         capsule(g, bx, y + 1, bw, ROW - 2, hl || hr ? FIELD_HOVER : FIELD);
-        g.text(font, "‹", bx + 5, y + 3, hl ? PAPER : CYAN, false);
-        g.text(font, "›", bx + bw - 9, y + 3, hr ? PAPER : CYAN, false);
+        g.text(font, body("‹"), bx + 5, y + 3, hl ? PAPER : CYAN, false);
+        g.text(font, body("›"), bx + bw - 9, y + 3, hr ? PAPER : CYAN, false);
         String v = fit(value, bw - 24);
-        g.text(font, v, bx + (bw - font.width(Component.literal(v))) / 2, y + 3, TEXT, false);
+        g.text(font, body(v), bx + (bw - font.width(body(v))) / 2, y + 3, TEXT, false);
         hits.add(new Hit(bx, y, bw / 2, ROW, () -> step.accept(-1), step));
         hits.add(new Hit(bx + bw / 2, y, bw - bw / 2, ROW, () -> step.accept(1), step));
         return y + ROW + GAP;
@@ -1943,8 +2078,8 @@ public final class RainiumScreen extends Screen {
         boolean hm = in(mx, my, bx, y, 14, ROW), hp = in(mx, my, bx + bw - 14, y, 14, ROW);
         if (hm) disc(g, bx + 6.5f, y + ROW / 2f, 4.5f, FIELD_HOVER);
         if (hp) disc(g, bx + bw - 6.5f, y + ROW / 2f, 4.5f, FIELD_HOVER);
-        g.text(font, "−", bx + 4, y + 3, hm ? PAPER : CYAN, false);
-        g.text(font, "+", bx + bw - 9, y + 3, hp ? PAPER : CYAN, false);
+        g.text(font, body("−"), bx + 4, y + 3, hm ? PAPER : CYAN, false);
+        g.text(font, body("+"), bx + bw - 9, y + 3, hp ? PAPER : CYAN, false);
         hits.add(new Hit(bx, y, 14, ROW, () -> step.accept(-1), null));
         hits.add(new Hit(bx + bw - 14, y, 14, ROW, () -> step.accept(1), null));
         if (setter != null && fieldId.equals(editId)) {
@@ -1953,9 +2088,9 @@ public final class RainiumScreen extends Screen {
         }
         boolean hv = setter != null && in(mx, my, bx + 14, y, bw - 28, ROW);
         String v = fit(value, bw - 30);
-        int vw = font.width(Component.literal(v)), vx = bx + (bw - vw) / 2;
+        int vw = font.width(body(v)), vx = bx + (bw - vw) / 2;
         if (hv) g.fill(vx, y + ROW - 3, vx + vw, y + ROW - 2, CYAN);   // click to type a value
-        g.text(font, v, vx, y + 3, TEXT, false);
+        g.text(font, body(v), vx, y + 3, TEXT, false);
         Runnable startEdit = setter == null ? null : () -> {
             Double cur = parseNumber(value);
             beginEdit(fieldId, cur == null ? "" : fmt(cur), true, txt -> {
@@ -1969,9 +2104,9 @@ public final class RainiumScreen extends Screen {
 
     private int toggle(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, boolean on, Runnable flip) {
         boolean band = rowBand(g, mx, my, x, y, w);
-        rowLabel(g, Lang.t("label." + id), x, y, w - 46, band);
-        tip(mx, my, x, y, w - 42, ROW, id);
-        drawSwitch(g, x + w - 40, y + 1, on);
+        rowLabel(g, Lang.t("label." + id), x, y, w - 54, band);
+        tip(mx, my, x, y, w - 50, ROW, id);
+        drawSwitch(g, x + w - 48, y + 1, on);
         hits.add(new Hit(x, y, w, ROW, flip, null));
         return y + ROW + GAP;
     }
@@ -2033,19 +2168,19 @@ public final class RainiumScreen extends Screen {
         List<net.minecraft.world.entity.player.Player> ps;
         try { ps = Self.nearbyPlayers(6); } catch (Throwable t) { return y; }
         if (ps.isEmpty()) return y;
-        g.text(font, fit(Lang.t("label.players_here"), w), x, y + 2, FAINT, false);
+        g.text(font, body(fit(Lang.t("label.players_here"), w)), x, y + 2, FAINT, false);
         tip(mx, my, x, y, w, 11, "players_here");
         y += 12;
         for (net.minecraft.world.entity.player.Player p : ps) {
             String uuid = p.getUUID().toString();   // the entity UUID, as Flashback shows it
             boolean me = Self.listed(p, c);
             String chip = Lang.t(me ? "button.is_me" : "button.add_me");
-            int cw = font.width(Component.literal(chip)) + 10, cx = x + w - cw;
+            int cw = font.width(body(chip)) + 10, cx = x + w - cw;
             String label = fit(p.getName().getString() + "  " + uuid.substring(0, 8) + "…", cx - x - 6);
-            g.text(font, label, x + 4, y + 2, TEXT, false);
+            g.text(font, body(label), x + 4, y + 2, TEXT, false);
             boolean hov = in(mx, my, cx, y, cw, 12);
             g.fill(cx, y, cx + cw, y + 12, me ? ACCENT_DIM : hov ? FIELD_HOVER : FIELD);
-            g.text(font, chip, cx + 5, y + 2, me ? TEXT : MUTED, false);
+            g.text(font, body(chip), cx + 5, y + 2, me ? TEXT : MUTED, false);
             hits.add(new Hit(cx, y, cw, 12, () -> {
                 if (me) { c.meUuids.remove(uuid); try { c.meUuids.remove(p.getGameProfile().id().toString()); } catch (Throwable ignored) { } }
                 else c.meUuids.add(uuid);
@@ -2185,7 +2320,7 @@ public final class RainiumScreen extends Screen {
         StringBuilder line = new StringBuilder();
         for (String word : text.split(" ")) {
             String trial = line.length() == 0 ? word : line + " " + word;
-            if (font.width(Component.literal(trial)) > w && line.length() > 0) { out.add(line.toString()); line = new StringBuilder(word); }
+            if (font.width(body(trial)) > w && line.length() > 0) { out.add(line.toString()); line = new StringBuilder(word); }
             else line = new StringBuilder(trial);
         }
         if (line.length() > 0) out.add(line.toString());
@@ -2202,15 +2337,15 @@ public final class RainiumScreen extends Screen {
         StringBuilder line = new StringBuilder();
         for (String word : text.split(" ")) {
             String trial = line.length() == 0 ? word : line + " " + word;
-            if (font.width(Component.literal(trial)) > w && line.length() > 0) {
-                g.text(font, fit(line.toString(), w), x, y + 2, color, false);
+            if (font.width(body(trial)) > w && line.length() > 0) {
+                g.text(font, body(fit(line.toString(), w)), x, y + 2, color, false);
                 y += 10;
                 line = new StringBuilder(word);
             } else {
                 line = new StringBuilder(trial);
             }
         }
-        if (line.length() > 0) { g.text(font, fit(line.toString(), w), x, y + 2, color, false); y += 10; }
+        if (line.length() > 0) { g.text(font, body(fit(line.toString(), w)), x, y + 2, color, false); y += 10; }
         return y + 3;
     }
 
@@ -2247,12 +2382,12 @@ public final class RainiumScreen extends Screen {
     private String fit(String s, int w) {
         if (s == null) return "";
         if (w <= 0) return "";
-        if (font.width(Component.literal(s)) <= w) return s;
+        if (font.width(body(s)) <= w) return s;
         String e = "…";
         int lo = 0, hi = s.length();
         while (lo < hi) {
             int mid = (lo + hi + 1) / 2;
-            if (font.width(Component.literal(s.substring(0, mid) + e)) <= w) lo = mid; else hi = mid - 1;
+            if (font.width(body(s.substring(0, mid) + e)) <= w) lo = mid; else hi = mid - 1;
         }
         return s.substring(0, lo) + e;
     }

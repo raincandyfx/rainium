@@ -264,6 +264,7 @@
   "rainium.tip.axes": "How the model was oriented when exported. Blender's default OBJ export is Y up, facing +Z.",
   "rainium.tip.back": "Moves it backwards, in blocks (negative goes forwards). Click the value to type.",
   "rainium.tip.bob_speed": "How fast the idle bob repeats.",
+  "rainium.tip.capture_menu": "Size, frame rate and spin for pictures and recordings.",
   "rainium.tip.capture_fps": "Frames per second for recordings. Set the same rate when importing the frames into a video editor.",
   "rainium.tip.capture_size": "Resolution of pictures and recordings, compared with the preview on your screen. Bigger takes more disk space and can drop frames while recording.",
   "rainium.tip.capture_spin": "Turns the preview while recording: slow is one turn every 12 seconds, fast every 6.",

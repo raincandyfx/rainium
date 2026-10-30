@@ -2,6 +2,15 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.3 (dev build)
+
+- **Rainium's own fonts everywhere in the editor:** all text now uses the website's fonts (Archivo for titles and buttons, Inter for everything else, both under the SIL Open Font License). Resource-pack fonts and Minecraft's pixel symbols no longer mix in; arrows and markers are drawn as shapes or come from Inter.
+- **Lighter layer list:** the rows are the site's blue, and the selected one is brighter, so its dark letters stay readable.
+- **Capture settings moved to the Rec button:** the small arrow on Rec opens a card with Size, Frame rate, Spin and Open captures folder. They're no longer in Settings.
+- **Privacy** is folded away at the end of Settings; click its heading to open it.
+- **Livelier water:** the background caustics now shift and re-form as they drift, like the website's.
+- **Tab transition:** switching between Edit, Add and Settings slides the new tab in behind a quick white wipe.
+
 ## 0.7.2 (dev build)
 
 - **The website's font:** tabs, headings, buttons and layer names use Archivo Condensed Black Italic, the font on the Rainium site (bundled under the SIL Open Font License).
