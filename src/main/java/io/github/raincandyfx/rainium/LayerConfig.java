@@ -35,7 +35,8 @@ final class LayerConfig {
         float[] rotation = {0, 0, 0}; // degrees, applied X then Y then Z
         float[] scale = {1, 1, 1};
         boolean yUp = false;          // mesh authored Y-up/front=+Z (Blender/glTF); converted to model space
-        float spin = 0;               // degrees per second around the layer's own upright axis (turns in place); 0 = still
+        float spin = 0;               // degrees per second around an upright axis through the spin centre; 0 = still
+        String spinCenter;            // null = the layer itself; "anchor:head" etc. = that anchor; "layer:<name>" = another layer's origin
         boolean physics = true;
         boolean mirror = false;       // also draw a copy mirrored across X
         int order = -1;               // submit order; -1 = automatic (0 opaque, 1 translucent, 2 emissive)
@@ -70,6 +71,7 @@ final class LayerConfig {
             m.put("scale", scale[0] == scale[1] && scale[1] == scale[2] ? (Object) (double) scale[0] : vec(scale));
             if (yUp) m.put("coords", "y_up");
             if (spin != 0) m.put("spin", (double) spin);
+            if (spinCenter != null) m.put("spin_center", spinCenter);
             if (mirror) m.put("mirror", true);
             m.put("physics", physics);
             if (hideWhenFlying) m.put("hide_when_flying", true);
@@ -209,6 +211,7 @@ final class LayerConfig {
         to.scale = from.scale.clone();
         to.yUp = from.yUp;
         to.spin = from.spin;
+        to.spinCenter = from.spinCenter;
         to.physics = from.physics;
         to.mirror = from.mirror;
         to.hideWhenFlying = from.hideWhenFlying;
@@ -440,6 +443,7 @@ final class LayerConfig {
             else if (!cs.equals("minecraft") && !cs.equals("model")) throw new IllegalArgumentException("coords must be \"minecraft\" or \"y_up\"");
         }
         l.spin = Math.max(-720f, Math.min(720f, f(m, "spin", 0f)));
+        l.spinCenter = m.get("spin_center") instanceof String sc && (sc.startsWith("anchor:") || sc.startsWith("layer:")) ? sc : null;
         l.physics = bool(m, "physics", true);
         l.mirror = bool(m, "mirror", false);
         l.hideWhenFlying = bool(m, "hide_when_flying", false);
@@ -554,6 +558,17 @@ final class LayerConfig {
         for (Layer l : layers) ls.add(l.toJson());
         m.put("layers", ls);
         return m;
+    }
+
+    /** The mesh layer with this name, preferring one in the same folder as `from`; null if none. */
+    Layer findLayer(String label, Layer from) {
+        Layer any = null;
+        for (Layer o : layers) {
+            if (o == from || o.isParticles() || !label.equals(o.label)) continue;
+            if (java.util.Objects.equals(o.folder, from.folder)) return o;
+            if (any == null) any = o;
+        }
+        return any;
     }
 
     Layer copyLayer(Layer l) {

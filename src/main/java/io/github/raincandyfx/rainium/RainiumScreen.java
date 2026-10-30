@@ -803,6 +803,22 @@ public final class RainiumScreen extends Screen {
             exact(v -> { l.spin = (float) Math.max(-720, Math.min(720, round(v))); save(); });
             y = stepper(g, mx, my, x, y, w, "spin", l.spin == 0 ? Lang.t("value.off") : fmt(l.spin) + "°/s", d -> { l.spin = Math.max(-720f, Math.min(720f, l.spin + d * 15f)); save(); });
         }
+        if (!l.isParticles()) {
+            List<String> ck = new ArrayList<>(), cl = new ArrayList<>();
+            ck.add(null); cl.add(Lang.t("value.spin.itself"));
+            for (LayerConfig.Anchor an : LayerConfig.Anchor.values()) {
+                ck.add("anchor:" + an.name().toLowerCase(Locale.ROOT));
+                cl.add(Lang.t(an == LayerConfig.Anchor.ROOT ? "value.spin.root" : "value.anchor." + an.name().toLowerCase(Locale.ROOT)));
+            }
+            for (LayerConfig.Layer o : layers) {
+                String key = "layer:" + o.label;
+                if (o == l || o.isParticles() || ck.contains(key)) continue;
+                ck.add(key); cl.add(Lang.t("value.spin.layer", o.label));
+            }
+            int ci = Math.max(0, ck.indexOf(l.spinCenter));
+            if (l.spinCenter != null && !ck.contains(l.spinCenter)) { ck.add(l.spinCenter); cl.add(l.spinCenter.substring(l.spinCenter.indexOf(':') + 1)); ci = ck.size() - 1; }
+            y = cycle(g, mx, my, x, y, w, "spin_around", cl.get(ci), cl, ci, d -> { l.spinCenter = ck.get(Math.floorMod(ck.indexOf(l.spinCenter) + d, ck.size())); save(); });
+        }
         y = toggle(g, mx, my, x, y, w, "mirrored_copy", l.mirror, () -> { l.mirror = !l.mirror; save(); });
         y = toggle(g, mx, my, x, y, w, "sway_with_movement", l.physics, () -> { l.physics = !l.physics; save(); });
         y = toggle(g, mx, my, x, y, w, "hide_while_gliding", l.hideWhenFlying, () -> { l.hideWhenFlying = !l.hideWhenFlying; save(); });

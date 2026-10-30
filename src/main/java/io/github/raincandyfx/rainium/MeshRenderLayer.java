@@ -100,6 +100,27 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         }
     }
 
+    /** Where the layer spins around, in the frame the layer is being placed in (before its anchor is applied). */
+    private static org.joml.Vector3f spinCentre(PoseStack ps, Bones bones, LayerConfig cfg, LayerConfig.Layer l, LayerConfig.Anchor own) {
+        LayerConfig.Anchor a = own;
+        float[] off = l.offset;
+        String sc = l.spinCenter;
+        if (sc != null && sc.startsWith("anchor:")) {
+            try { a = LayerConfig.Anchor.valueOf(sc.substring(7).toUpperCase(java.util.Locale.ROOT)); off = new float[3]; }
+            catch (IllegalArgumentException ignored) { }
+        } else if (sc != null && sc.startsWith("layer:")) {
+            LayerConfig.Layer o = cfg.findLayer(sc.substring(6), l);
+            if (o != null) { a = o.anchor; off = o.offset; }
+        }
+        org.joml.Matrix4f base = new org.joml.Matrix4f(ps.last().pose());
+        ps.pushPose();
+        bones.apply(ps, a);
+        ps.translate(off[0], off[1], off[2]);
+        org.joml.Vector3f p = ps.last().pose().transformPosition(new org.joml.Vector3f(0, 0, 0));
+        ps.popPose();
+        return base.invert().transformPosition(p);
+    }
+
     private static final int MIRROR_NONE = 0, MIRROR_BOTH = 1, MIRROR_LIMB = 2;
 
     private static void submitLayer(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, Bones bones, Sway.Pose sp,
@@ -113,15 +134,18 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
                 ps.rotateDegrees(Axis.YP, sp.yawDeg() * k);
             }
         }
+        if (l.spin != 0 && !l.isParticles()) {   // turn around an upright axis through the spin centre (itself, an anchor or another layer)
+            double secs = (where.preview() ? Recorder.previewNanos() : System.nanoTime()) / 1e9;
+            org.joml.Vector3f c = spinCentre(ps, bones, st.config(), l, anchor);
+            ps.translate(c.x, c.y, c.z);
+            ps.rotateDegrees(Axis.YP, (float) ((secs * l.spin) % 360.0));
+            ps.translate(-c.x, -c.y, -c.z);
+        }
         bones.apply(ps, anchor);
         // The copy on the opposite limb is the layer reflected left/right: reflect the layer's own
         // placement here and its vertices in emit (two reflections, so faces keep their winding).
         if (mirrorMode == MIRROR_LIMB) ps.scale(-1f, 1f, 1f);
         ps.translate(l.offset[0], l.offset[1], l.offset[2]);
-        if (l.spin != 0 && !l.isParticles()) {   // turn in place around the layer's own origin, before its fixed rotation
-            double secs = (where.preview() ? Recorder.previewNanos() : System.nanoTime()) / 1e9;
-            ps.rotateDegrees(Axis.YP, (float) ((secs * l.spin) % 360.0));
-        }
         if (l.rotation[0] != 0) ps.rotateDegrees(Axis.XP, l.rotation[0]);
         if (l.rotation[1] != 0) ps.rotateDegrees(Axis.YP, l.rotation[1]);
         if (l.rotation[2] != 0) ps.rotateDegrees(Axis.ZP, l.rotation[2]);

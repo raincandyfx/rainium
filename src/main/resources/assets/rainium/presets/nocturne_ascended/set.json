@@ -25,7 +25,8 @@
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 45
+      "spin": 180,
+      "spin_center": "layer:Moon"
     },
     {
       "name": "Body",
@@ -48,7 +49,8 @@
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 45
+      "spin": 180,
+      "spin_center": "layer:Moon"
     },
     {
       "name": "Body glow",
@@ -71,7 +73,8 @@
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 45
+      "spin": 180,
+      "spin_center": "layer:Moon"
     },
     {
       "name": "Dress",
@@ -94,7 +97,8 @@
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 45
+      "spin": 180,
+      "spin_center": "layer:Moon"
     },
     {
       "name": "Moon",
@@ -116,8 +120,7 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 45
+      "physics": false
     },
     {
       "name": "Moon glow",
@@ -139,8 +142,7 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 45
+      "physics": false
     },
     {
       "name": "Moon ring",
@@ -164,7 +166,8 @@
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 45
+      "spin": 180,
+      "spin_center": "layer:Moon"
     },
     {
       "name": "Ribbon",
@@ -189,7 +192,8 @@
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 45
+      "spin": 180,
+      "spin_center": "layer:Moon"
     }
   ]
 }

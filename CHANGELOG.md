@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.8 (dev build)
+
+- **Spin around:** a spinning layer now turns around a centre you choose: itself, the player, a body part, or another layer (Edit > Behaviour > Spin around). Pick another layer to circle it while that layer stays still.
+- **Nocturne:** everything now turns around the moon at half a turn per second, while the moon itself stays still.
+
 ## 0.8.7 (dev build)
 
 - **Sharp sample-model pictures:** the Nocturne pictures are now high-resolution images drawn as real textures instead of coarse pixel blocks.
