@@ -2,6 +2,21 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.0
+
+Everything from the 0.7.1 to 0.7.10 dev builds, plus:
+
+- **First-run tutorial:** a short tour offered on the main menu the first time you start the game. It points you to Mods, then walks through the editor in seven steps (adding models, placing them, layers, particles with Hue and Tint, who sees it). Skip it from any step; replay it from **Settings > Replay tutorial**. It only shows once; the flag is saved in the rainium folder (`tutorial.state`).
+- **What's new popup:** each main release shows one popup on the main menu the first time you start the game after updating.
+
+From the dev builds:
+
+- **Folders and zips:** drop a folder or a .zip of models into the rainium folder and it shows in Add > Your models. One click converts every model inside and assigns each its texture (from the OBJ's material file, a texture inside a glTF/GLB, or the closest file name), in a folder named after it.
+- **Dropdowns** replace the ‹ › lists, and a small **i** beside each setting explains it (hover or click).
+- **Editor look:** Rainium's own fonts (Archivo and Inter), the website's blues in the layer list, proper Undo, Redo and Showing icons, capture settings under the Rec button, and Privacy folded away at the end of Settings. No background animation or tab transition.
+- **Faster editor:** translations, measured text, part names and Motion presets are remembered instead of recomputed every frame.
+- Players are no longer given a fresh copy of the layer list every frame in the world.
+
 ## 0.7.10 (dev build)
 
 - **Tutorial text:** emphasised words are now a lighter cyan instead of Minecraft's bold, which left small gaps in the letters and uneven spacing.

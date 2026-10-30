@@ -300,6 +300,7 @@ final class Tutorial {
             cx = m[0] + 9;
             cy = m[1] + 9;
         }
+        disc(g, cx, cy, 7.5f, INK);   // a dark blue outline
         disc(g, cx, cy, 6, CYAN);
         int w = font.width(RainiumScreen.styled(label, true, true));
         g.text(font, RainiumScreen.styled(label, true, true), cx - w / 2, cy - 4, INK, false);
