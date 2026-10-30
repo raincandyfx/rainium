@@ -2,6 +2,18 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.1 (dev build)
+
+The first step of the editor's new look, after the Rainium website and Persona 3 Reload's menus. Every setting is still where it was.
+
+- **Look:** the site's deep blue, cyan, red and white. The game behind the editor is blurred (it follows Minecraft's Menu Background Blur setting), and the open tab's name sits huge and faded in the background.
+- **Selection:** the open tab and the selected layer get the site's triangle: a white triangle with a red twin that stabs in, with the letters turning red inside it.
+- **Tabs** moved to the top bar next to the title; **Showing**, **Undo**, **Redo** and **Done** sit on the right as button hints.
+- **Layer list:** slanted dark ribbons; the row under the mouse gets a cyan bar.
+- **Panels and headings:** the settings panel is see-through blue glass with a white border and a cut corner. Section headings are white name tags.
+- **Settings rows:** values sit in dark rounded pills, and the row under the mouse turns white with a red line, as in the game's settings. Switches show **On / Off**.
+- **Buttons:** slanted, in bold italics; **Picture** and **Rec** too.
+
 ## 0.7.0
 
 Everything from the 0.6.1 to 0.6.4 dev builds, plus:
