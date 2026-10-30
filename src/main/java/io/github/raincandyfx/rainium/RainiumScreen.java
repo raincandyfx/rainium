@@ -157,50 +157,12 @@ public final class RainiumScreen extends Screen {
     @Override
     public void extractBackground(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         // the game behind the editor, blurred like other menus (follows the Menu Background Blur setting),
-        // under the website's water; the preview is drawn later, so it stays sharp
+        // over the water-blue wash; the preview is drawn later, so it stays sharp
         boolean inWorld = Minecraft.getInstance().level != null;
         if (!inWorld) extractPanorama(g, partialTick);   // opened from the mod list: the menu panorama, not an empty screen
         extractBlurredBackground(g);
         if (inWorld) g.fillGradient(0, 0, width, height, 0x7010237F, 0xB8040A2E);
         else g.fillGradient(0, 0, width, height, 0x6022B8F0, 0x901436C9);   // brighter, like the site's daytime water
-        caustics(g, inWorld ? 1f : 1.4f);
-    }
-
-    private static final Identifier CAUSTICS = Identifier.fromNamespaceAndPath("rainium", "textures/gui/caustics.png");
-
-    /** Faint light from the water's surface, like the site's: two layers of a looping caustics animation
-     *  (24 frames whose cells shift and re-form), each fading frame to frame and drifting a different way. */
-    private void caustics(GuiGraphicsExtractor g, float strength) {
-        float t = (System.currentTimeMillis() % 3_600_000L) / 1000f, gs = guiScale();
-        causticLayer(g, 2.2f / gs, t * 4.0f, t * 2.2f, t / 9f, Math.round(0x26 * strength));
-        causticLayer(g, 1.5f / gs, -t * 3.0f, t * 3.6f, t / 6.5f + 0.37f, Math.round(0x1A * strength));
-    }
-
-    private static final int CAUS_FRAMES = 24, CAUS_COLS = 6, CAUS_TILE = 256, CAUS_W = 1536, CAUS_H = 1024;
-
-    /** One layer; scale = GUI units per texture pixel, phase = position in the animation loop (1 = once round). */
-    private void causticLayer(GuiGraphicsExtractor g, float scale, float dx, float dy, float phase, int alpha) {
-        float fpos = (((phase % 1f) + 1f) % 1f) * CAUS_FRAMES;
-        int f0 = (int) fpos % CAUS_FRAMES, f1 = (f0 + 1) % CAUS_FRAMES;
-        float mix = fpos - (int) fpos;
-        causticTiles(g, scale, dx, dy, f0, Math.round(alpha * (1f - mix)));
-        causticTiles(g, scale, dx, dy, f1, Math.round(alpha * mix));
-    }
-
-    private void causticTiles(GuiGraphicsExtractor g, float scale, float dx, float dy, int frame, int alpha) {
-        if (alpha <= 0) return;
-        int tile = CAUS_TILE;
-        float ox = ((dx % tile) + tile) % tile, oy = ((dy % tile) + tile) % tile;
-        float u = (frame % CAUS_COLS) * tile, v = (frame / CAUS_COLS) * tile;
-        g.pose().pushMatrix();
-        g.pose().scale(scale, scale);
-        g.pose().translate(ox - tile, oy - tile);
-        int cols = (int) Math.ceil(width / scale / tile) + 2, rows = (int) Math.ceil(height / scale / tile) + 2;
-        int color = (Math.min(255, alpha) << 24) | 0xFFFFFF;
-        for (int i = 0; i < cols; i++)
-            for (int j = 0; j < rows; j++)
-                g.blit(RenderPipelines.GUI_TEXTURED, CAUSTICS, i * tile, j * tile, u, v, tile, tile, tile, tile, CAUS_W, CAUS_H, color);
-        g.pose().popMatrix();
     }
 
     // ------------------------------------------------------------------- tab change
@@ -231,6 +193,9 @@ public final class RainiumScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
         super.extractRenderState(g, mx, my, pt);
         hits.clear();
+        lateHits.clear();
+        drop = null;
+        infoAnchor = null;
         tipCandidate = null;
         String cap = captureDone;
         if (cap != null) {
@@ -257,7 +222,7 @@ public final class RainiumScreen extends Screen {
         if (W - lw - rw - 24 < 80) rw = Math.max(136, W - lw - 24 - 80);
         int top = 30, bottom = H - 7;
 
-        if (tab != shownTab) { shownTab = tab; tabSince = System.currentTimeMillis(); }
+        if (tab != shownTab) { shownTab = tab; tabSince = System.currentTimeMillis(); closePopups(); }
         watermark(g);
         header(g, mx, my, W);
         layersPanel(g, mx, my, 6, top, lw, bottom - top);
@@ -267,6 +232,8 @@ public final class RainiumScreen extends Screen {
         toast(g, pvx, pvw, bottom);
         errorBanner(g, mx, my, pvx, top, pvw);
         captureMenu(g, mx, my);
+        dropList(g, mx, my);
+        infoCard(g, mx, my);
         tooltip(g, mx, my);
     }
 
@@ -459,17 +426,18 @@ public final class RainiumScreen extends Screen {
 
     private int folderRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, LayerConfig.Entry e) {
         LayerConfig.Folder f = assets.editable().folder(e.folder());
-        int rh = 18;
+        int rh = 22;
         boolean sel = e.folder().equals(selectedFolder), hov = in(mx, my, rx, ry, rwid, rh - 2);
         ribbon(g, rx, ry, rwid, rh - 2, sel, hov);
+        thumbTile(g, rx + 15, ry + 2, 16, folderThumb(e.members()), null, f.enabled);
         // collapse arrow
         boolean ah = in(mx, my, rx + 2, ry, 12, rh - 2);
-        float ax = rx + 8f, ay = ry + 8f;   // drawn, not a font symbol: right when folded, down when open
+        float ax = rx + 8f, ay = ry + 10f;   // drawn, not a font symbol: right when folded, down when open
         if (f.collapsed) triangle(g, ax - 2f, ay - 3.5f, ax - 2f, ay + 3.5f, ax + 2.5f, ay, ah ? PAPER : CYAN);
         else triangle(g, ax - 3.5f, ay - 2f, ax + 3.5f, ay - 2f, ax, ay + 2.5f, ah ? PAPER : CYAN);
         hits.add(new Hit(rx + 2, ry, 12, rh - 2, () -> { f.collapsed = !f.collapsed; save(); }, null));
-        rowName(g, "layer", "folder:" + e.folder(), e.folder(), rx + 16, ry + 4, rwid - 38, sel, f.enabled, hov);
-        visibilityBox(g, mx, my, rx + rwid - 18, ry + 4, f.enabled, () -> {
+        rowName(g, "layer", "folder:" + e.folder(), e.folder(), rx + 36, ry + 6, rwid - 58, sel, f.enabled, hov);
+        visibilityBox(g, mx, my, rx + rwid - 18, ry + 6, f.enabled, () -> {
             f.enabled = !f.enabled;
             save();
             say(Lang.t(f.enabled ? "msg.folder_shown" : "msg.folder_hidden", e.folder()), MUTED);
@@ -479,28 +447,88 @@ public final class RainiumScreen extends Screen {
     }
 
     private int layerRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, LayerConfig.Layer l, int idx, boolean parentOn) {
-        int rh = 18;
+        int rh = 22;
         boolean on = l.enabled && parentOn;
         boolean sel = selectedFolder == null && idx == selected, hov = in(mx, my, rx, ry, rwid, rh - 2);
         ribbon(g, rx, ry, rwid, rh - 2, sel, hov);
-        g.fill(rx + 6, ry + 3, rx + 10, ry + 13, on ? (l.color | 0xFF000000) : FAINT);
-        rowName(g, "layer", l, l.label, rx + 16, ry + 4, rwid - 38, sel, on, hov);
-        visibilityBox(g, mx, my, rx + rwid - 18, ry + 4, l.enabled, () -> { l.enabled = !l.enabled; save(); });
+        thumbTile(g, rx + 4, ry + 2, 16, layerThumb(l), l, on);
+        rowName(g, "layer", l, l.label, rx + 25, ry + 6, rwid - 47, sel, on, hov);
+        visibilityBox(g, mx, my, rx + rwid - 18, ry + 6, l.enabled, () -> { l.enabled = !l.enabled; save(); });
         hits.add(new Hit(rx, ry, rwid - 22, rh - 2, () -> selectLayer(idx), null));
         return ry + rh;
     }
 
     /** Compact one-line row for a part inside a folder. */
     private int partRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, LayerConfig.Layer l, int idx, boolean parentOn) {
-        int rh = 16;
+        int rh = 20;
         boolean on = l.enabled && parentOn;
         boolean sel = selectedFolder == null && idx == selected, hov = in(mx, my, rx, ry, rwid, rh - 2);
         ribbon(g, rx, ry, rwid, rh - 2, sel, hov);
-        g.fill(rx + 6, ry + 3, rx + 9, ry + 11, on ? (l.color | 0xFF000000) : FAINT);
-        rowName(g, "layer", l, l.label, rx + 14, ry + 3, rwid - 36, sel, on, hov);
-        visibilityBox(g, mx, my, rx + rwid - 18, ry + 3, l.enabled, () -> { l.enabled = !l.enabled; save(); });
+        thumbTile(g, rx + 4, ry + 2, 14, layerThumb(l), l, on);
+        rowName(g, "layer", l, l.label, rx + 23, ry + 5, rwid - 45, sel, on, hov);
+        visibilityBox(g, mx, my, rx + rwid - 18, ry + 5, l.enabled, () -> { l.enabled = !l.enabled; save(); });
         hits.add(new Hit(rx, ry, rwid - 22, rh - 2, () -> selectLayer(idx), null));
         return ry + rh;
+    }
+
+    // ------------------------------------------------------------------- thumbnails
+    /** Screen pixels across for a picture size GUI units wide (sharp at every GUI scale). */
+    private static int thumbN(int size) { return Math.max(size, Math.min(size * 4, Math.round(size * guiScale()))); }
+
+    /** The layer on its own: its model, part, texture, hue, tint and placement. Null for particles, or while it's being made. */
+    private int[] layerThumb(LayerConfig.Layer l) {
+        if (l.isParticles()) return null;
+        return Thumbs.parts(assets.thumbKey(l), thumbN(16), () -> {
+            Thumbs.Part p = assets.thumbPart(l);
+            return p == null ? null : List.of(p);
+        });
+    }
+
+    /** A folder: all its shown layers together, in place. */
+    private int[] folderThumb(List<LayerConfig.Layer> members) {
+        List<LayerConfig.Layer> on = new ArrayList<>();
+        StringBuilder key = new StringBuilder("folder:");
+        for (LayerConfig.Layer l : members) if (l.enabled && !l.isParticles()) { on.add(l); key.append(assets.thumbKey(l)).append(';'); }
+        if (on.isEmpty()) return null;
+        return Thumbs.parts(key.toString(), thumbN(16), () -> {
+            List<Thumbs.Part> ps = new ArrayList<>();
+            for (LayerConfig.Layer l : on) { Thumbs.Part p = assets.thumbPart(l); if (p != null) ps.add(p); }
+            return ps;
+        });
+    }
+
+    /** A small tile with a picture (the game's party-list portraits); particle layers get a sparkle in their colour. */
+    private void thumbTile(GuiGraphicsExtractor g, int x, int y, int size, int[] px, LayerConfig.Layer l, boolean on) {
+        g.fill(x, y, x + size, y + size, 0x70050B33);
+        if (px != null) drawThumb(g, x, y, size, px, thumbN(size));
+        else if (l != null && l.isParticles()) {
+            int c = l.color | 0xFF000000;
+            disc(g, x + size * 0.35f, y + size * 0.4f, size * 0.16f, c);
+            disc(g, x + size * 0.68f, y + size * 0.62f, size * 0.11f, c);
+            disc(g, x + size * 0.62f, y + size * 0.25f, size * 0.07f, PAPER);
+            disc(g, x + size * 0.3f, y + size * 0.75f, size * 0.06f, PAPER);
+        }
+        if (!on) g.fill(x, y, x + size, y + size, 0x99050B33);
+        g.outline(x, y, size, size, on ? 0xCCFFFFFF : 0x66FFFFFF);
+    }
+
+    /** Draws an n×n picture into a size×size GUI square, one fill per run of equal pixels, in screen pixels. */
+    private void drawThumb(GuiGraphicsExtractor g, int x, int y, int size, int[] px, int n) {
+        if (px.length != n * n) n = (int) Math.round(Math.sqrt(px.length));
+        float k = (float) size / n;
+        g.pose().pushMatrix();
+        g.pose().translate(x, y);
+        g.pose().scale(k, k);
+        for (int r = 0; r < n; r++) {
+            int c = 0;
+            while (c < n) {
+                int col = px[r * n + c], end = c + 1;
+                while (end < n && px[r * n + end] == col) end++;
+                if ((col >>> 24) != 0) g.fill(c, r, end, r + 1, col);
+                c = end;
+            }
+        }
+        g.pose().popMatrix();
     }
 
     /** Show / hide: a small ring, filled when shown. */
@@ -566,6 +594,8 @@ public final class RainiumScreen extends Screen {
             case SETTINGS -> settingsTab(g, mx, my, cx, cy, cw);
         };
         g.pose().popMatrix();
+        hits.addAll(lateHits);   // info buttons sit on top of their row's own buttons
+        lateHits.clear();
         g.disableScissor();
         if (e < 1f) {
             // a white slanted wipe sweeps across the panel, with a cyan one just behind it
@@ -641,7 +671,7 @@ public final class RainiumScreen extends Screen {
         folderOpts.add("");
         folderOpts.addAll(assets.editable().folderNames());
         if (folderOpts.size() > 1 || l.folder != null) {
-            y = cycle(g, mx, my, x, y, w, "folder", l.folder == null ? Lang.t("value.none") : l.folder, d -> {
+            y = cycle(g, mx, my, x, y, w, "folder", l.folder == null ? Lang.t("value.none") : l.folder, mapped(folderOpts, f -> f.isEmpty() ? Lang.t("value.none") : f), folderOpts.indexOf(l.folder == null ? "" : l.folder), d -> {
                 String cur = l.folder == null ? "" : l.folder;
                 String next = folderOpts.get(Math.floorMod(folderOpts.indexOf(cur) + d, folderOpts.size()));
                 l.folder = next.isEmpty() ? null : next;
@@ -665,7 +695,7 @@ public final class RainiumScreen extends Screen {
         } else {
         List<String> groups = assets.groupsOf(l.mesh);
         String part = l.groups == null ? Lang.t("value.whole_model") : String.join(", ", l.groups);
-        y = cycle(g, mx, my, x, y, w, "part", part, d -> {
+        y = cycle(g, mx, my, x, y, w, "part", part, prepend(Lang.t("value.whole_model"), groups), l.groups == null ? 0 : l.groups.size() == 1 ? 1 + groups.indexOf(l.groups.get(0)) : -1, l.groups != null && l.groups.size() == 1 ? 1 + groups.indexOf(l.groups.get(0)) : 0, d -> {
             List<String> opts = new ArrayList<>();
             opts.add("*");
             opts.addAll(groups);
@@ -674,14 +704,14 @@ public final class RainiumScreen extends Screen {
             l.groups = next.equals("*") ? null : new ArrayList<>(List.of(next));
             save();
         });
-        y = cycle(g, mx, my, x, y, w, "model", shortFile(l.mesh), d -> {
+        y = cycle(g, mx, my, x, y, w, "model", shortFile(l.mesh), mapped(meshFiles, RainiumScreen::shortFile), meshFiles.indexOf(l.mesh), d -> {
             if (meshFiles.isEmpty()) return;
             int i = meshFiles.indexOf(l.mesh);
             l.mesh = meshFiles.get(Math.floorMod(i + d, meshFiles.size()));
             l.groups = null;
             save();
         });
-        y = cycle(g, mx, my, x, y, w, "texture", l.texture == null ? Lang.t("value.none") : shortFile(l.texture), d -> {
+        y = cycle(g, mx, my, x, y, w, "texture", l.texture == null ? Lang.t("value.none") : shortFile(l.texture), mapped(texOptions(l), t -> t.isEmpty() ? Lang.t("value.none") : shortFile(t)), texOptions(l).indexOf(l.texture == null ? "" : l.texture), d -> {
             List<String> opts = new ArrayList<>();
             opts.add("");
             opts.addAll(pngFiles);
@@ -692,7 +722,7 @@ public final class RainiumScreen extends Screen {
             save();
         });
         }
-        y = cycle(g, mx, my, x, y, w, "style", styleName(l.render), d -> { l.render = cyc(LayerConfig.Render.values(), l.render, d); save(); });
+        y = cycle(g, mx, my, x, y, w, "style", styleName(l.render), names(LayerConfig.Render.values(), RainiumScreen::styleName), l.render.ordinal(), d -> { l.render = cyc(LayerConfig.Render.values(), l.render, d); save(); });
         y = hue(g, mx, my, x, y, w, l);
         y = tint(g, mx, my, x, y, w, l);
         int alpha = (l.color >>> 24) & 0xFF;
@@ -707,7 +737,7 @@ public final class RainiumScreen extends Screen {
         if (l.isParticles()) y = particleSettings(g, mx, my, x, y + 4, w, l.particles);
 
         y = section(g, x, y + 4, w, "placement");
-        y = cycle(g, mx, my, x, y, w, "attach_to", anchorName(l.anchor), d -> { l.anchor = cyc(LayerConfig.Anchor.values(), l.anchor, d); save(); });
+        y = cycle(g, mx, my, x, y, w, "attach_to", anchorName(l.anchor), names(LayerConfig.Anchor.values(), RainiumScreen::anchorName), l.anchor.ordinal(), d -> { l.anchor = cyc(LayerConfig.Anchor.values(), l.anchor, d); save(); });
         double step = STEPS[stepIndex];
         if (!l.isParticles()) {
             exact(v -> { float s = (float) Math.max(0.01, v / 100.0); l.scale = new float[]{s, s, s}; save(); });
@@ -735,7 +765,7 @@ public final class RainiumScreen extends Screen {
                 save();
             });
         }
-        y = cycle(g, mx, my, x, y, w, "step_size", Lang.t("value.step." + STEP_NAMES[stepIndex]), d -> stepIndex = Math.floorMod(stepIndex + d, STEPS.length));
+        y = cycle(g, mx, my, x, y, w, "step_size", Lang.t("value.step." + STEP_NAMES[stepIndex]), mapped(List.of(STEP_NAMES), n -> Lang.t("value.step." + n)), stepIndex, d -> stepIndex = Math.floorMod(stepIndex + d, STEPS.length));
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.reset_placement"), () -> {
             l.offset = new float[3]; l.rotation = new float[3]; l.scale = new float[]{1, 1, 1}; save();
         });
@@ -745,7 +775,7 @@ public final class RainiumScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "sway_with_movement", l.physics, () -> { l.physics = !l.physics; save(); });
         y = toggle(g, mx, my, x, y, w, "hide_while_gliding", l.hideWhenFlying, () -> { l.hideWhenFlying = !l.hideWhenFlying; save(); });
         y = audience(g, mx, my, x, y + 4, w, l.show, l.folder == null ? null : assets.editable().folders.get(l.folder));
-        if (!l.isParticles()) y = cycle(g, mx, my, x, y, w, "model_axes", Lang.t(l.yUp ? "value.axes.blender" : "value.axes.minecraft"), d -> { l.yUp = !l.yUp; save(); });
+        if (!l.isParticles()) y = cycle(g, mx, my, x, y, w, "model_axes", Lang.t(l.yUp ? "value.axes.blender" : "value.axes.minecraft"), List.of(Lang.t("value.axes.minecraft"), Lang.t("value.axes.blender")), l.yUp ? 1 : 0, d -> { l.yUp = !l.yUp; save(); });
 
         y = section(g, x, y + 4, w, "layer");
         int half = (w - GAP) / 2, dx = x, dw = w;
@@ -825,7 +855,7 @@ public final class RainiumScreen extends Screen {
         }
         exact(v -> { f.motion = clampF((float) (v / 100.0), 0f, 3f); save(); });
         y = stepper(g, mx, my, x, y, w, "motion", Math.round(f.motion * 100) + "%", d -> { f.motion = clampF(f.motion + d * 0.1f, 0f, 3f); save(); });
-        y = cycle(g, mx, my, x, y, w, "step_size", Lang.t("value.step." + STEP_NAMES[stepIndex]), d -> stepIndex = Math.floorMod(stepIndex + d, STEPS.length));
+        y = cycle(g, mx, my, x, y, w, "step_size", Lang.t("value.step." + STEP_NAMES[stepIndex]), mapped(List.of(STEP_NAMES), n -> Lang.t("value.step." + n)), stepIndex, d -> stepIndex = Math.floorMod(stepIndex + d, STEPS.length));
         if (styleClipboard != null) {
             y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.paste_style_all"), () -> {
                 for (LayerConfig.Layer l : parts) LayerConfig.copyStyle(styleClipboard, l);
@@ -882,14 +912,14 @@ public final class RainiumScreen extends Screen {
     // ------------------------------------------------------------------- Add
     private int addTab(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
         y = section(g, x, y, w, "presets");
-        int th = Thumbs.SIZE + 4;   // thumbnail column
+        int th = ADD_THUMB + 4;   // thumbnail column
         for (Presets.Info p : presetList) {
             List<String> lines = wrapLines(p.description(), w - 12 - th, 2);
             int ch = Math.max(19 + lines.size() * 10 + 3, th + 6);
             boolean hov = in(mx, my, x, y, w, ch);
             g.fill(x, y, x + w, y + ch, hov ? FIELD_HOVER : FIELD);
             g.fill(x, y, x + 2, y + ch, ACCENT);
-            thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
+            bigThumb(g, x + 5, y + (ch - ADD_THUMB) / 2, Thumbs.get("preset:" + p.id(), thumbN(ADD_THUMB), () -> assets.presets.previewGroups(p.id())));
             g.text(font, body(fit(p.name(), w - 46 - th)), x + 7 + th, y + 5, TEXT, false);
             for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7 + th, y + 18 + li * 10, MUTED, false);
             String chip = Lang.t("preset.add");
@@ -959,13 +989,13 @@ public final class RainiumScreen extends Screen {
 
     /** A model file in the Add tab, with a small picture of it. */
     private int modelRow(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String file, String kind, Runnable click) {
-        int rh = Thumbs.SIZE + 2;
+        int rh = ADD_THUMB + 2;
         boolean hov = in(mx, my, x, y, w, rh);
         if (hov) g.fill(x, y, x + w, y + rh, HOVER);
         java.nio.file.Path path = assets.dir().resolve(file);
-        thumb(g, x + 1, y + 1, Thumbs.get(Thumbs.key(path), () -> assets.previewGroups(file)));
+        bigThumb(g, x + 1, y + 1, Thumbs.get(Thumbs.key(path), thumbN(ADD_THUMB), () -> assets.previewGroups(file)));
         String kindText = Lang.t("add.kind." + kind);
-        int kw = font.width(body(kindText)), tx = x + Thumbs.SIZE + 6;
+        int kw = font.width(body(kindText)), tx = x + ADD_THUMB + 6;
         g.text(font, body(fit(file, x + w - kw - 8 - tx)), tx, y + (rh - 8) / 2, TEXT, false);
         g.text(font, body(kindText), x + w - kw - 3, y + (rh - 8) / 2, kind.equals("import") ? ACCENT : MUTED, false);
         hits.add(new Hit(x, y, w, rh, click, null));
@@ -976,8 +1006,7 @@ public final class RainiumScreen extends Screen {
     private int textRow(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, String value, String placeholder, Consumer<String> commit) {
         int lw = labelWidth(w);
         boolean band = rowBand(g, mx, my, x, y, w);
-        rowLabel(g, Lang.t("label." + id), x, y, lw - 4, band);
-        tip(mx, my, x, y, lw - 2, ROW, id);
+        rowLabel(g, mx, my, id, Lang.t("label." + id), x, y, lw - 4, w, band);
         capsule(g, x + lw, y + 1, w - lw, ROW - 2, FIELD);
         boolean empty = value == null || value.isBlank();
         textField(g, mx, my, x + lw + 4, y + 1, w - lw - 6, ROW - 2, "text:" + id, empty ? "" : value, false, TEXT, commit);
@@ -985,20 +1014,13 @@ public final class RainiumScreen extends Screen {
         return y + ROW + GAP;
     }
 
-    /** Draws a thumbnail (or an empty frame while it's being made), one fill per run of equal pixels. */
-    private void thumb(GuiGraphicsExtractor g, int x, int y, int[] px) {
-        int n = Thumbs.SIZE;
-        g.fill(x, y, x + n, y + n, 0x40081038);
-        if (px == null) return;
-        for (int r = 0; r < n; r++) {
-            int c = 0;
-            while (c < n) {
-                int col = px[r * n + c], end = c + 1;
-                while (end < n && px[r * n + end] == col) end++;
-                if ((col >>> 24) != 0) g.fill(x + c, y + r, x + end, y + r + 1, col);
-                c = end;
-            }
-        }
+    /** Pictures in the Add tab (presets and models) are this many GUI units across. */
+    private static final int ADD_THUMB = 36;
+
+    /** An Add-tab picture on a dark tile (an empty tile while it's being made). */
+    private void bigThumb(GuiGraphicsExtractor g, int x, int y, int[] px) {
+        g.fill(x, y, x + ADD_THUMB, y + ADD_THUMB, 0x50050B33);
+        if (px != null) drawThumb(g, x, y, ADD_THUMB, px, thumbN(ADD_THUMB));
     }
 
     private int listRow(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String name, String kind, Runnable click) {
@@ -1107,12 +1129,12 @@ public final class RainiumScreen extends Screen {
             y = primaryButtonRow(g, mx, my, x, y, w, Lang.t(impResult.groups().size() > 1 && importAsFolder ? "button.add_as_folder" : "button.add_as_layer"), this::commitImport);
         }
         y = section(g, x, y + 4, w, "orientation");
-        y = cycle(g, mx, my, x, y, w, "axes", Lang.t("import.axes." + imp.axes.name().toLowerCase(Locale.ROOT)), d -> { imp.axes = cyc(ObjImport.Axes.values(), imp.axes, d); reconvert(); });
-        y = cycle(g, mx, my, x, y, w, "origin_at", Lang.t(imp.origin == ObjImport.Origin.FEET ? "import.origin.feet" : "import.origin.neck"), d -> { imp.origin = cyc(ObjImport.Origin.values(), imp.origin, d); reconvert(); });
+        y = cycle(g, mx, my, x, y, w, "axes", Lang.t("import.axes." + imp.axes.name().toLowerCase(Locale.ROOT)), names(ObjImport.Axes.values(), e -> Lang.t("import.axes." + low(e))), imp.axes.ordinal(), d -> { imp.axes = cyc(ObjImport.Axes.values(), imp.axes, d); reconvert(); });
+        y = cycle(g, mx, my, x, y, w, "origin_at", Lang.t(imp.origin == ObjImport.Origin.FEET ? "import.origin.feet" : "import.origin.neck"), names(ObjImport.Origin.values(), o -> Lang.t(o == ObjImport.Origin.FEET ? "import.origin.feet" : "import.origin.neck")), imp.origin.ordinal(), d -> { imp.origin = cyc(ObjImport.Origin.values(), imp.origin, d); reconvert(); });
         y = section(g, x, y + 4, w, "size");
-        y = cycle(g, mx, my, x, y, w, "units", Lang.t("import.units." + imp.unitIndex), d -> { imp.unitIndex = Math.floorMod(imp.unitIndex + d, ObjImport.UNIT_VALUES.length); reconvert(); });
+        y = cycle(g, mx, my, x, y, w, "units", Lang.t("import.units." + imp.unitIndex), indexed(ObjImport.UNIT_VALUES.length, i -> Lang.t("import.units." + i)), imp.unitIndex, d -> { imp.unitIndex = Math.floorMod(imp.unitIndex + d, ObjImport.UNIT_VALUES.length); reconvert(); });
         double fitV = ObjImport.FIT_VALUES[imp.fitIndex];
-        y = cycle(g, mx, my, x, y, w, "fit_to", fitV == 0 ? Lang.t("value.off") : Lang.t("value.blocks", fmt(fitV)), d -> { imp.fitIndex = Math.floorMod(imp.fitIndex + d, ObjImport.FIT_VALUES.length); reconvert(); });
+        y = cycle(g, mx, my, x, y, w, "fit_to", fitV == 0 ? Lang.t("value.off") : Lang.t("value.blocks", fmt(fitV)), indexed(ObjImport.FIT_VALUES.length, i -> ObjImport.FIT_VALUES[i] == 0 ? Lang.t("value.off") : Lang.t("value.blocks", fmt(ObjImport.FIT_VALUES[i]))), imp.fitIndex, d -> { imp.fitIndex = Math.floorMod(imp.fitIndex + d, ObjImport.FIT_VALUES.length); reconvert(); });
         exact(v -> { imp.scale = Math.max(0.0001, v); reconvert(); });
         y = stepper(g, mx, my, x, y, w, "scale", fmt(imp.scale) + "×", d -> { imp.scale = Math.max(0.01, round(imp.scale * (d > 0 ? 1.1 : 1 / 1.1))); reconvert(); });
         String[] move = {"left", "down", "back"};
@@ -1127,8 +1149,8 @@ public final class RainiumScreen extends Screen {
             });
         }
         y = section(g, x, y + 4, w, "details");
-        y = cycle(g, mx, my, x, y, w, "split_by", Lang.t("import.split." + imp.grouping.name().toLowerCase(Locale.ROOT)), d -> { imp.grouping = cyc(ObjImport.Grouping.values(), imp.grouping, d); reconvert(); });
-        y = cycle(g, mx, my, x, y, w, "normals", Lang.t("import.normals." + imp.normals.name().toLowerCase(Locale.ROOT)), d -> { imp.normals = cyc(ObjImport.Normals.values(), imp.normals, d); reconvert(); });
+        y = cycle(g, mx, my, x, y, w, "split_by", Lang.t("import.split." + imp.grouping.name().toLowerCase(Locale.ROOT)), names(ObjImport.Grouping.values(), e -> Lang.t("import.split." + low(e))), imp.grouping.ordinal(), d -> { imp.grouping = cyc(ObjImport.Grouping.values(), imp.grouping, d); reconvert(); });
+        y = cycle(g, mx, my, x, y, w, "normals", Lang.t("import.normals." + imp.normals.name().toLowerCase(Locale.ROOT)), names(ObjImport.Normals.values(), e -> Lang.t("import.normals." + low(e))), imp.normals.ordinal(), d -> { imp.normals = cyc(ObjImport.Normals.values(), imp.normals, d); reconvert(); });
         y = toggle(g, mx, my, x, y, w, "flip_texture_vertically", imp.flipV, () -> { imp.flipV = !imp.flipV; reconvert(); });
         return y;
     }
@@ -1200,7 +1222,7 @@ public final class RainiumScreen extends Screen {
         y = section(g, x, y, w, "visibility");
         y = toggle(g, mx, my, x, y, w, "show_layers", c.enabled, () -> { c.enabled = !c.enabled; save(); });
         String who = Lang.t("value.show_on." + c.showOn.name().toLowerCase(Locale.ROOT));
-        y = cycle(g, mx, my, x, y, w, "show_on", who, d -> { c.showOn = cyc(LayerConfig.ShowOn.values(), c.showOn, d); save(); });
+        y = cycle(g, mx, my, x, y, w, "show_on", who, names(LayerConfig.ShowOn.values(), e -> Lang.t("value.show_on." + low(e))), c.showOn.ordinal(), d -> { c.showOn = cyc(LayerConfig.ShowOn.values(), c.showOn, d); save(); });
         if (c.showOn == LayerConfig.ShowOn.LISTED)
             y = textRow(g, mx, my, x, y, w, "players", String.join(", ", c.players), Lang.t("value.players_empty"), v -> {
                 c.players.clear();
@@ -1220,7 +1242,7 @@ public final class RainiumScreen extends Screen {
         LayerConfig.Physics p = c.physics;
         y = section(g, x, y + 4, w, "motion");
         int feel = Motion.match(p);
-        y = cycle(g, mx, my, x, y, w, "motion_feel", Lang.t(feel < 0 ? "value.feel.custom" : "value.feel." + Motion.NAMES[feel]), d -> {
+        y = cycle(g, mx, my, x, y, w, "motion_feel", Lang.t(feel < 0 ? "value.feel.custom" : "value.feel." + Motion.NAMES[feel]), mapped(List.of(Motion.NAMES), n -> Lang.t("value.feel." + n)), feel, feel < 0 ? Motion.NORMAL : feel, d -> {
             int cur = Motion.match(p);
             Motion.apply(p, Math.floorMod((cur < 0 ? Motion.NORMAL : cur) + d, Motion.NAMES.length));
             save();
@@ -1280,12 +1302,11 @@ public final class RainiumScreen extends Screen {
         y = foldSection(g, mx, my, x, y + 4, w, "privacy", privacyOpen, () -> privacyOpen = !privacyOpen);
         if (privacyOpen) {
             String pm = Lang.t("value.privacy." + c.privacyMode.name().toLowerCase(Locale.ROOT));
-            y = cycle(g, mx, my, x, y, w, "name_in_paths", pm, d -> { c.privacyMode = cyc(Privacy.Mode.values(), c.privacyMode, d); Privacy.mode = c.privacyMode; save(); });
+            y = cycle(g, mx, my, x, y, w, "name_in_paths", pm, names(Privacy.Mode.values(), e -> Lang.t("value.privacy." + low(e))), c.privacyMode.ordinal(), d -> { c.privacyMode = cyc(Privacy.Mode.values(), c.privacyMode, d); Privacy.mode = c.privacyMode; save(); });
             if (c.privacyMode == Privacy.Mode.CUSTOM) {
                 int lw = labelWidth(w);
                 boolean band = rowBand(g, mx, my, x, y, w);
-                rowLabel(g, Lang.t("label.custom_name"), x, y, lw - 4, band);
-                tip(mx, my, x, y, lw - 2, ROW, "custom_name");
+                rowLabel(g, mx, my, "custom_name", Lang.t("label.custom_name"), x, y, lw - 4, w, band);
                 capsule(g, x + lw, y + 1, w - lw, ROW - 2, FIELD);
                 textField(g, mx, my, x + lw + 4, y + 1, w - lw - 6, ROW - 2, "name:privacy", c.privacyName.isBlank() ? "player" : c.privacyName, false, TEXT, v -> {
                     c.privacyName = v.trim();
@@ -1692,7 +1713,7 @@ public final class RainiumScreen extends Screen {
         boolean ctrl = down(SC_LCTRL) || down(SC_RCTRL) || down(SC_LGUI) || down(SC_RGUI);
         if (ctrl && k == SC_Z) { if (down(SC_LSHIFT) || down(SC_RSHIFT)) redo(); else undo(); return true; }
         if (ctrl && k == SC_Y) { redo(); return true; }
-        if (k == SC_ESC) { close(); return true; }
+        if (k == SC_ESC) { if (!closePopups()) close(); return true; }
         return super.keyPressed(event);
     }
 
@@ -2000,8 +2021,25 @@ public final class RainiumScreen extends Screen {
         return true;
     }
 
-    private void rowLabel(GuiGraphicsExtractor g, String text, int x, int y, int w, boolean band) {
-        g.text(font, styled(fit(text, w), false, true), x, y + 3, band ? INK : MENU, false);
+    /** A row's label, and after it a small "i" when the setting has an explanation: a click opens it under the row. */
+    private void rowLabel(GuiGraphicsExtractor g, int mx, int my, String id, String text, int x, int y, int w, int rowW, boolean band) {
+        boolean info = id != null && Lang.optional("tip." + id) != null;
+        String t = fit(text, info ? w - 11 : w);
+        Component c = styled(t, false, true);
+        g.text(font, c, x, y + 3, band ? INK : MENU, false);
+        if (!info) return;
+        float cx = x + font.width(c) + 7.5f, cy = y + ROW / 2f;
+        boolean open = id.equals(infoOpen), hov = in(mx, my, (int) cx - 5, y, 10, ROW);
+        int col = band ? INK : hov || open ? PAPER : CYAN;
+        if (open) disc(g, cx, cy, 4.2f, col); else ring(g, cx, cy, 4.2f, 1f, col);
+        String i = "i";
+        g.text(font, styled(i, true, false), Math.round(cx - font.width(styled(i, true, false)) / 2f), y + 3, open ? (band ? PAPER : INK) : col, false);
+        lateHits.add(new Hit((int) cx - 5, y, 10, ROW, () -> {
+            boolean was = id.equals(infoOpen);
+            infoOpen = was ? null : id;
+            openDrop = null;
+        }, null));
+        if (open) infoAnchor = new int[]{x - 6, y + ROW, rowW + 9};
     }
 
     private void primaryButton(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String label, Runnable click) {
@@ -2046,22 +2084,113 @@ public final class RainiumScreen extends Screen {
 
     private int labelWidth(int w) { return Math.min(70, w * 2 / 5); }
 
-    /** "Label        ‹ value ›" — click either half or scroll to change. */
-    private int cycle(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, String value, IntConsumer step) {
+    /**
+     * "Label        [ value ▾ ]" — a dropdown: a click lists every option (the current one marked with the
+     * triangle), the scroll wheel steps through them. opts lists the options in order, cur is the current one
+     * (-1 when the value isn't one of them), and step moves by d options from base, as the old ‹ › arrows did.
+     */
+    private int cycle(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, String value, List<String> opts, int cur, IntConsumer step) {
+        return cycle(g, mx, my, x, y, w, id, value, opts, cur, cur, step);
+    }
+
+    private int cycle(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, String value, List<String> opts, int cur, int base, IntConsumer step) {
         int lw = labelWidth(w);
         boolean band = rowBand(g, mx, my, x, y, w);
-        rowLabel(g, Lang.t("label." + id), x, y, lw - 4, band);
-        tip(mx, my, x, y, lw - 2, ROW, id);
+        rowLabel(g, mx, my, id, Lang.t("label." + id), x, y, lw - 4, w, band);
         int bx = x + lw, bw = w - lw;
-        boolean hl = in(mx, my, bx, y, bw / 2, ROW), hr = in(mx, my, bx + bw / 2, y, bw - bw / 2, ROW);
-        capsule(g, bx, y + 1, bw, ROW - 2, hl || hr ? FIELD_HOVER : FIELD);
-        g.text(font, body("‹"), bx + 5, y + 3, hl ? PAPER : CYAN, false);
-        g.text(font, body("›"), bx + bw - 9, y + 3, hr ? PAPER : CYAN, false);
-        String v = fit(value, bw - 24);
-        g.text(font, body(v), bx + (bw - font.width(body(v))) / 2, y + 3, TEXT, false);
-        hits.add(new Hit(bx, y, bw / 2, ROW, () -> step.accept(-1), step));
-        hits.add(new Hit(bx + bw / 2, y, bw - bw / 2, ROW, () -> step.accept(1), step));
+        boolean open = id.equals(openDrop), hov = in(mx, my, bx, y, bw, ROW);
+        capsule(g, bx, y + 1, bw, ROW - 2, hov || open ? FIELD_HOVER : FIELD);
+        String v = fit(value, bw - 22);
+        g.text(font, body(v), bx + (bw - 8 - font.width(body(v))) / 2, y + 3, TEXT, false);
+        float tx = bx + bw - 8.5f, ty = y + ROW / 2f;
+        int tc = hov || open ? PAPER : CYAN;
+        if (open) triangle(g, tx - 3f, ty + 1.6f, tx + 3f, ty + 1.6f, tx, ty - 2.2f, tc);
+        else triangle(g, tx - 3f, ty - 1.6f, tx + 3f, ty - 1.6f, tx, ty + 2.2f, tc);
+        hits.add(new Hit(bx, y, bw, ROW, () -> {
+            if (open) { openDrop = null; return; }
+            openDrop = id;
+            infoOpen = null;
+            dropScroll = Math.max(0, cur - 4);
+        }, step));
+        if (open) drop = new Drop(id, bx, y + ROW, bw, opts, cur, i -> step.accept(i - base));
         return y + ROW + GAP;
+    }
+
+    // ------------------------------------------------------------------- pop-ups: dropdown lists and info cards
+    private record Drop(String id, int x, int y, int w, List<String> opts, int cur, IntConsumer pick) {}
+    private String openDrop;    // the dropdown that's open, by its setting id
+    private Drop drop;          // where it was drawn this frame (null when its row isn't on screen)
+    private int dropScroll;
+    private String infoOpen;    // the setting whose explanation is open
+    private int[] infoAnchor;   // x, bottom, width of its row this frame
+    private final List<Hit> lateHits = new ArrayList<>();   // info buttons: on top of their row's own buttons
+
+    /** The open dropdown's list, under its box (above it when there's no room below). */
+    private void dropList(GuiGraphicsExtractor g, int mx, int my) {
+        if (openDrop == null) return;
+        if (drop == null || drop.opts().isEmpty()) { openDrop = null; return; }
+        Drop d = drop;
+        int rowH = 13, n = d.opts().size(), rows = Math.min(n, 10);
+        int lw = d.w();
+        for (String o : d.opts()) lw = Math.max(lw, font.width(body(o)) + 26);
+        lw = Math.min(lw, width - 8);
+        int x = clamp(d.x() + d.w() - lw, 4, width - lw - 4), h = rows * rowH + 6;
+        int y = d.y() + 2;
+        if (y + h > height - 4) y = Math.max(4, d.y() - ROW - 2 - h);
+        dropScroll = clamp(dropScroll, 0, n - rows);
+        hits.add(new Hit(0, 0, width, height, () -> openDrop = null, dd -> { }));
+        g.fill(x + 3, y + 3, x + lw + 3, y + h + 3, 0x99050B33);   // hard shadow
+        g.fill(x, y, x + lw, y + h, 0xF8050B33);
+        g.outline(x, y, lw, h, PANEL_EDGE);
+        final int top = y;
+        hits.add(new Hit(x, y, lw, h, () -> { }, dd -> dropScroll = clamp(dropScroll - dd, 0, n - rows)));
+        g.enableScissor(x + 1, y + 1, x + lw - 1, y + h - 1);
+        for (int i = dropScroll; i < dropScroll + rows; i++) {
+            int ry = top + 3 + (i - dropScroll) * rowH;
+            boolean on = i == d.cur(), hov = in(mx, my, x + 1, ry, lw - 2, rowH);
+            if (hov && !on) {
+                g.fill(x + 1, ry, x + lw - 1, ry + rowH, FIELD_HOVER);
+                g.fill(x + 1, ry, x + 3, ry + rowH, CYAN);
+            }
+            String o = d.opts().get(i);
+            if (on) selection(g, "drop:" + d.id(), d.id(), fitStrong(o, lw - 20), x + 9, ry + 3);
+            else g.text(font, body(fit(o, lw - 16)), x + 9, ry + 3, hov ? PAPER : MENU, false);
+            final int k = i;
+            hits.add(new Hit(x + 1, ry, lw - 2, rowH, () -> { openDrop = null; d.pick().accept(k); }, null));
+        }
+        g.disableScissor();
+        if (n > rows) {   // more above or below: a thin cyan bar shows where in the list this is
+            int bh = Math.max(8, (h - 4) * rows / n), by = top + 2 + (h - 4 - bh) * dropScroll / Math.max(1, n - rows);
+            g.fill(x + lw - 3, by, x + lw - 2, by + bh, CYAN);
+        }
+    }
+
+    /** The open explanation: the site's dialogue box under its row, with the setting's name on a tag. */
+    private void infoCard(GuiGraphicsExtractor g, int mx, int my) {
+        if (infoOpen == null) return;
+        String t = Lang.optional("tip." + infoOpen);
+        if (infoAnchor == null || t == null) { infoOpen = null; return; }
+        int x = infoAnchor[0], w = Math.min(infoAnchor[2], width - 8);
+        x = clamp(x, 4, width - w - 4);
+        List<String> lines = wrapLines(t, w - 16, 10);
+        int h = lines.size() * 10 + 14, y = infoAnchor[1] + 7;
+        if (y + h > height - 4) y = Math.max(10, infoAnchor[1] - ROW - 10 - h);
+        hits.add(new Hit(0, 0, width, height, () -> infoOpen = null, dd -> { }));
+        g.fill(x, y, x + w, y + h, OVERLAY);
+        g.outline(x, y, w, h, PANEL_EDGE);
+        String label = Lang.optional("label." + infoOpen);
+        if (label != null) nameTag(g, x + 6, y - 6, fitStrong(label.toUpperCase(Locale.ROOT), w - 30));
+        for (int i = 0; i < lines.size(); i++) g.text(font, body(lines.get(i)), x + 8, y + 8 + i * 10, TEXT, false);
+        float tx = x + w - 9f, ty = y + h - 6f;   // the cyan "more" marker of the site's dialogue box
+        triangle(g, tx - 3f, ty - 2f, tx + 3f, ty - 2f, tx, ty + 2f, CYAN);
+        hits.add(new Hit(x, y, w, h, () -> infoOpen = null, dd -> { }));
+    }
+
+    /** Closes any open dropdown, info card or capture card; true if one was open. */
+    private boolean closePopups() {
+        boolean any = openDrop != null || infoOpen != null || captureMenu;
+        openDrop = null; infoOpen = null; captureMenu = false;
+        return any;
     }
 
     /** "Label        − value +" — buttons or scroll wheel. */
@@ -2070,8 +2199,7 @@ public final class RainiumScreen extends Screen {
         nextExact = null;
         int lw = labelWidth(w);
         boolean band = rowBand(g, mx, my, x, y, w);
-        rowLabel(g, Lang.t("label." + id), x, y, lw - 4, band);
-        tip(mx, my, x, y, lw - 2, ROW, id);
+        rowLabel(g, mx, my, id, Lang.t("label." + id), x, y, lw - 4, w, band);
         int bx = x + lw, bw = w - lw;
         String fieldId = "num:" + id;
         capsule(g, bx, y + 1, bw, ROW - 2, FIELD);
@@ -2104,8 +2232,7 @@ public final class RainiumScreen extends Screen {
 
     private int toggle(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String id, boolean on, Runnable flip) {
         boolean band = rowBand(g, mx, my, x, y, w);
-        rowLabel(g, Lang.t("label." + id), x, y, w - 54, band);
-        tip(mx, my, x, y, w - 50, ROW, id);
+        rowLabel(g, mx, my, id, Lang.t("label." + id), x, y, w - 54, w, band);
         drawSwitch(g, x + w - 48, y + 1, on);
         hits.add(new Hit(x, y, w, ROW, flip, null));
         return y + ROW + GAP;
@@ -2128,7 +2255,7 @@ public final class RainiumScreen extends Screen {
         String pv = a.players == null
             ? Lang.t("value.default_is", Lang.t("value.show_on." + inheritedMode.name().toLowerCase(Locale.ROOT)))
             : Lang.t("value.show_on." + a.players.name().toLowerCase(Locale.ROOT));
-        y = cycle(g, mx, my, x, y, w, "on_players", pv, d -> {
+        y = cycle(g, mx, my, x, y, w, "on_players", pv, prepend(Lang.t("value.default_is", Lang.t("value.show_on." + low(inheritedMode))), names(modes, e -> Lang.t("value.show_on." + low(e)))), a.players == null ? 0 : a.players.ordinal() + 1, d -> {
             int i = a.players == null ? -1 : a.players.ordinal();
             int n = Math.floorMod(i + 1 + d, modes.length + 1) - 1;   // -1 = Default
             a.players = n < 0 ? null : modes[n];
@@ -2147,7 +2274,7 @@ public final class RainiumScreen extends Screen {
         String sv = a.stands == null
             ? Lang.t("value.default_is", inheritedStands.isEmpty() ? Lang.t("value.stands.none") : String.join(", ", inheritedStands))
             : a.stands.isEmpty() ? Lang.t("value.stands.none") : Lang.t("value.stands.named");
-        y = cycle(g, mx, my, x, y, w, "on_stands", sv, d -> {
+        y = cycle(g, mx, my, x, y, w, "on_stands", sv, List.of(Lang.t("value.default_is", inheritedStands.isEmpty() ? Lang.t("value.stands.none") : String.join(", ", inheritedStands)), Lang.t("value.stands.none"), Lang.t("value.stands.named")), a.stands == null ? 0 : a.stands.isEmpty() ? 1 : 2, d -> {
             int i = a.stands == null ? 0 : a.stands.isEmpty() ? 1 : 2;
             int n = Math.floorMod(i + d, 3);
             a.stands = n == 0 ? null : n == 1 ? new ArrayList<>() : new ArrayList<>(inheritedStands.isEmpty() ? List.of("Rainium") : inheritedStands);
@@ -2206,7 +2333,7 @@ public final class RainiumScreen extends Screen {
     private int particleTexture(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Layer l) {
         String vn = ParticleSim.vanillaName(l.texture);
         String shown = vn != null ? Lang.t("particle." + vn) : l.texture == null ? Lang.t("value.none") : shortFile(l.texture);
-        return cycle(g, mx, my, x, y, w, "particle_texture", shown, d -> {
+        return cycle(g, mx, my, x, y, w, "particle_texture", shown, mapped(particleTexOptions(l), t -> ParticleSim.vanillaName(t) != null ? Lang.t("particle." + ParticleSim.vanillaName(t)) : shortFile(t)), particleTexOptions(l).indexOf(l.texture), d -> {
             List<String> opts = new ArrayList<>();
             for (String n : ParticleSim.VANILLA) opts.add(ParticleSim.vanillaId(n));
             opts.addAll(pngFiles);
@@ -2220,7 +2347,7 @@ public final class RainiumScreen extends Screen {
     /** How a particle emitter spawns and moves its particles. */
     private int particleSettings(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Particles p) {
         y = section(g, x, y, w, "particles");
-        y = cycle(g, mx, my, x, y, w, "p_when", Lang.t("value.p_when." + p.when.name().toLowerCase(Locale.ROOT)), d -> { p.when = cyc(LayerConfig.Particles.When.values(), p.when, d); save(); });
+        y = cycle(g, mx, my, x, y, w, "p_when", Lang.t("value.p_when." + p.when.name().toLowerCase(Locale.ROOT)), names(LayerConfig.Particles.When.values(), e -> Lang.t("value.p_when." + low(e))), p.when.ordinal(), d -> { p.when = cyc(LayerConfig.Particles.When.values(), p.when, d); save(); });
         exact(v -> { p.rate = clampF((float) v, 0, 200); save(); });
         y = stepper(g, mx, my, x, y, w, "p_rate", fmt(p.rate) + "/s", d -> { p.rate = clampF(p.rate + d * (p.rate < 10 ? 1 : 5), 0, 200); save(); });
         exact(v -> { p.life = clampF((float) v, 0.05f, 20); save(); });
@@ -2228,7 +2355,7 @@ public final class RainiumScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "p_follow", p.follow, () -> { p.follow = !p.follow; save(); });
 
         y = section(g, x, y + 4, w, "p_spawn");
-        y = cycle(g, mx, my, x, y, w, "p_shape", Lang.t("value.p_shape." + p.shape.name().toLowerCase(Locale.ROOT)), d -> { p.shape = cyc(LayerConfig.Particles.Shape.values(), p.shape, d); save(); });
+        y = cycle(g, mx, my, x, y, w, "p_shape", Lang.t("value.p_shape." + p.shape.name().toLowerCase(Locale.ROOT)), names(LayerConfig.Particles.Shape.values(), e -> Lang.t("value.p_shape." + low(e))), p.shape.ordinal(), d -> { p.shape = cyc(LayerConfig.Particles.Shape.values(), p.shape, d); save(); });
         if (p.shape != LayerConfig.Particles.Shape.POINT) {
             exact(v -> { p.area = clampF((float) v, 0, 4); save(); });
             y = stepper(g, mx, my, x, y, w, "p_area", fmt(p.area), d -> { p.area = clampF(p.area + d * 0.05f, 0, 4); save(); });
@@ -2240,7 +2367,7 @@ public final class RainiumScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "p_fade", p.fade, () -> { p.fade = !p.fade; save(); });
 
         y = section(g, x, y + 4, w, "p_motion");
-        y = cycle(g, mx, my, x, y, w, "p_direction", Lang.t("value.p_direction." + p.direction.name().toLowerCase(Locale.ROOT)), d -> { p.direction = cyc(LayerConfig.Particles.Direction.values(), p.direction, d); save(); });
+        y = cycle(g, mx, my, x, y, w, "p_direction", Lang.t("value.p_direction." + p.direction.name().toLowerCase(Locale.ROOT)), names(LayerConfig.Particles.Direction.values(), e -> Lang.t("value.p_direction." + low(e))), p.direction.ordinal(), d -> { p.direction = cyc(LayerConfig.Particles.Direction.values(), p.direction, d); save(); });
         exact(v -> { p.speed = clampF((float) v, 0, 10); save(); });
         y = stepper(g, mx, my, x, y, w, "p_speed", fmt(p.speed), d -> { p.speed = clampF(p.speed + d * 0.05f, 0, 10); save(); });
         exact(v -> { p.spread = clampF((float) v, 0, 180); save(); });
@@ -2251,7 +2378,7 @@ public final class RainiumScreen extends Screen {
         y = stepper(g, mx, my, x, y, w, "p_drag", fmt(p.drag), d -> { p.drag = clampF(p.drag + d * 0.1f, 0, 10); save(); });
         exact(v -> { p.spin = clampF((float) v, -720, 720); save(); });
         y = stepper(g, mx, my, x, y, w, "p_spin", fmt(p.spin) + "°/s", d -> { p.spin = clampF(p.spin + d * 15, -720, 720); save(); });
-        y = cycle(g, mx, my, x, y, w, "p_angle", Lang.t(p.upright ? "value.p_angle.upright" : "value.p_angle.random"), d -> { p.upright = !p.upright; save(); });
+        y = cycle(g, mx, my, x, y, w, "p_angle", Lang.t(p.upright ? "value.p_angle.upright" : "value.p_angle.random"), List.of(Lang.t("value.p_angle.random"), Lang.t("value.p_angle.upright")), p.upright ? 1 : 0, d -> { p.upright = !p.upright; save(); });
         return y;
     }
 
@@ -2347,6 +2474,53 @@ public final class RainiumScreen extends Screen {
         }
         if (line.length() > 0) { g.text(font, body(fit(line.toString(), w)), x, y + 2, color, false); y += 10; }
         return y + 3;
+    }
+
+
+    // ------------------------------------------------------------------- dropdown option lists
+    private static String low(Enum<?> e) { return e.name().toLowerCase(Locale.ROOT); }
+
+    private static <E> List<String> names(E[] values, java.util.function.Function<E, String> label) {
+        List<String> out = new ArrayList<>();
+        for (E v : values) out.add(label.apply(v));
+        return out;
+    }
+
+    private static List<String> mapped(List<String> values, java.util.function.Function<String, String> label) {
+        List<String> out = new ArrayList<>();
+        for (String v : values) out.add(label.apply(v));
+        return out;
+    }
+
+    private static List<String> indexed(int n, java.util.function.IntFunction<String> label) {
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < n; i++) out.add(label.apply(i));
+        return out;
+    }
+
+    private static List<String> prepend(String first, List<String> rest) {
+        List<String> out = new ArrayList<>();
+        out.add(first);
+        out.addAll(rest);
+        return out;
+    }
+
+    /** Textures in the order the Texture setting steps through them: none, the folder's PNGs, then the current one if it's elsewhere. */
+    private List<String> texOptions(LayerConfig.Layer l) {
+        List<String> opts = new ArrayList<>();
+        opts.add("");
+        opts.addAll(pngFiles);
+        if (l.texture != null && !opts.contains(l.texture)) opts.add(l.texture);
+        return opts;
+    }
+
+    /** Particle pictures in stepping order: Minecraft's, the folder's PNGs, then the current one if it's elsewhere. */
+    private List<String> particleTexOptions(LayerConfig.Layer l) {
+        List<String> opts = new ArrayList<>();
+        for (String n : ParticleSim.VANILLA) opts.add(ParticleSim.vanillaId(n));
+        opts.addAll(pngFiles);
+        if (l.texture != null && !opts.contains(l.texture)) opts.add(l.texture);
+        return opts;
     }
 
     // =================================================================== helpers

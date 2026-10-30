@@ -2,13 +2,19 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.4 (dev build)
+
+- **Dropdowns:** every list you used to step through with ‹ › (style, model, texture, step size and the rest) is now a dropdown that shows all the choices at once.
+- **Clickable info buttons:** an "i" beside a setting's name opens its explanation; hovering no longer pops it up.
+- **Bigger thumbnails:** the Add tab's pictures are larger. Each layer in the list shows that layer alone, with its assigned texture, colour and placement; a folder shows all its enabled layers together.
+- **Caustics removed** from the editor background, for speed.
+
 ## 0.7.3 (dev build)
 
 - **Rainium's own fonts everywhere in the editor:** all text now uses the website's fonts (Archivo for titles and buttons, Inter for everything else, both under the SIL Open Font License). Resource-pack fonts and Minecraft's pixel symbols no longer mix in; arrows and markers are drawn as shapes or come from Inter.
 - **Lighter layer list:** the rows are the site's blue, and the selected one is brighter, so its dark letters stay readable.
 - **Capture settings moved to the Rec button:** the small arrow on Rec opens a card with Size, Frame rate, Spin and Open captures folder. They're no longer in Settings.
 - **Privacy** is folded away at the end of Settings; click its heading to open it.
-- **Livelier water:** the background caustics now shift and re-form as they drift, like the website's.
 - **Tab transition:** switching between Edit, Add and Settings slides the new tab in behind a quick white wipe.
 
 ## 0.7.2 (dev build)
