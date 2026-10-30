@@ -98,6 +98,10 @@ public final class RainiumScreen extends Screen {
     private List<String> objFiles = List.of(), meshFiles = List.of(), pngFiles = List.of();
     private List<Presets.Info> presetList = List.of();
     private List<String> setZips = List.of();
+    private List<Bundles.Found> bundles = List.of();
+    private volatile boolean bundleBusy;
+    private volatile Object bundleDone;     // Bundles.Added or Exception, handed from the worker to the render thread
+    private volatile String bundleName;
 
     // text editing (rename / type exact numbers)
     private String editId;                 // field being edited, null when none
@@ -195,6 +199,11 @@ public final class RainiumScreen extends Screen {
             if (cap.startsWith("!")) say(Lang.t("msg.capture_failed", cap.substring(1)), DANGER);
             else if (captureWasRecording) say(Lang.t("msg.recording_saved", Recorder.framesWritten(), "captures/" + cap + "/"), ACCENT);
             else say(Lang.t("msg.picture_saved", "captures/" + cap), ACCENT);
+        }
+        Object bd = bundleDone;
+        if (bd != null) {
+            bundleDone = null;
+            finishBundle(bd);
         }
         if (!updateAnnounced && Updater.state() == Updater.State.READY) {
             updateAnnounced = true;
@@ -873,8 +882,12 @@ public final class RainiumScreen extends Screen {
         y = section(g, x, y + 5, w, "your_models");
         List<String> own = new ArrayList<>();
         for (String f : meshFiles) if (!f.startsWith("presets/")) own.add(f);
-        if (own.isEmpty() && objFiles.isEmpty()) {
+        if (own.isEmpty() && objFiles.isEmpty() && bundles.isEmpty()) {
             y = wrapped(g, x, y, w, Lang.t("add.empty_hint"), MUTED);
+        }
+        for (Bundles.Found b : bundles) {
+            String label = b.name() + "  ·  " + Lang.t("add.bundle_counts", b.models(), b.textures());
+            y = listRow(g, mx, my, x, y, w, label, "bundle", () -> addBundle(b));
         }
         for (String f : own) y = modelRow(g, mx, my, x, y, w, f, "mesh", () -> addMesh(f));
         for (String f : objFiles) {
@@ -1564,6 +1577,43 @@ public final class RainiumScreen extends Screen {
         pngFiles = assets.files("png");
         presetList = assets.presets.list();
         setZips = assets.setZips();
+        if (force || (tab == Tab.ADD && !bundleBusy)) bundles = Bundles.scan(assets.dir());
+    }
+
+    private void addBundle(Bundles.Found f) {
+        if (bundleBusy) return;
+        bundleBusy = true;
+        bundleName = f.name();
+        String folderName = assets.editable().uniqueFolderName(f.name());
+        java.nio.file.Path dir = assets.dir();
+        say(Lang.t("msg.bundle_working", f.name()), MUTED);
+        Thread t = new Thread(() -> {
+            Object r;
+            try { r = Bundles.add(dir, f, folderName); } catch (Throwable e) { r = e; }
+            bundleDone = r;
+        }, "rainium-bundle");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void finishBundle(Object result) {
+        bundleBusy = false;
+        if (!(result instanceof Bundles.Added a)) {
+            Throwable e = (Throwable) result;
+            say(Lang.t("msg.bundle_failed", bundleName, String.valueOf(e.getMessage())), DANGER);
+            return;
+        }
+        List<LayerConfig.Layer> layers = assets.editable().layers;
+        layers.addAll(a.layers());
+        selected = layers.size() - 1;
+        save();
+        refreshFiles(true);
+        tab = Tab.EDIT;
+        rightScroll = 0;
+        if (a.folder() != null) selectFolder(a.folder()); else selectedFolder = null;
+        int missing = a.layers().size() - (int) a.layers().stream().filter(l -> l.texture != null).count();
+        say(Lang.t(missing > 0 ? "msg.bundle_added_missing" : "msg.bundle_added", bundleName, a.layers().size(), missing), missing > 0 ? WARN : ACCENT);
+        for (String n : a.notes()) Assets.LOG.info("[bundle {}] {}", bundleName, n);
     }
 
     // =================================================================== input

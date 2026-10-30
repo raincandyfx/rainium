@@ -2,6 +2,13 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.8 (dev build)
+
+- **Folders and zips are detected automatically.** Drop a folder or a .zip of models into the rainium folder and it appears in the Add tab's "Your models" list. One click unpacks it (zips go to `imports/`), converts every .obj, .gltf and .glb inside, matches each model to its texture, and adds them as layers in a folder named after it.
+- **Textures are assigned for you:** an OBJ's own material file (`map_Kd`) is followed first, a texture embedded in a glTF/GLB is used as is, and otherwise the closest file name wins (`dragon.obj` with `dragon_diffuse.png`). Normal, specular, glow and similar maps are never picked as the colour texture. A model with several materials is split per material, each with its own texture. JPG and similar textures are converted to PNG.
+- Models clearly not sized in blocks are fitted to two blocks across. Anything that couldn't be matched or read is listed in the game log.
+- Zips are unpacked safely: only model and image files, nothing written outside the folder, with limits on size and file count.
+
 ## 0.7.7 (dev build)
 
 - **Showing icon** is centred in its circle (the Undo and Redo icons use the same exact centring).
