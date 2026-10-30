@@ -219,7 +219,7 @@ final class Assets {
         List<LayerConfig.Layer> layers = new ArrayList<>();
         List<String> hiddenFolders = new ArrayList<>();
         for (Presets.Info p : presets.list()) {
-            if (Presets.bundledIds().contains(p.id())) continue;   // sample models are added from the Add tab, not installed on the first run
+            if (p.id().equals(Presets.HALO) || Presets.bundledIds().contains(p.id())) continue;   // sample models (Gold halo included) are only offered in the Add tab
             try {
                 List<LayerConfig.Layer> got = presets.install(p.id());
                 layers.addAll(got);

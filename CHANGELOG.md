@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.3 (dev build)
+
+- **Fresh installs start empty:** the Gold halo is no longer added (switched off) on the first launch; it is only offered in the Add tab, like the other sample models. Existing setups are unchanged.
+
 ## 0.8.2 (dev build)
 
 - **New sample model: Glow halo.** A soft glowing ring over the head with pink sparkles, in Add > Presets. Presets are now data-driven, so more sample models can be added the same way.
