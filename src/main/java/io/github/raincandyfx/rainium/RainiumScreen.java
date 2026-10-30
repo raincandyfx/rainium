@@ -937,27 +937,62 @@ public final class RainiumScreen extends Screen {
         return y + ROW + GAP;
     }
 
+    /** One preset card; compact cards (side-by-side variants) have a fixed height. Returns the card's height. */
+    private int presetCard(GuiGraphicsExtractor g, int mx, int my, Presets.Info p, int x, int y, int w, int fixedH, boolean compact) {
+        int th = Thumbs.SIZE + 4;
+        boolean ok = p.available();
+        String chip = Lang.t(ok ? "preset.add" : "preset.needs_mod");
+        int cwid = font.width(body(chip)) + 8;
+        int ch;
+        if (compact) {   // side-by-side variants: picture on top, name and Add underneath
+            ch = fixedH;
+            boolean hov = in(mx, my, x, y, w, ch);
+            g.fill(x, y, x + w, y + ch, hov ? FIELD_HOVER : FIELD);
+            g.fill(x, y, x + 2, y + ch, ACCENT);
+            thumb(g, x + (w - Thumbs.SIZE) / 2, y + 4, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
+            String nm = fit(p.name(), w - 8);
+            g.text(font, body(nm), x + (w - font.width(body(nm))) / 2, y + 7 + Thumbs.SIZE, TEXT, false);
+            g.fill(x + (w - cwid) / 2, y + ch - 14, x + (w + cwid) / 2, y + ch - 4, ACCENT);
+            g.text(font, body(chip), x + (w - cwid) / 2 + 4, y + ch - 13, ACCENT_INK, false);
+            hits.add(new Hit(x, y, w, ch, () -> addPreset(p), null));
+            return ch;
+        }
+        List<String> lines = wrapLines(p.description(), w - 12 - th, 2);
+        ch = Math.max(19 + lines.size() * 10 + (ok ? 3 : 15), th + 6);
+        boolean hov = in(mx, my, x, y, w, ch);
+        g.fill(x, y, x + w, y + ch, ok ? (hov ? FIELD_HOVER : FIELD) : (hov ? 0xF00A1247 : 0xB0050B33));
+        g.fill(x, y, x + 2, y + ch, ok ? ACCENT : FAINT);
+        if (ok) thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
+        else g.fill(x + 5, y + (ch - Thumbs.SIZE) / 2, x + 5 + Thumbs.SIZE, y + (ch - Thumbs.SIZE) / 2 + Thumbs.SIZE, 0x30FFFFFF);   // no model to show until the mod is found
+        g.text(font, body(fit(p.name(), w - 12 - th - (ok ? cwid + 4 : 0))), x + 7 + th, y + 5, ok ? TEXT : FAINT, false);
+        for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7 + th, y + 18 + li * 10, ok ? MUTED : FAINT, false);
+        int cy = ok ? y + 4 : y + 19 + lines.size() * 10;
+        int cx = ok ? x + w - cwid - 5 : x + 7 + th;
+        g.fill(cx, cy, cx + cwid, cy + 10, ok ? ACCENT : 0x40FFFFFF);
+        g.text(font, body(chip), cx + 4, cy + 1, ok ? ACCENT_INK : FAINT, false);
+        if (ok) hits.add(new Hit(x, y, w, ch, () -> addPreset(p), null));
+        else hits.add(new Hit(x, y, w, ch, () -> { assets.openLink(Presets.WING_MOD_URL); say(Lang.t("msg.opening_mod_page"), MUTED); }, null));
+        if (p.id().equals("halo")) mark("preset_halo", x, y, w, ch);
+        return ch;
+    }
+
     // ------------------------------------------------------------------- Add
     private int addTab(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
         y = section(g, x, y, w, "presets");
         int th = Thumbs.SIZE + 4;   // thumbnail column
-        for (Presets.Info p : presetList) {
-            List<String> lines = wrapLines(p.description(), w - 12 - th, 2);
-            int ch = Math.max(19 + lines.size() * 10 + 3, th + 6);
-            boolean hov = in(mx, my, x, y, w, ch), ok = p.available();
-            g.fill(x, y, x + w, y + ch, ok ? (hov ? FIELD_HOVER : FIELD) : (hov ? 0xF00A1247 : 0xB0050B33));
-            g.fill(x, y, x + 2, y + ch, ok ? ACCENT : FAINT);
-            if (ok) thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
-            else g.fill(x + 5, y + (ch - Thumbs.SIZE) / 2, x + 5 + Thumbs.SIZE, y + (ch - Thumbs.SIZE) / 2 + Thumbs.SIZE, 0x30FFFFFF);   // no model to show until the mod is found
-            g.text(font, body(fit(p.name(), w - 46 - th)), x + 7 + th, y + 5, ok ? TEXT : FAINT, false);
-            for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7 + th, y + 18 + li * 10, ok ? MUTED : FAINT, false);
-            String chip = Lang.t(ok ? "preset.add" : "preset.needs_mod");
-            int cwid = font.width(body(chip)) + 8;
-            g.fill(x + w - cwid - 5, y + 4, x + w - 5, y + 14, ok ? ACCENT : 0x40FFFFFF);
-            g.text(font, body(chip), x + w - cwid - 1, y + 5, ok ? ACCENT_INK : FAINT, false);
-            if (ok) hits.add(new Hit(x, y, w, ch, () -> addPreset(p), null));
-            else hits.add(new Hit(x, y, w, ch, () -> { assets.openLink(Presets.WING_MOD_URL); say(Lang.t("msg.opening_mod_page"), MUTED); }, null));
-            if (p.id().equals("halo")) mark("preset_halo", x, y, w, ch);
+        for (int pi = 0; pi < presetList.size(); pi++) {
+            Presets.Info p = presetList.get(pi);
+            if (p.group() != null && pi + 1 < presetList.size() && p.group().equals(presetList.get(pi + 1).group())) {   // variants of one model: side by side
+                Presets.Info q = presetList.get(pi + 1);
+                int pw2 = (w - GAP) / 2;
+                int ch = Thumbs.SIZE + 34;
+                presetCard(g, mx, my, p, x, y, pw2, ch, true);
+                presetCard(g, mx, my, q, x + pw2 + GAP, y, pw2, ch, true);
+                y += ch + GAP;
+                pi++;
+                continue;
+            }
+            int ch = presetCard(g, mx, my, p, x, y, w, 0, false);
             y += ch + GAP;
         }
 

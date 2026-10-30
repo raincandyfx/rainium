@@ -23,8 +23,9 @@ import java.util.zip.ZipFile;
  */
 final class Presets {
     /** A preset the editor can offer (only ones that can actually be installed are listed). */
-    record Info(String id, String name, String description, boolean available) {
-        Info(String id, String name, String description) { this(id, name, description, true); }
+    record Info(String id, String name, String description, boolean available, String group) {
+        Info(String id, String name, String description) { this(id, name, description, true, null); }
+        Info(String id, String name, String description, boolean available) { this(id, name, description, available, null); }
     }
 
     /** Where to get the mod Eyed wings is read from (opened when its greyed-out card is clicked). */
@@ -62,7 +63,11 @@ final class Presets {
         boolean wings = wingSource() != null || Files.exists(assets.dir().resolve("presets/wings/wings_mesh.json"));
         out.add(new Info(WINGS, displayName(WINGS), Lang.t(wings ? "preset.wings.description" : "preset.wings.needs_mod"), wings));
         out.add(new Info(HALO, displayName(HALO), Lang.t("preset.halo.description")));
-        for (String id : bundledIds()) out.add(new Info(id, displayName(id), Lang.t("preset." + id + ".description")));
+        for (String id : bundledIds()) {
+            String group = null;
+            try { if (bundledSet(id).get("group") instanceof String gr && !gr.isBlank()) group = gr; } catch (IOException ignored) { }   // sets with the same "group" are shown side by side
+            out.add(new Info(id, displayName(id), Lang.t("preset." + id + ".description"), true, group));
+        }
         return out;
     }
 

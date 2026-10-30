@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.5 (dev build)
+
+- **New sample model: Nocturne** (a moon inside a glowing halo with ribbons), in two forms shown side by side in Add > Presets: the base form and the glowing Ascended form.
+
 ## 0.8.4 (dev build)
 
 - **Eyed wings is always listed:** without the mod it is read from, the preset is greyed out with "Needs mod"; clicking it opens the mod's page. Keep the mod disabled: Rainium finds it in the `mods` folder either way. It ungreys as soon as the mod is found.

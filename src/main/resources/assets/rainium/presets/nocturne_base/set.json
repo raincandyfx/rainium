@@ -1,0 +1,123 @@
+{
+  "name": "Nocturne base",
+  "format": "rainium-set-1",
+  "group": "nocturne",
+  "layers": [
+    {
+      "name": "Halo",
+      "mesh": "model.json",
+      "groups": [
+        "Halo_Mat"
+      ],
+      "texture": "halo.png",
+      "render": "translucent_emissive",
+      "fullbright": true,
+      "anchor": "root",
+      "coords": "y_up",
+      "offset": [
+        0,
+        1.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": 1,
+      "physics": false
+    },
+    {
+      "name": "Body",
+      "mesh": "model.json",
+      "groups": [
+        "Equip_Catalyst_Brisingamen_Mat"
+      ],
+      "texture": "body.png",
+      "render": "cutout_no_cull",
+      "anchor": "root",
+      "coords": "y_up",
+      "offset": [
+        0,
+        1.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": 1,
+      "physics": false
+    },
+    {
+      "name": "Dress",
+      "mesh": "model.json",
+      "groups": [
+        "Equip_Catalyst_Brisingamen_Dress_Mat"
+      ],
+      "texture": "body.png",
+      "render": "cutout_no_cull",
+      "anchor": "root",
+      "coords": "y_up",
+      "offset": [
+        0,
+        1.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": 1,
+      "physics": false
+    },
+    {
+      "name": "Moon",
+      "mesh": "model.json",
+      "groups": [
+        "Equip_Catalyst_Brisingamen_Moon_Mat"
+      ],
+      "texture": "moon.png",
+      "render": "cutout_no_cull",
+      "anchor": "root",
+      "coords": "y_up",
+      "offset": [
+        0,
+        1.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": 1,
+      "physics": false
+    },
+    {
+      "name": "Moon glow",
+      "mesh": "model.json",
+      "groups": [
+        "Equip_Catalyst_Brisingamen_Moon_Mat"
+      ],
+      "texture": "moon_glow.png",
+      "render": "emissive",
+      "anchor": "root",
+      "coords": "y_up",
+      "offset": [
+        0,
+        1.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": 1,
+      "physics": false
+    }
+  ]
+}
