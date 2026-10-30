@@ -2,6 +2,12 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.9 (dev build)
+
+- **First-run tutorial.** The first time you start the game with Rainium, the main menu offers a short tour (skip it any time, from any step, with a confirmation). It starts on the main menu by pointing at **Mods**, follows you to Rainium, then walks through the editor in seven steps with a "Step n / 7" progress bar: finding Rainium, the editor's four areas, adding models (your own files, folders and zips, and the Gold halo), shaping and placing, managing layers, particles with Hue and Tint, and who sees it.
+- It only shows once. The flag is saved in the rainium folder (`tutorial.state`), so updates and Undo never bring it back. **Settings > Replay tutorial** runs it again.
+- **What's new popup:** every main release (x.y.0) shows one popup on the main menu the first time you start the game after updating.
+
 ## 0.7.8 (dev build)
 
 - **Folders and zips are detected automatically.** Drop a folder or a .zip of models into the rainium folder and it appears in the Add tab's "Your models" list. One click unpacks it (zips go to `imports/`), converts every .obj, .gltf and .glb inside, matches each model to its texture, and adds them as layers in a folder named after it.

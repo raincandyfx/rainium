@@ -24,6 +24,7 @@ public final class RainiumClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ASSETS.init();
+        Tutorial.init(ASSETS.dir());
         Updater.checkAsync(ASSETS.editable().autoUpdate, ASSETS.editable().devUpdates);
         try {
             CaptureRenderer.register();
@@ -37,6 +38,12 @@ public final class RainiumClient implements ClientModInitializer {
             }
             if (renderer.getClass().getSimpleName().equals("ArmorStandRenderer")) registerStandLayer(renderer, helper);
         });
+
+        try {
+            TutorialHooks.register();
+        } catch (Throwable t) {   // the tour is optional; never stop the mod loading
+            Assets.LOG.warn("[rainium] the tutorial is unavailable: " + t);
+        }
 
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("rainium", "main"));
         openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.rainium.open", InputConstants.Type.KEYBOARD, KEY_K, category));

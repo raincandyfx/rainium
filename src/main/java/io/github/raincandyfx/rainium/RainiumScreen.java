@@ -73,6 +73,20 @@ public final class RainiumScreen extends Screen {
     private int stepIndex = 1;
     private int rightScroll, rightContent, leftScroll;
 
+    // Where things are this frame ({x, y, w, h}), for the tutorial to point at. Clipped to the panel they scroll in.
+    private final java.util.Map<String, int[]> marks = new java.util.HashMap<>(), rawMarks = new java.util.HashMap<>();
+    private int[] markClip;
+    private void mark(String id, int x, int y, int w, int h) {
+        rawMarks.put(id, new int[]{x, y, w, h});
+        if (markClip != null) {
+            int x0 = Math.max(x, markClip[0]), y0 = Math.max(y, markClip[1]), x1 = Math.min(x + w, markClip[2]), y1 = Math.min(y + h, markClip[3]);
+            if (x1 <= x0 || y1 <= y0) { marks.remove(id); return; }
+            x = x0; y = y0; w = x1 - x0; h = y1 - y0;
+        }
+        marks.put(id, new int[]{x, y, w, h});
+    }
+    private void markFirst(String id, int x, int y, int w, int h) { if (!rawMarks.containsKey(id)) mark(id, x, y, w, h); }
+
     private String toast = "";
     private int toastColor = TEXT;
     private long toastUntil;
@@ -134,6 +148,58 @@ public final class RainiumScreen extends Screen {
         super(Component.translatable("rainium.name"));
         this.parent = parent;
         currentSnapshot = assets.snapshot();
+        Tutorial.editorOpened();
+    }
+
+    /** What the tour asks of this editor. */
+    private final Tutorial.Host tutorialHost = new Tutorial.Host() {
+        @Override public void tab(String name) {
+            Tab t = Tab.valueOf(name.toUpperCase(Locale.ROOT));
+            if (tab != t || impFile != null) {
+                tab = t;
+                impFile = null;
+                impParsed = null;
+                impResult = null;
+                rightScroll = 0;
+                closePopups();
+                if (t == Tab.ADD) refreshFiles(true);
+            }
+        }
+        @Override public void ensureHalo() {
+            if (haloIndex() >= 0) return;
+            for (Presets.Info p : presetList) if (p.id().equals("halo")) { addPreset(p); return; }
+        }
+        @Override public void selectHalo() {
+            int i = haloIndex();
+            if (i < 0) return;
+            LayerConfig.Layer l = assets.editable().layers.get(i);
+            if (l.folder != null && !assets.editable().folder(l.folder).enabled) {   // the bundled halo starts switched off
+                assets.editable().folder(l.folder).enabled = true;
+                save();
+            }
+            selected = i;
+            selectedFolder = null;
+            tab = Tab.EDIT;
+            rightScroll = 0;
+        }
+        @Override public void ensureParticle() {
+            List<LayerConfig.Layer> layers = assets.editable().layers;
+            for (int i = 0; i < layers.size(); i++) if (layers.get(i).isParticles()) {
+                selected = i;
+                selectedFolder = null;
+                tab = Tab.EDIT;
+                rightScroll = 0;
+                return;
+            }
+            addParticles(ParticleStarters.NAMES[0]);
+        }
+        @Override public void openEditor() { }
+    };
+
+    private int haloIndex() {
+        List<LayerConfig.Layer> layers = assets.editable().layers;
+        for (int i = layers.size() - 1; i >= 0; i--) if (layers.get(i).preset != null && layers.get(i).preset.startsWith("halo:")) return i;   // the newest one
+        return -1;
     }
 
     private static boolean updateAnnounced;
@@ -193,6 +259,8 @@ public final class RainiumScreen extends Screen {
         infoHover = null;
         infoIds.clear();
         tipCandidate = null;
+        marks.clear();
+        rawMarks.clear();
         String cap = captureDone;
         if (cap != null) {
             captureDone = null;
@@ -226,6 +294,9 @@ public final class RainiumScreen extends Screen {
         if (popState != (popState = java.util.Objects.hash(tab, selected, selectedFolder))) closePopups();   // a different tab or layer: close any open list
         watermark(g);
         header(g, mx, my, W);
+        mark("layers", 6, top, lw, bottom - top);
+        mark("panel", W - 6 - rw, top, rw, bottom - top);
+        mark("preview", 6 + lw + 6, top, W - lw - rw - 24, bottom - top);
         layersPanel(g, mx, my, 6, top, lw, bottom - top);
         sidePanel(g, mx, my, W - 6 - rw, top, rw, bottom - top);
         int pvx = 6 + lw + 6, pvw = W - lw - rw - 24;
@@ -236,6 +307,7 @@ public final class RainiumScreen extends Screen {
         dropList(g, mx, my);
         infoCard(g, mx, my);
         tooltip(g, mx, my);
+        Tutorial.draw(g, font, W, H, mx, my, marks, tutorialHost, true);
     }
 
     /** Config problems stay visible above the preview until fixed. */
@@ -300,6 +372,7 @@ public final class RainiumScreen extends Screen {
 
         // the tabs, as the site's menu: the open one gets the triangle
         int x = 8 + strongWidth(title) + 14;
+        final int tabsX = x - 3;
         for (Tab t : Tab.values()) {
             String n = Lang.t("tab." + t.name().toLowerCase(Locale.ROOT)).toUpperCase(Locale.ROOT);
             int tw = strongWidth(n);
@@ -309,6 +382,7 @@ public final class RainiumScreen extends Screen {
             hits.add(new Hit(x - 3, 4, tw + 6, 18, () -> { tab = t; rightScroll = 0; if (t == Tab.ADD) refreshFiles(true); }, null));
             x += tw + 14;
         }
+        mark("tabs", tabsX, 4, x - 14 - tabsX + 3, 18);
 
         // the site's button hints: Showing, Undo, Redo, then Done
         LayerConfig c = assets.editable();
@@ -324,8 +398,10 @@ public final class RainiumScreen extends Screen {
         int full = 3 * 24 + strongWidth(Lang.t("button.redo").toUpperCase(Locale.ROOT)) + strongWidth(Lang.t("button.undo").toUpperCase(Locale.ROOT))
             + strongWidth(show.toUpperCase(Locale.ROOT));
         boolean compact = rx - full < x;   // not enough room: keys only (their labels show as tooltips)
+        final int redoRight = rx;
         rx = hint(g, mx, my, rx, "↻", Lang.t("button.redo"), !redoStack.isEmpty(), compact, this::redo);
         rx = hint(g, mx, my, rx, "↺", Lang.t("button.undo"), !undoStack.isEmpty(), compact, this::undo);
+        mark("undoredo", rx + 8, 5, redoRight - rx - 6, 16);
         hint(g, mx, my, rx, c.enabled ? "●" : "○", show, true, compact,
             () -> { c.enabled = !c.enabled; save(); say(Lang.t(c.enabled ? "msg.layers_shown" : "msg.layers_hidden"), MUTED); });
         g.fill(Math.max(x, W * 11 / 20), 24, W, 25, 0xB0FFFFFF);
@@ -374,6 +450,7 @@ public final class RainiumScreen extends Screen {
         }
 
         int before = hits.size();
+        markClip = new int[]{x, listTop, x + w, listBottom};
         g.enableScissor(x, listTop, x + w, listBottom);
         int ry = listTop - leftScroll, startY = ry;
         int rx = x, rwid = w - 4;
@@ -392,6 +469,7 @@ public final class RainiumScreen extends Screen {
             }
         }
         g.disableScissor();
+        markClip = null;
         int contentH = ry - startY;
         for (int i = hits.size() - 1; i >= before; i--) {
             Hit hh = hits.get(i);
@@ -412,6 +490,7 @@ public final class RainiumScreen extends Screen {
         by += ROW + GAP + 2;
         boolean has = !layers.isEmpty();
         int half = (w - 4 - GAP) / 2;
+        mark("updown", x, by, w - 4, ROW);
         iconButton(g, mx, my, x, by, half, Lang.t("button.up"), has, () -> move(-1));
         iconButton(g, mx, my, x + half + GAP, by, w - 4 - half - GAP, Lang.t("button.down"), has, () -> move(1));
     }
@@ -443,6 +522,7 @@ public final class RainiumScreen extends Screen {
         float ax = rx + 8f, ay = ry + 8f;   // drawn, not a font symbol: right when folded, down when open
         if (f.collapsed) triangle(g, ax - 2f, ay - 3.5f, ax - 2f, ay + 3.5f, ax + 2.5f, ay, ah ? PAPER : CYAN);
         else triangle(g, ax - 3.5f, ay - 2f, ax + 3.5f, ay - 2f, ax, ay + 2.5f, ah ? PAPER : CYAN);
+        markFirst("fold", rx + 2, ry, 12, rh - 2);
         hits.add(new Hit(rx + 2, ry, 12, rh - 2, () -> { f.collapsed = !f.collapsed; save(); }, null));
         rowName(g, "layer", "folder:" + e.folder(), e.folder(), rx + 16, ry + 4, rwid - 38, sel, f.enabled, hov);
         visibilityBox(g, mx, my, rx + rwid - 18, ry + 4, f.enabled, () -> {
@@ -482,6 +562,7 @@ public final class RainiumScreen extends Screen {
     /** Show / hide: a small ring, filled when shown. */
     private void visibilityBox(GuiGraphicsExtractor g, int mx, int my, int ex, int ey, boolean on, Runnable flip) {
         boolean eh = in(mx, my, ex - 3, ey - 3, 14, 14);
+        markFirst("eye", ex - 3, ey - 3, 14, 14);
         ring(g, ex + 4f, ey + 4f, 4.5f, 1.2f, eh ? PAPER : on ? CYAN : FAINT);
         if (on) disc(g, ex + 4f, ey + 4f, 2.2f, eh ? PAPER : CYAN);
         hits.add(new Hit(ex - 3, ey - 3, 14, 14, flip, null));
@@ -531,6 +612,7 @@ public final class RainiumScreen extends Screen {
         int viewH = cBottom - cTop;
         rightScroll = clamp(rightScroll, 0, Math.max(0, rightContent - viewH));
         int before = hits.size();
+        markClip = new int[]{x + 1, cTop, x + w - 1, cBottom};
         g.enableScissor(x + 1, cTop, x + w - 1, cBottom);
         int cy = cTop - rightScroll, start = cy;
         cy = switch (tab) {
@@ -541,7 +623,15 @@ public final class RainiumScreen extends Screen {
         hits.addAll(lateHits);   // info buttons sit on top of their row's own buttons
         lateHits.clear();
         g.disableScissor();
+        markClip = null;
         rightContent = cy - start + 6;
+        String focus = Tutorial.pendingFocus();   // the tour wants something here in view: scroll to it once
+        if (focus != null && rawMarks.containsKey(focus)) {
+            int[] m = rawMarks.get(focus);
+            boolean seen = m[1] >= cTop && m[1] + Math.min(m[3], viewH) <= cBottom;
+            int to = clamp(rightScroll + m[1] - cTop - 4, 0, Math.max(0, rightContent - viewH));
+            if (seen || to == rightScroll) Tutorial.focusDone(); else rightScroll = to;
+        }
         for (int i = hits.size() - 1; i >= before; i--) {
             Hit hh = hits.get(i);
             if (hh.y() + hh.h() <= cTop || hh.y() >= cBottom) hits.remove(i);
@@ -865,9 +955,11 @@ public final class RainiumScreen extends Screen {
             g.fill(x + w - cwid - 5, y + 4, x + w - 5, y + 14, ACCENT);
             g.text(font, body(chip), x + w - cwid - 1, y + 5, ACCENT_INK, false);
             hits.add(new Hit(x, y, w, ch, () -> addPreset(p), null));
+            if (p.id().equals("halo")) mark("preset_halo", x, y, w, ch);
             y += ch + GAP;
         }
 
+        final int startersTop = y + 5;
         y = section(g, x, y + 5, w, "particles");
         int pw = (w - GAP) / 2;
         String[] starters = ParticleStarters.NAMES;
@@ -879,6 +971,8 @@ public final class RainiumScreen extends Screen {
             if (i % 2 == 1 || i == starters.length - 1) y += ROW + GAP;
         }
 
+        mark("starters", x, startersTop, w, y - startersTop);
+        final int modelsTop = y + 5;
         y = section(g, x, y + 5, w, "your_models");
         List<String> own = new ArrayList<>();
         for (String f : meshFiles) if (!f.startsWith("presets/")) own.add(f);
@@ -900,6 +994,7 @@ public final class RainiumScreen extends Screen {
         }
         y += 4;
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.open_folder"), assets::openFolder);
+        mark("yourmodels", x, modelsTop, w, y - modelsTop);
         return y;
     }
 
@@ -994,6 +1089,7 @@ public final class RainiumScreen extends Screen {
         rightScroll = 0;
         save();
         say(Lang.t("msg.added_file", l.label), ACCENT);
+        Tutorial.particleAdded();
     }
 
     private void addPreset(Presets.Info p) {
@@ -1009,6 +1105,7 @@ public final class RainiumScreen extends Screen {
             rightScroll = 0;
             if (folder != null) selectFolder(folder); else selectedFolder = null;
             say(Lang.t(add.size() == 1 ? "msg.added_one" : "msg.added", p.name(), add.size()), ACCENT);
+            Tutorial.presetAdded(p.id());
         } catch (Exception e) {
             say(Lang.t("msg.preset_failed", p.name(), e.getMessage()), DANGER);
         }
@@ -1227,6 +1324,9 @@ public final class RainiumScreen extends Screen {
             p.bob = def.bob; p.bobHz = def.bobHz;
             save();
         });
+
+        y = section(g, x, y + 4, w, "tutorial");
+        y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.replay_tutorial"), Tutorial::replay);
 
         y = section(g, x, y + 4, w, "files");
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.open_folder"), assets::openFolder);
@@ -1620,6 +1720,7 @@ public final class RainiumScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         double mx = event.x(), my = event.y();
+        if (Tutorial.click(mx, my)) return true;
         dragging = false;
         if (editId != null) {
             if (editRect != null && in(mx, my, editRect[0], editRect[1], editRect[2], editRect[3])) return true;
@@ -1652,6 +1753,7 @@ public final class RainiumScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+        if (Tutorial.blocks(mx, my)) return true;
         if (editId != null) commitEdit();
         int d = sy > 0 ? 1 : sy < 0 ? -1 : 0;
         if (d == 0) return false;
@@ -1685,9 +1787,12 @@ public final class RainiumScreen extends Screen {
     }
     // @port keys end
 
+    static boolean isEsc(int key) { return key == SC_ESC; }
+
     @Override
     public boolean keyPressed(KeyEvent event) {
         int k = event.key();
+        if ((editId == null || k != SC_ESC) && Tutorial.key(k, editId == null)) return true;   // the tour owns Esc and the keys, except while typing a value
         if (editId != null) {
             boolean shift = down(SC_LSHIFT) || down(SC_RSHIFT);
             if (k == SC_V && (down(SC_LCTRL) || down(SC_RCTRL) || down(SC_LGUI) || down(SC_RGUI))) { paste(); return true; }
@@ -1812,14 +1917,14 @@ public final class RainiumScreen extends Screen {
     private static final FontDescription BODY = new FontDescription.Resource(Identifier.fromNamespaceAndPath("rainium", "body"));
 
     /** Text in the editor's text font. */
-    private static MutableComponent body(String s) {
+    static MutableComponent body(String s) {
         return Component.literal(s == null ? "" : s).withStyle(st -> st.withFont(BODY));
     }
 
     private static Component body(Component c) { return c; }
 
     /** Text styles: bold + italic means the site's display font (tabs, headings, buttons); otherwise the text font. */
-    private static Component styled(String s, boolean bold, boolean italic) {
+    static Component styled(String s, boolean bold, boolean italic) {
         // the same few labels are styled every frame, so each is built once (the results are never changed afterwards)
         if (STYLED.size() > 3000) STYLED.clear();
         return STYLED.computeIfAbsent((bold ? "b" : "-") + (italic ? "i" : "-") + s, k -> {
@@ -2424,6 +2529,7 @@ public final class RainiumScreen extends Screen {
 
     /** Hue shift: a stepper (type or scroll for exact values) and a strip to click a shift directly. */
     private int hue(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Layer l) {
+        int y0 = y;
         exact(v -> { l.hue = Hue.normalize((float) round(v)); save(); });
         y = stepper(g, mx, my, x, y, w, "hue", hueText(l.hue), d -> { l.hue = Hue.normalize(l.hue + d * HUE_STEPS[stepIndex]); save(); });
         // the strip shows what a red pixel becomes at each shift from -180° (left) to +180° (right)
@@ -2437,6 +2543,7 @@ public final class RainiumScreen extends Screen {
         }
         int mxk = bx + Math.round(bw * (Hue.normalize(l.hue) + 180f) / 360f);
         g.fill(mxk - 1, sy - 1, mxk + 1, sy + sh + 1, TEXT);
+        mark("hue", x, y0, w, sy + sh + GAP + 1 - y0);
         return sy + sh + GAP + 1;
     }
 
@@ -2444,6 +2551,7 @@ public final class RainiumScreen extends Screen {
 
     /** Tint: how strongly the layer is coloured towards a colour, and a strip to pick the colour. */
     private int tint(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.Layer l) {
+        final int yStart = y;
         float[] t = Hue.tintOf(l.color);
         if (t[1] > 0) lastTintHue = t[0];
         final float hue = t[1] > 0 ? t[0] : lastTintHue;
@@ -2470,6 +2578,7 @@ public final class RainiumScreen extends Screen {
             int mxk = bx + Math.round(bw * hue / 360f);
             g.fill(mxk - 1, sy - 1, mxk + 1, sy + sh + 1, TEXT);
         }
+        mark("tint", x, yStart, w, sy + sh + GAP + 1 - yStart);
         return sy + sh + GAP + 1;
     }
 

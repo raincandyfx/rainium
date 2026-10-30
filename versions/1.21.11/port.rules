@@ -8,6 +8,9 @@
 # Screens: 26.x renamed GuiGraphics and the render methods; the screen lives on Minecraft itself.
 *                     ||  \bGuiGraphicsExtractor\b                 ||  GuiGraphics
 RainiumScreen.java    ||  \bg\.text\(                              ||  g.drawString(
+Tutorial.java         ||  \bg\.text\(                              ||  g.drawString(
+TutorialHooks.java    ||  \bScreenEvents\.afterExtract\(          ||  ScreenEvents.afterRender(
+TutorialHooks.java    ||  \bScreens\.getWidgets\(               ||  Screens.getButtons(
 RainiumScreen.java    ||  \bg\.outline\(                           ||  g.renderOutline(
 RainiumScreen.java    ||  \bg\.entity\(                            ||  g.submitEntityRenderState(
 RainiumScreen.java    ||  \bextractRenderState\(                   ||  render(
