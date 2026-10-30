@@ -13,6 +13,7 @@ RainiumScreen.java    ||  \bg\.entity\(                            ||  g.submitE
 RainiumScreen.java    ||  \bextractRenderState\(                   ||  render(
 RainiumScreen.java    ||  \bextractBackground\(                    ||  renderBackground(
 RainiumScreen.java    ||  \bextractBlurredBackground\(            ||  renderBlurredBackground(
+RainiumScreen.java    ||  \bextractPanorama\(                     ||  renderPanorama(
 *                     ||  \.gui\.setScreen\(                       ||  .setScreen(
 *                     ||  \.gui\.screen\(\)                        ||  .screen
 

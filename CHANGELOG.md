@@ -2,6 +2,13 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.2 (dev build)
+
+- **The website's font:** tabs, headings, buttons and layer names use Archivo Condensed Black Italic, the font on the Rainium site (bundled under the SIL Open Font License).
+- **Water caustics:** faint light from the water's surface drifts across the editor's background.
+- **Brighter outside a world:** opened from the mod list, the editor now shows Minecraft's menu panorama behind a lighter blue, instead of a dark empty screen.
+- **Updater:** more reliable on networks where the check timed out. It uses an older, more compatible connection (HTTP/1.1), waits longer, tries once more before giving up, and says which step failed.
+
 ## 0.7.1 (dev build)
 
 The first step of the editor's new look, after the Rainium website and Persona 3 Reload's menus. Every setting is still where it was.

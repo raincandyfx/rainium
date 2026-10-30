@@ -1,0 +1,6 @@
+{
+  "providers": [
+    {"type": "ttf", "file": "rainium:archivo_condensed_black_italic.ttf", "size": 10.0, "oversample": 4.0, "shift": [0.0, 0.0], "skip": ""},
+    {"type": "reference", "id": "minecraft:default"}
+  ]
+}

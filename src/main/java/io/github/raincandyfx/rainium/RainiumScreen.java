@@ -9,8 +9,11 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.Identifier;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -154,9 +157,36 @@ public final class RainiumScreen extends Screen {
     @Override
     public void extractBackground(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         // the game behind the editor, blurred like other menus (follows the Menu Background Blur setting),
-        // under the website's deep-blue water; the preview is drawn later, so it stays sharp
+        // under the website's water; the preview is drawn later, so it stays sharp
+        boolean inWorld = Minecraft.getInstance().level != null;
+        if (!inWorld) extractPanorama(g, partialTick);   // opened from the mod list: the menu panorama, not an empty screen
         extractBlurredBackground(g);
-        g.fillGradient(0, 0, width, height, 0x7010237F, 0xB8040A2E);
+        if (inWorld) g.fillGradient(0, 0, width, height, 0x7010237F, 0xB8040A2E);
+        else g.fillGradient(0, 0, width, height, 0x6022B8F0, 0x901436C9);   // brighter, like the site's daytime water
+        caustics(g, inWorld ? 1f : 1.4f);
+    }
+
+    private static final Identifier CAUSTICS = Identifier.fromNamespaceAndPath("rainium", "textures/gui/caustics.png");
+
+    /** Faint light from the water's surface: two layers of the caustics tile drifting slowly past each other. */
+    private void caustics(GuiGraphicsExtractor g, float strength) {
+        float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
+        causticLayer(g, 1f, t * 5.0f, t * 2.6f, Math.round(0x22 * strength));
+        causticLayer(g, 0.62f, -t * 3.4f, t * 4.1f, Math.round(0x16 * strength));
+    }
+
+    private void causticLayer(GuiGraphicsExtractor g, float scale, float dx, float dy, int alpha) {
+        int tile = 256;   // the 512-pixel texture is drawn at 256 GUI units, so it stays smooth at high GUI scales
+        float ox = ((dx % tile) + tile) % tile, oy = ((dy % tile) + tile) % tile;
+        g.pose().pushMatrix();
+        g.pose().scale(scale, scale);
+        g.pose().translate(ox - tile, oy - tile);
+        int cols = (int) Math.ceil(width / scale / tile) + 2, rows = (int) Math.ceil(height / scale / tile) + 2;
+        int color = (Math.min(255, alpha) << 24) | 0xFFFFFF;
+        for (int i = 0; i < cols; i++)
+            for (int j = 0; j < rows; j++)
+                g.blit(RenderPipelines.GUI_TEXTURED, CAUSTICS, i * tile, j * tile, 0f, 0f, tile, tile, 512, 512, 512, 512, color);
+        g.pose().popMatrix();
     }
 
     /** The current tab's name, huge and faded behind everything, like the game's CONFIG and ITEM screens. */
@@ -395,7 +425,7 @@ public final class RainiumScreen extends Screen {
     /** A row's name: the triangle when selected, else italic. */
     private void rowName(GuiGraphicsExtractor g, String key, Object what, String name, int x, int y, int w, boolean sel, boolean on, boolean hov) {
         if (sel) selection(g, key, what, fitStrong(name, w), x, y);
-        else g.text(font, styled(fit(name, w), false, true), x, y, !on ? FAINT : hov ? PAPER : MENU, false);
+        else g.text(font, styled(fitStrong(name, w), true, true), x, y, !on ? FAINT : hov ? PAPER : MENU, false);
     }
 
     private int folderRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, LayerConfig.Entry e) {
@@ -1644,10 +1674,13 @@ public final class RainiumScreen extends Screen {
     // Drawn in real screen pixels (not GUI pixels), so slants, triangles and round ends stay smooth
     // at every GUI scale.
 
-    /** Bold / italic text (Minecraft's own font). */
+    /** The website's display font: Archivo Condensed Black Italic (SIL Open Font License; assets/rainium/font). */
+    private static final FontDescription DISPLAY = new FontDescription.Resource(Identifier.fromNamespaceAndPath("rainium", "display"));
+
+    /** Text styles: bold + italic means the site's display font (tabs, headings, buttons); otherwise Minecraft's font. */
     private static Component styled(String s, boolean bold, boolean italic) {
         MutableComponent c = Component.literal(s);
-        if (bold && italic) return c.withStyle(ChatFormatting.BOLD, ChatFormatting.ITALIC);
+        if (bold && italic) return c.withStyle(st -> st.withFont(DISPLAY));
         if (bold) return c.withStyle(ChatFormatting.BOLD);
         return italic ? c.withStyle(ChatFormatting.ITALIC) : c;
     }

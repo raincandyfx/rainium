@@ -147,11 +147,15 @@ final class Updater {
             Path dir = fl.getConfigDir().resolve("rainium/update");
             Files.createDirectories(dir);
 
-            HttpClient http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(10)).build();
-            HttpResponse<String> res = http.send(HttpRequest.newBuilder(URI.create(API))
+            // HTTP/1.1: Java's default HTTP/2 stalls on some networks, routers and antivirus filters
+            HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(20)).build();
+            step = "checking GitHub for releases";
+            HttpRequest listReq = HttpRequest.newBuilder(URI.create(API))
                 .header("Accept", "application/vnd.github+json")
                 .header("User-Agent", "Rainium-updater/" + current)
-                .timeout(Duration.ofSeconds(20)).build(), HttpResponse.BodyHandlers.ofString());
+                .timeout(Duration.ofSeconds(40)).build();
+            HttpResponse<String> res = withRetry(() -> http.send(listReq, HttpResponse.BodyHandlers.ofString()));
             if (res.statusCode() != 200) { finish(State.FAILED, "GitHub answered " + res.statusCode()); return; }
 
             Pick pick = choose(Json.parse(res.body()), current, minecraft, includeDev);
@@ -160,9 +164,11 @@ final class Updater {
             Path target = dir.resolve(pick.name());
             if (!(Files.isRegularFile(target) && looksRight(target, pick.version()))) {
                 Path part = dir.resolve(pick.name() + ".part");
-                HttpResponse<Path> dl = http.send(HttpRequest.newBuilder(URI.create(pick.url()))
+                step = "downloading " + pick.name();
+                HttpRequest dlReq = HttpRequest.newBuilder(URI.create(pick.url()))
                     .header("User-Agent", "Rainium-updater/" + current)
-                    .timeout(Duration.ofMinutes(2)).build(), HttpResponse.BodyHandlers.ofFile(part));
+                    .timeout(Duration.ofMinutes(4)).build();
+                HttpResponse<Path> dl = withRetry(() -> http.send(dlReq, HttpResponse.BodyHandlers.ofFile(part)));
                 if (dl.statusCode() != 200) { Files.deleteIfExists(part); finish(State.FAILED, "download answered " + dl.statusCode()); return; }
                 if (pick.size() >= 0 && Files.size(part) != pick.size()) { Files.deleteIfExists(part); finish(State.FAILED, "download was incomplete"); return; }
                 if (pick.sha256() != null && !pick.sha256().equalsIgnoreCase(sha256(part))) { Files.deleteIfExists(part); finish(State.FAILED, "download didn't match its checksum"); return; }
@@ -176,8 +182,27 @@ final class Updater {
             scheduleSwap(ownJar, target);
             finish(State.READY, pick.version());
             Assets.LOG.info("[rainium] update {} downloaded; it will be installed when the game closes", pick.version());
+        } catch (java.net.http.HttpConnectTimeoutException | java.net.ConnectException e) {
+            finish(State.FAILED, "couldn't reach GitHub while " + step + " (" + e.getClass().getSimpleName() + "); a firewall or antivirus may be blocking Java");
+        } catch (java.net.http.HttpTimeoutException e) {
+            finish(State.FAILED, "GitHub stopped answering while " + step + "; try again later");
         } catch (Exception e) {
-            finish(State.FAILED, e.getClass().getSimpleName() + (e.getMessage() == null ? "" : ": " + e.getMessage()));
+            finish(State.FAILED, e.getClass().getSimpleName() + (e.getMessage() == null ? "" : ": " + e.getMessage()) + " (while " + step + ")");
+        }
+    }
+
+    /** What the check was doing, for the message when it fails. */
+    private static volatile String step = "starting";
+
+    private interface Call<T> { T run() throws Exception; }
+
+    /** Runs a request, and once more after 3 seconds if the network timed out or refused the connection. */
+    private static <T> T withRetry(Call<T> call) throws Exception {
+        try {
+            return call.run();
+        } catch (java.net.http.HttpTimeoutException | java.net.ConnectException e) {
+            Thread.sleep(3000);
+            return call.run();
         }
     }
 
