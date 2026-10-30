@@ -2,6 +2,14 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.7.5 (dev build)
+
+- **Smooth edges:** slanted buttons, ribbons, circles and the selection triangle are drawn with anti-aliased edges instead of stair-steps, and the editor's text is rendered at a size that matches the GUI better.
+- **No more list thumbnails:** layers and folders in the list are plain rows again (they were too small to read, and cost time every frame). The Add tab keeps its larger previews.
+- **Info buttons:** the "i" is drawn inside its circle, and hovering it shows the explanation (click it to keep it open).
+- **Header buttons** (Showing, Undo, Redo) have their symbols centred.
+- **Tab change** fades in instead of sliding with a wipe.
+
 ## 0.7.4 (dev build)
 
 - **Dropdowns:** every list you used to step through with ‹ › (style, model, texture, step size and the rest) is now a dropdown that shows all the choices at once.
