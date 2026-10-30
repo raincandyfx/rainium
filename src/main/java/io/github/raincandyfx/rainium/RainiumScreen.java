@@ -941,6 +941,29 @@ public final class RainiumScreen extends Screen {
         return y + ROW + GAP;
     }
 
+    private final java.util.Map<String, Identifier> presetTextures = new java.util.HashMap<>();
+    private final java.util.Map<String, Integer> presetTextureSize = new java.util.HashMap<>();
+
+    /** The sample model's shipped picture as a real texture (sharp at any GUI scale); null if it can't be made. */
+    private Identifier presetTexture(Presets.Info p) {
+        if (!assets.presets.hasThumb(p.id())) return null;
+        if (presetTextures.containsKey(p.id())) return presetTextures.get(p.id());
+        Identifier id = null;
+        try {
+            byte[] b = assets.presets.thumbBytes(p.id());
+            if (b != null) {
+                com.mojang.blaze3d.platform.NativeImage img = com.mojang.blaze3d.platform.NativeImage.read(new java.io.ByteArrayInputStream(b));
+                id = Identifier.fromNamespaceAndPath("rainium", "ui/thumb_" + p.id());
+                presetTextureSize.put(p.id(), img.getWidth());
+                Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(() -> "rainium picture", img));
+            }
+        } catch (Throwable t) {
+            id = null;
+        }
+        presetTextures.put(p.id(), id);
+        return id;
+    }
+
     private int[] presetPicture(Presets.Info p) {
         return assets.presets.hasThumb(p.id())
             ? Thumbs.picture("preset:" + p.id(), () -> assets.presets.thumbPixels(p.id()))
@@ -965,7 +988,11 @@ public final class RainiumScreen extends Screen {
             boolean hov = in(mx, my, dx, dy, dw, dh);
             g.fill(dx, dy, dx + dw, dy + dh, hov ? FIELD_HOVER : 0x80050B33);
             g.outline(dx, dy, dw, dh, hov ? ACCENT : FIELD_EDGE);
-            thumb(g, dx + (dw - Thumbs.BIG) / 2, dy + 3, presetPicture(p));
+            Identifier tex = presetTexture(p);
+            if (tex != null) {
+                int ts = presetTextureSize.get(p.id());
+                g.blit(RenderPipelines.GUI_TEXTURED, tex, dx + (dw - Thumbs.BIG) / 2, dy + 3, 0, 0, Thumbs.BIG, Thumbs.BIG, ts, ts, ts, ts, 0xFFFFFFFF);
+            } else thumb(g, dx + (dw - Thumbs.BIG) / 2, dy + 3, presetPicture(p));
             String nm = fit(p.name(), dw - 6);
             g.text(font, body(nm), dx + (dw - font.width(body(nm))) / 2, dy + Thumbs.BIG + 6, TEXT, false);
             String chip = Lang.t("preset.add");

@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.7 (dev build)
+
+- **Sharp sample-model pictures:** the Nocturne pictures are now high-resolution images drawn as real textures instead of coarse pixel blocks.
+
 ## 0.8.6 (dev build)
 
 - **Nocturne is one entry with two forms:** a Nocturne heading in Add > Presets with **Base** and **Ascended** underneath, each with a proper picture instead of the rough silhouette.

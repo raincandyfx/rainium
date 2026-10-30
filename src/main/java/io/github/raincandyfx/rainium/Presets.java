@@ -78,12 +78,27 @@ final class Presets {
         return hasThumbCache.computeIfAbsent(id, k -> bundledIds().contains(k) && Presets.class.getResource(RES + k + "/thumb.png") != null);
     }
 
-    /** The shipped picture as ARGB pixels (Thumbs.BIG square), or null. */
-    int[] thumbPixels(String id) {
+    /** The shipped picture's PNG bytes (drawn as a real texture), or null. */
+    byte[] thumbBytes(String id) {
         try (InputStream in = Presets.class.getResourceAsStream(RES + id + "/thumb.png")) {
-            if (in == null) return null;
-            java.awt.image.BufferedImage im = javax.imageio.ImageIO.read(in);
-            if (im == null || im.getWidth() != Thumbs.BIG || im.getHeight() != Thumbs.BIG) return null;
+            return in == null ? null : in.readAllBytes();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /** The shipped picture shrunk to Thumbs.BIG square ARGB pixels (the fallback when it can't be drawn as a texture), or null. */
+    int[] thumbPixels(String id) {
+        try {
+            byte[] b = thumbBytes(id);
+            if (b == null) return null;
+            java.awt.image.BufferedImage src = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(b));
+            if (src == null) return null;
+            java.awt.image.BufferedImage im = new java.awt.image.BufferedImage(Thumbs.BIG, Thumbs.BIG, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g2 = im.createGraphics();
+            g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2.drawImage(src.getScaledInstance(Thumbs.BIG, Thumbs.BIG, java.awt.Image.SCALE_AREA_AVERAGING), 0, 0, null);
+            g2.dispose();
             int[] px = new int[Thumbs.BIG * Thumbs.BIG];
             im.getRGB(0, 0, Thumbs.BIG, Thumbs.BIG, px, 0, Thumbs.BIG);
             return px;
