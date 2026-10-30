@@ -957,7 +957,7 @@ function render(releases) {
   const showVer = (i) => {
     const x = DL[i];
     $("bigVer").textContent = x.version;
-    $("bigCap").textContent = `${x.jar.name === latest.jar.name ? "Latest release for" : x.dev ? "Dev build for" : "For"} Minecraft ${x.mc}, released ${fmtDate(x.date)}`;
+    $("bigCap").textContent = `${x.r.id === latest.r.id ? "Latest release for" : x.dev ? "Dev build for" : "For"} Minecraft ${x.mc}, released ${fmtDate(x.date)}`;
     $("betaNote").hidden = !isBeta(x);
     $("mainDl").href = x.jar.browser_download_url;
     $("mainDlLabel").textContent = `Download ${x.version}`;
@@ -965,7 +965,7 @@ function render(releases) {
     const n = (v) => v.toLocaleString("en-US");
     const total = ALL.reduce((t, a) => t + (a.download_count || 0), 0);
     $("dlCount").hidden = total <= 0;
-    $("dlCount").innerHTML = `<b>${n(total)}</b> download${total === 1 ? "" : "s"} in total` + (DL.length > 1 ? `, ${n(x.jar.download_count || 0)} of ${esc(x.version)}` : "");
+    $("dlCount").innerHTML = `<b>${n(total)}</b> download${total === 1 ? "" : "s"}`;
   };
   showVer(0);
   const sel = $("verSel");
