@@ -221,6 +221,8 @@
   "rainium.preset.add": "Add",
   "rainium.preset.halo": "Gold halo",
   "rainium.preset.halo.description": "A floating gold ornament behind the head (example model)",
+  "rainium.preset.glow_halo": "Glow halo",
+  "rainium.preset.glow_halo.description": "A soft glowing ring over the head with pink sparkles",
   "rainium.preset.wings": "Eyed wings",
   "rainium.preset.wings.description": "Feathered wings with eyes, glow and an optional aura",
   "rainium.preview.back": "Back",

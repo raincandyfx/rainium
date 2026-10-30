@@ -1,0 +1,87 @@
+{
+  "name": "Glow halo",
+  "format": "rainium-set-1",
+  "layers": [
+    {
+      "name": "Core",
+      "mesh": "halo.json",
+      "groups": [
+        "HaloCore_HaloCoreMat"
+      ],
+      "render": "emissive",
+      "anchor": "head",
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "physics": false
+    },
+    {
+      "name": "Glow",
+      "mesh": "halo.json",
+      "groups": [
+        "HaloGlow_HaloGlowMat"
+      ],
+      "render": "emissive",
+      "color": "#3CFF66FF",
+      "anchor": "head",
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "physics": false
+    },
+    {
+      "name": "Sparkles",
+      "particles": {
+        "shape": "sphere",
+        "area": 1,
+        "rate": 10,
+        "when": "always",
+        "life": 1.5,
+        "size": 0.37,
+        "end_size": 0.03,
+        "speed": 0.3,
+        "direction": "up",
+        "spread": 30,
+        "gravity": 0,
+        "drag": 0.5,
+        "spin": 0,
+        "fade": true,
+        "follow": false,
+        "upright": true
+      },
+      "texture": "minecraft:textures/particle/glitter_7.png",
+      "color": "#FFFF66B3",
+      "render": "translucent_emissive",
+      "fullbright": true,
+      "anchor": "body",
+      "offset": [
+        0,
+        0.35,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1,
+      "physics": true
+    }
+  ]
+}

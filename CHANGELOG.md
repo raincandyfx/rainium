@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.2 (dev build)
+
+- **New sample model: Glow halo.** A soft glowing ring over the head with pink sparkles, in Add > Presets. Presets are now data-driven, so more sample models can be added the same way.
+
 ## 0.8.1 (dev build)
 
 - **Tutorial:** the Mods and Configure highlights are found in more ways, so they keep working if Mod Menu's labels or layout change. If neither is found, the card still says what to click.

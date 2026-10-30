@@ -56,6 +56,7 @@ final class Presets {
         if (wingSource() != null || Files.exists(assets.dir().resolve("presets/wings/wings_mesh.json")))
             out.add(new Info(WINGS, displayName(WINGS), Lang.t("preset.wings.description")));
         out.add(new Info(HALO, displayName(HALO), Lang.t("preset.halo.description")));
+        for (String id : bundledIds()) out.add(new Info(id, displayName(id), Lang.t("preset." + id + ".description")));
         return out;
     }
 
@@ -63,7 +64,14 @@ final class Presets {
     java.util.Collection<Mesh.Group> previewGroups(String id) {
         try {
             String json = null;
-            if (id.equals(HALO)) {
+            if (bundledIds().contains(id)) {
+                for (Object o : (List<?>) bundledSet(id).get("layers")) {
+                    if (o instanceof java.util.Map<?, ?> m && m.get("mesh") instanceof String f) {
+                        try (InputStream in = Presets.class.getResourceAsStream(RES + id + "/" + f)) { if (in != null) json = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
+                        break;
+                    }
+                }
+            } else if (id.equals(HALO)) {
                 try (InputStream in = Presets.class.getResourceAsStream(HALO_RES + "halo.json")) { if (in != null) json = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8); }
             } else if (id.equals(WINGS)) {
                 Path copied = assets.dir().resolve("presets/wings/wings_mesh.json");
@@ -96,8 +104,16 @@ final class Presets {
         List<LayerConfig.Layer> layers = switch (id) {
             case WINGS -> wings();
             case HALO -> halo();
-            default -> throw new IllegalArgumentException("unknown preset " + id);
+            default -> {
+                if (!bundledIds().contains(id)) throw new IllegalArgumentException("unknown preset " + id);
+                yield bundled(id, true);
+            }
         };
+        if (bundledIds().contains(id)) {
+            String f = assets.editable().uniqueFolderName(String.valueOf(bundledSet(id).get("name")));
+            for (LayerConfig.Layer l : layers) l.folder = f;
+            return layers;
+        }
         String folder = assets.editable().uniqueFolderName(folderName(id));
         for (LayerConfig.Layer l : layers) l.folder = folder;
         return layers;
@@ -108,6 +124,10 @@ final class Presets {
         if (l.preset == null) return null;
         String id = l.preset.substring(0, Math.max(0, l.preset.indexOf(':')));
         try {
+            if (bundledIds().contains(id)) {
+                for (LayerConfig.Layer t : bundled(id, false)) if (l.preset.equals(t.preset)) return t;
+                return null;
+            }
             for (LayerConfig.Layer t : id.equals(WINGS) ? wings() : id.equals(HALO) ? halo() : List.<LayerConfig.Layer>of()) {
                 if (l.preset.equals(t.preset)) return t;
             }
@@ -182,6 +202,62 @@ final class Presets {
             }
         } catch (IOException ignored) { }
         return wingSource;
+    }
+
+    // ---------------------------------------------------------------- bundled sets
+    // Sample models shipped inside the mod: assets/rainium/presets/<id>/set.json (the same format as a shared set) plus
+    // its mesh and texture files, listed by id in assets/rainium/presets/index.txt. Gold halo is the older, hand-written one.
+    private static final String RES = "/assets/rainium/presets/";
+    private static List<String> bundledCache;
+
+    static synchronized List<String> bundledIds() {
+        if (bundledCache == null) {
+            List<String> ids = new ArrayList<>();
+            try (InputStream in = Presets.class.getResourceAsStream(RES + "index.txt")) {
+                if (in != null) for (String line : new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).split("\\R")) if (!line.isBlank() && !line.startsWith("#")) ids.add(line.trim());
+            } catch (IOException ignored) { }
+            bundledCache = ids;
+        }
+        return bundledCache;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static java.util.Map<String, Object> bundledSet(String id) throws IOException {
+        try (InputStream in = Presets.class.getResourceAsStream(RES + id + "/set.json")) {
+            if (in == null) throw new IOException("the mod jar is missing the " + id + " preset");
+            return (java.util.Map<String, Object>) Json.parse(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+    }
+
+    /** The set's layers, with their files in presets/&lt;id&gt;/ (copied out of the jar first when copy is true). */
+    @SuppressWarnings("unchecked")
+    private List<LayerConfig.Layer> bundled(String id, boolean copy) throws IOException {
+        java.util.Map<String, Object> set = bundledSet(id);
+        Path dst = assets.dir().resolve("presets/" + id);
+        String sub = "presets/" + id;
+        List<Object> ls = new ArrayList<>();
+        int n = 0;
+        for (Object o : (List<Object>) set.get("layers")) {
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>((java.util.Map<String, Object>) o);
+            for (String key : new String[]{"mesh", "texture"}) {
+                if (!(m.get(key) instanceof String f) || f.indexOf(':') >= 0) continue;   // a resource id like minecraft:... stays as it is
+                if (copy) {
+                    Files.createDirectories(dst);
+                    if (!Files.exists(dst.resolve(f))) {
+                        try (InputStream in = Presets.class.getResourceAsStream(RES + id + "/" + f)) {
+                            if (in == null) throw new IOException("the mod jar is missing " + f);
+                            Files.copy(in, dst.resolve(f));
+                        }
+                    }
+                }
+                m.put(key, sub + "/" + f);
+            }
+            m.put("preset", id + ":" + (n++));
+            ls.add(m);
+        }
+        java.util.Map<String, Object> wrapper = new java.util.LinkedHashMap<>();
+        wrapper.put("layers", ls);
+        return LayerConfig.fromJson(wrapper).layers;
     }
 
     // ---------------------------------------------------------------- Gold halo
