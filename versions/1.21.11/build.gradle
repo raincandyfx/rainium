@@ -105,3 +105,14 @@ jar {
     inputs.property 'archivesName', project.base.archivesName
     from('../../LICENSE') { rename { "${it}_${project.base.archivesName.get()}" } }
 }
+
+// ---- in-game test (test branch only)
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'rainium-gametest'
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true
+    }
+}

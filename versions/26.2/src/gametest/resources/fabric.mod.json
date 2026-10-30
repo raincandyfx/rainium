@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "rainium-gametest",
+  "version": "1.0.0",
+  "name": "Rainium game test",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["io.github.raincandyfx.rainium.RainiumGameTest"]
+  },
+  "depends": { "rainium": "*" }
+}

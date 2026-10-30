@@ -12,6 +12,7 @@ RainiumScreen.java    ||  \bg\.outline\(                           ||  g.renderO
 RainiumScreen.java    ||  \bg\.entity\(                            ||  g.submitEntityRenderState(
 RainiumScreen.java    ||  \bextractRenderState\(                   ||  render(
 RainiumScreen.java    ||  \bextractBackground\(                    ||  renderBackground(
+RainiumScreen.java    ||  \bextractBlurredBackground\(            ||  renderBlurredBackground(
 *                     ||  \.gui\.setScreen\(                       ||  .setScreen(
 *                     ||  \.gui\.screen\(\)                        ||  .screen
 

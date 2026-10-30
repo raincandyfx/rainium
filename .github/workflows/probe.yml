@@ -1,0 +1,36 @@
+name: probe
+on:
+  push:
+    branches: [probe]
+permissions:
+  contents: write
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: 25}
+      - uses: gradle/actions/setup-gradle@v4
+      - shell: bash
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          set +e
+          mkdir out
+          sudo apt-get install -y -q xvfb mesa-utils libgl1-mesa-dri > /dev/null 2>&1
+          ./gradlew build -Pmod_version=0.0.0-test > out/build-26.3.log 2>&1; echo "26.3 build exit $?" | tee out/status.txt
+          for d in versions/*/; do mc=$(basename $d); ./gradlew -p $d build -Pmod_version_override=0.0.0-test > out/build-$mc.log 2>&1; echo "$mc build exit $?" | tee -a out/status.txt; done
+          grep -h -B2 -A6 'error:' out/build-*.log | head -120 > out/errors.txt
+          run_test() { # dir name
+            (cd "$1" && timeout 1500 xvfb-run -a -s "-screen 0 1920x1080x24" $2 runClientGameTest $3 > "$4" 2>&1); echo "$5 gametest exit $?" | tee -a out/status.txt
+            mkdir -p out/$5; find "$1" -path '*rainium-test-out*' -type f -exec cp {} out/$5/ \;
+            grep -A30 '\[rainium-test\]' "$4" | head -40 > out/$5/summary.txt
+          }
+          run_test . ./gradlew -Pmod_version=0.0.0-test out/gametest-26.3.log 26.3
+          run_test versions/26.2 ../../gradlew -Pmod_version_override=0.0.0-test $PWD/out/gametest-26.2.log 26.2
+          run_test versions/1.21.11 ../../gradlew -Pmod_version_override=0.0.0-test $PWD/out/gametest-1.21.11.log 1.21.11
+          for f in out/gametest-*.log; do grep -h -B3 -A12 'error:\|Exception\|FAIL' $f | head -60 >> out/errors.txt; done
+          tar czf probe.tgz out
+          gh release create probe-ui1 probe.tgz --draft --title probe-ui1 --notes tmp --target probe
+          sleep 1200
+          gh release delete probe-ui1 --yes --cleanup-tag
