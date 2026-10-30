@@ -71,6 +71,27 @@ final class Presets {
         return out;
     }
 
+    private final java.util.Map<String, Boolean> hasThumbCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** True when the sample model ships a pre-rendered picture (presets/&lt;id&gt;/thumb.png in the jar). */
+    boolean hasThumb(String id) {
+        return hasThumbCache.computeIfAbsent(id, k -> bundledIds().contains(k) && Presets.class.getResource(RES + k + "/thumb.png") != null);
+    }
+
+    /** The shipped picture as ARGB pixels (Thumbs.BIG square), or null. */
+    int[] thumbPixels(String id) {
+        try (InputStream in = Presets.class.getResourceAsStream(RES + id + "/thumb.png")) {
+            if (in == null) return null;
+            java.awt.image.BufferedImage im = javax.imageio.ImageIO.read(in);
+            if (im == null || im.getWidth() != Thumbs.BIG || im.getHeight() != Thumbs.BIG) return null;
+            int[] px = new int[Thumbs.BIG * Thumbs.BIG];
+            im.getRGB(0, 0, Thumbs.BIG, Thumbs.BIG, px, 0, Thumbs.BIG);
+            return px;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /** The preset's model for a thumbnail, read without installing anything; null if unavailable. */
     java.util.Collection<Mesh.Group> previewGroups(String id) {
         try {

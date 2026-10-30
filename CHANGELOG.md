@@ -2,6 +2,12 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.6 (dev build)
+
+- **Nocturne is one entry with two forms:** a Nocturne heading in Add > Presets with **Base** and **Ascended** underneath, each with a proper picture instead of the rough silhouette.
+- **Nocturne is upright and placed properly:** moon and halo the right way up, 20% bigger, at eye level, beside your right arm and half a block behind you.
+- **New: Spin.** Any layer can turn in place around its own upright axis (Edit > Behaviour > Spin, in degrees per second). On for Nocturne; set it to Off to keep it still.
+
 ## 0.8.5 (dev build)
 
 - **New sample model: Nocturne** (a moon inside a glowing halo with ribbons), in two forms shown side by side in Add > Presets: the base form and the glowing Ascended form.

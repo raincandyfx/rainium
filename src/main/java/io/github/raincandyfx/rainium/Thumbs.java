@@ -16,6 +16,8 @@ import java.util.function.Supplier;
  */
 final class Thumbs {
     static final int SIZE = 22;
+    /** Side of a pre-rendered picture shipped with a sample model (thumb.png next to its set.json). */
+    static final int BIG = 48;
 
     private static final Map<String, int[]> done = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> pending = new ConcurrentHashMap<>();
@@ -37,6 +39,21 @@ final class Thumbs {
                 if (gs != null) done.put(key, render(gs, SIZE, 0xFFE8DBED));
             } catch (Throwable ignored) {
                 // no picture for unreadable models
+            }
+        });
+        return null;
+    }
+
+    /** A ready-made picture (not drawn by us): loaded once on the background thread; null until then or if it can't be read. */
+    static int[] picture(String key, Supplier<int[]> loader) {
+        int[] px = done.get(key);
+        if (px != null || pending.putIfAbsent(key, true) != null) return px;
+        worker.execute(() -> {
+            try {
+                int[] p = loader.get();
+                if (p != null) done.put(key, p);
+            } catch (Throwable ignored) {
+                // no picture
             }
         });
         return null;

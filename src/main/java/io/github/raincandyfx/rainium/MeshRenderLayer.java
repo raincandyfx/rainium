@@ -118,6 +118,10 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         // placement here and its vertices in emit (two reflections, so faces keep their winding).
         if (mirrorMode == MIRROR_LIMB) ps.scale(-1f, 1f, 1f);
         ps.translate(l.offset[0], l.offset[1], l.offset[2]);
+        if (l.spin != 0 && !l.isParticles()) {   // turn in place around the layer's own origin, before its fixed rotation
+            double secs = (where.preview() ? Recorder.previewNanos() : System.nanoTime()) / 1e9;
+            ps.rotateDegrees(Axis.YP, (float) ((secs * l.spin) % 360.0));
+        }
         if (l.rotation[0] != 0) ps.rotateDegrees(Axis.XP, l.rotation[0]);
         if (l.rotation[1] != 0) ps.rotateDegrees(Axis.YP, l.rotation[1]);
         if (l.rotation[2] != 0) ps.rotateDegrees(Axis.ZP, l.rotation[2]);

@@ -13,19 +13,19 @@
       "render": "translucent_emissive",
       "fullbright": true,
       "anchor": "root",
-      "coords": "y_up",
       "offset": [
-        0,
-        1.4,
+        -0.875,
+        -0.12,
         0.5
       ],
       "rotation": [
         0,
-        90,
-        0
+        0,
+        90
       ],
-      "scale": 1,
-      "physics": false
+      "scale": 1.2,
+      "physics": false,
+      "spin": 45
     },
     {
       "name": "Body",
@@ -36,19 +36,19 @@
       "texture": "body.png",
       "render": "cutout_no_cull",
       "anchor": "root",
-      "coords": "y_up",
       "offset": [
-        0,
-        1.4,
+        -0.875,
+        -0.12,
         0.5
       ],
       "rotation": [
         0,
-        90,
-        0
+        0,
+        90
       ],
-      "scale": 1,
-      "physics": false
+      "scale": 1.2,
+      "physics": false,
+      "spin": 45
     },
     {
       "name": "Body glow",
@@ -59,19 +59,19 @@
       "texture": "body_glow.png",
       "render": "emissive",
       "anchor": "root",
-      "coords": "y_up",
       "offset": [
-        0,
-        1.4,
+        -0.875,
+        -0.12,
         0.5
       ],
       "rotation": [
         0,
-        90,
-        0
+        0,
+        90
       ],
-      "scale": 1,
-      "physics": false
+      "scale": 1.2,
+      "physics": false,
+      "spin": 45
     },
     {
       "name": "Dress",
@@ -82,19 +82,19 @@
       "texture": "body.png",
       "render": "cutout_no_cull",
       "anchor": "root",
-      "coords": "y_up",
       "offset": [
-        0,
-        1.4,
+        -0.875,
+        -0.12,
         0.5
       ],
       "rotation": [
         0,
-        90,
-        0
+        0,
+        90
       ],
-      "scale": 1,
-      "physics": false
+      "scale": 1.2,
+      "physics": false,
+      "spin": 45
     },
     {
       "name": "Moon",
@@ -105,19 +105,19 @@
       "texture": "moon.png",
       "render": "cutout_no_cull",
       "anchor": "root",
-      "coords": "y_up",
       "offset": [
-        0,
-        1.4,
+        -0.875,
+        -0.12,
         0.5
       ],
       "rotation": [
         0,
-        90,
-        0
+        0,
+        90
       ],
-      "scale": 1,
-      "physics": false
+      "scale": 1.2,
+      "physics": false,
+      "spin": 45
     },
     {
       "name": "Moon glow",
@@ -128,19 +128,19 @@
       "texture": "moon_glow.png",
       "render": "emissive",
       "anchor": "root",
-      "coords": "y_up",
       "offset": [
-        0,
-        1.4,
+        -0.875,
+        -0.12,
         0.5
       ],
       "rotation": [
         0,
-        90,
-        0
+        0,
+        90
       ],
-      "scale": 1,
-      "physics": false
+      "scale": 1.2,
+      "physics": false,
+      "spin": 45
     },
     {
       "name": "Moon ring",
@@ -152,19 +152,19 @@
       "render": "translucent_emissive",
       "fullbright": true,
       "anchor": "root",
-      "coords": "y_up",
       "offset": [
-        0,
-        1.4,
+        -0.875,
+        -0.12,
         0.5
       ],
       "rotation": [
         0,
-        90,
-        0
+        0,
+        90
       ],
-      "scale": 1,
-      "physics": false
+      "scale": 1.2,
+      "physics": false,
+      "spin": 45
     },
     {
       "name": "Ribbon",
@@ -177,19 +177,19 @@
       "color": "#B3B2D9FF",
       "fullbright": true,
       "anchor": "root",
-      "coords": "y_up",
       "offset": [
-        0,
-        1.4,
+        -0.875,
+        -0.12,
         0.5
       ],
       "rotation": [
         0,
-        90,
-        0
+        0,
+        90
       ],
-      "scale": 1,
-      "physics": false
+      "scale": 1.2,
+      "physics": false,
+      "spin": 45
     }
   ]
 }

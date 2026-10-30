@@ -81,8 +81,12 @@ Besides models, a layer can be a **particle emitter**. On the **Add** tab, start
 
 | Preset | |
 |---|---|
-| **Gold halo** | Comes with the mod. It's set up on first launch but switched off, and its rungs glow in the dark. |
+| **Gold halo** | Offered in the Add tab (a fresh setup starts empty). Its rungs glow in the dark. |
+| **Glow halo** | A soft glowing ring over the head with pink sparkles. |
+| **Nocturne** | A moon in a halo that turns in place beside your right arm, in two forms (**Base** and **Ascended**) shown under one heading. |
 | **Eyed wings** | Greyed out (with a link to the mod's page) until a compatible wing mod is in your `mods` folder (keep it disabled, it crashes Rainium while enabled). Its files are read from that mod. |
+
+Any layer can **Spin** (Edit > Behaviour): it turns around its own upright axis at the speed you set, in degrees per second, in place rather than orbiting. In a set file this is `"spin": 45`. Nocturne uses it.
 
 You can add a preset again at any time from the **Add** tab, and **Reset to preset** puts a part back the way it came.
 

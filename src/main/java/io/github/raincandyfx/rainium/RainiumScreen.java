@@ -799,6 +799,10 @@ public final class RainiumScreen extends Screen {
         });
 
         y = section(g, x, y + 4, w, "behaviour");
+        if (!l.isParticles()) {
+            exact(v -> { l.spin = (float) Math.max(-720, Math.min(720, round(v))); save(); });
+            y = stepper(g, mx, my, x, y, w, "spin", l.spin == 0 ? Lang.t("value.off") : fmt(l.spin) + "°/s", d -> { l.spin = Math.max(-720f, Math.min(720f, l.spin + d * 15f)); save(); });
+        }
         y = toggle(g, mx, my, x, y, w, "mirrored_copy", l.mirror, () -> { l.mirror = !l.mirror; save(); });
         y = toggle(g, mx, my, x, y, w, "sway_with_movement", l.physics, () -> { l.physics = !l.physics; save(); });
         y = toggle(g, mx, my, x, y, w, "hide_while_gliding", l.hideWhenFlying, () -> { l.hideWhenFlying = !l.hideWhenFlying; save(); });
@@ -937,32 +941,53 @@ public final class RainiumScreen extends Screen {
         return y + ROW + GAP;
     }
 
-    /** One preset card; compact cards (side-by-side variants) have a fixed height. Returns the card's height. */
-    private int presetCard(GuiGraphicsExtractor g, int mx, int my, Presets.Info p, int x, int y, int w, int fixedH, boolean compact) {
+    private int[] presetPicture(Presets.Info p) {
+        return assets.presets.hasThumb(p.id())
+            ? Thumbs.picture("preset:" + p.id(), () -> assets.presets.thumbPixels(p.id()))
+            : Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id()));
+    }
+
+    /** A container for one model with several forms: its name and blurb on top, one clickable division per form underneath. */
+    private int groupCard(GuiGraphicsExtractor g, int mx, int my, String group, Presets.Info a, Presets.Info b, int x, int y, int w) {
+        String title = Lang.t("preset.group." + group), blurb = Lang.t("preset.group." + group + ".description");
+        List<String> lines = wrapLines(blurb, w - 12, 2);
+        int top = 5 + 12 + lines.size() * 10 + 3;
+        int dh = Thumbs.BIG + 30, ch = top + dh + 5;
+        g.fill(x, y, x + w, y + ch, FIELD);
+        g.fill(x, y, x + 2, y + ch, ACCENT);
+        g.text(font, body(fit(title, w - 12)), x + 7, y + 5, TEXT, false);
+        for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7, y + 17 + li * 10, MUTED, false);
+        int dw = (w - 12 - GAP) / 2, dy = y + top;
+        Presets.Info[] forms = {a, b};
+        for (int i = 0; i < 2; i++) {
+            Presets.Info p = forms[i];
+            int dx = x + 6 + i * (dw + GAP);
+            boolean hov = in(mx, my, dx, dy, dw, dh);
+            g.fill(dx, dy, dx + dw, dy + dh, hov ? FIELD_HOVER : 0x80050B33);
+            g.outline(dx, dy, dw, dh, hov ? ACCENT : FIELD_EDGE);
+            thumb(g, dx + (dw - Thumbs.BIG) / 2, dy + 3, presetPicture(p));
+            String nm = fit(p.name(), dw - 6);
+            g.text(font, body(nm), dx + (dw - font.width(body(nm))) / 2, dy + Thumbs.BIG + 6, TEXT, false);
+            String chip = Lang.t("preset.add");
+            int cwid = font.width(body(chip)) + 8;
+            g.fill(dx + (dw - cwid) / 2, dy + dh - 14, dx + (dw + cwid) / 2, dy + dh - 4, ACCENT);
+            g.text(font, body(chip), dx + (dw - cwid) / 2 + 4, dy + dh - 13, ACCENT_INK, false);
+            hits.add(new Hit(dx, dy, dw, dh, () -> addPreset(p), null));
+        }
+        return ch;
+    }
+
+    private int presetCard(GuiGraphicsExtractor g, int mx, int my, Presets.Info p, int x, int y, int w) {
         int th = Thumbs.SIZE + 4;
         boolean ok = p.available();
         String chip = Lang.t(ok ? "preset.add" : "preset.needs_mod");
         int cwid = font.width(body(chip)) + 8;
-        int ch;
-        if (compact) {   // side-by-side variants: picture on top, name and Add underneath
-            ch = fixedH;
-            boolean hov = in(mx, my, x, y, w, ch);
-            g.fill(x, y, x + w, y + ch, hov ? FIELD_HOVER : FIELD);
-            g.fill(x, y, x + 2, y + ch, ACCENT);
-            thumb(g, x + (w - Thumbs.SIZE) / 2, y + 4, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
-            String nm = fit(p.name(), w - 8);
-            g.text(font, body(nm), x + (w - font.width(body(nm))) / 2, y + 7 + Thumbs.SIZE, TEXT, false);
-            g.fill(x + (w - cwid) / 2, y + ch - 14, x + (w + cwid) / 2, y + ch - 4, ACCENT);
-            g.text(font, body(chip), x + (w - cwid) / 2 + 4, y + ch - 13, ACCENT_INK, false);
-            hits.add(new Hit(x, y, w, ch, () -> addPreset(p), null));
-            return ch;
-        }
         List<String> lines = wrapLines(p.description(), w - 12 - th, 2);
-        ch = Math.max(19 + lines.size() * 10 + (ok ? 3 : 15), th + 6);
+        int ch = Math.max(19 + lines.size() * 10 + (ok ? 3 : 15), th + 6);
         boolean hov = in(mx, my, x, y, w, ch);
         g.fill(x, y, x + w, y + ch, ok ? (hov ? FIELD_HOVER : FIELD) : (hov ? 0xF00A1247 : 0xB0050B33));
         g.fill(x, y, x + 2, y + ch, ok ? ACCENT : FAINT);
-        if (ok) thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, Thumbs.get("preset:" + p.id(), () -> assets.presets.previewGroups(p.id())));
+        if (ok) thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, presetPicture(p));
         else g.fill(x + 5, y + (ch - Thumbs.SIZE) / 2, x + 5 + Thumbs.SIZE, y + (ch - Thumbs.SIZE) / 2 + Thumbs.SIZE, 0x30FFFFFF);   // no model to show until the mod is found
         g.text(font, body(fit(p.name(), w - 12 - th - (ok ? cwid + 4 : 0))), x + 7 + th, y + 5, ok ? TEXT : FAINT, false);
         for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7 + th, y + 18 + li * 10, ok ? MUTED : FAINT, false);
@@ -982,17 +1007,12 @@ public final class RainiumScreen extends Screen {
         int th = Thumbs.SIZE + 4;   // thumbnail column
         for (int pi = 0; pi < presetList.size(); pi++) {
             Presets.Info p = presetList.get(pi);
-            if (p.group() != null && pi + 1 < presetList.size() && p.group().equals(presetList.get(pi + 1).group())) {   // variants of one model: side by side
-                Presets.Info q = presetList.get(pi + 1);
-                int pw2 = (w - GAP) / 2;
-                int ch = Thumbs.SIZE + 34;
-                presetCard(g, mx, my, p, x, y, pw2, ch, true);
-                presetCard(g, mx, my, q, x + pw2 + GAP, y, pw2, ch, true);
-                y += ch + GAP;
+            if (p.group() != null && pi + 1 < presetList.size() && p.group().equals(presetList.get(pi + 1).group())) {   // variants of one model: a container with a division each
+                y += groupCard(g, mx, my, p.group(), p, presetList.get(pi + 1), x, y, w) + GAP;
                 pi++;
                 continue;
             }
-            int ch = presetCard(g, mx, my, p, x, y, w, 0, false);
+            int ch = presetCard(g, mx, my, p, x, y, w);
             y += ch + GAP;
         }
 
@@ -1091,7 +1111,7 @@ public final class RainiumScreen extends Screen {
 
     /** Draws a thumbnail (or an empty frame while it's being made), one fill per run of equal pixels. */
     private void thumb(GuiGraphicsExtractor g, int x, int y, int[] px) {
-        int n = Thumbs.SIZE;
+        int n = px == null ? Thumbs.SIZE : (int) Math.round(Math.sqrt(px.length));
         g.fill(x, y, x + n, y + n, 0x40081038);
         if (px == null) return;
         for (int r = 0; r < n; r++) {
