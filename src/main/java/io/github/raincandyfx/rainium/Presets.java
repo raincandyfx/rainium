@@ -59,15 +59,15 @@ final class Presets {
 
     List<Info> list() {
         List<Info> out = new ArrayList<>();
-        // always listed; greyed out (and a link to the mod) until the mod it is read from is found
-        boolean wings = wingSource() != null || Files.exists(assets.dir().resolve("presets/wings/wings_mesh.json"));
-        out.add(new Info(WINGS, displayName(WINGS), Lang.t(wings ? "preset.wings.description" : "preset.wings.needs_mod"), wings));
         out.add(new Info(HALO, displayName(HALO), Lang.t("preset.halo.description")));
         for (String id : bundledIds()) {
             String group = null;
             try { if (bundledSet(id).get("group") instanceof String gr && !gr.isBlank()) group = gr; } catch (IOException ignored) { }   // sets with the same "group" are shown side by side
             out.add(new Info(id, displayName(id), Lang.t("preset." + id + ".description"), true, group));
         }
+        // last in the list; always shown, greyed out (with a link to the mod) until the mod it is read from is found
+        boolean wings = wingSource() != null || Files.exists(assets.dir().resolve("presets/wings/wings_mesh.json"));
+        out.add(new Info(WINGS, displayName(WINGS), Lang.t(wings ? "preset.wings.description" : "preset.wings.needs_mod"), wings));
         return out;
     }
 
@@ -75,7 +75,7 @@ final class Presets {
 
     /** True when the sample model ships a pre-rendered picture (presets/&lt;id&gt;/thumb.png in the jar). */
     boolean hasThumb(String id) {
-        return hasThumbCache.computeIfAbsent(id, k -> (bundledIds().contains(k) || k.equals(HALO)) && Presets.class.getResource(RES + k + "/thumb.png") != null);
+        return hasThumbCache.computeIfAbsent(id, k -> (bundledIds().contains(k) || k.equals(HALO) || k.equals(WINGS)) && Presets.class.getResource(RES + k + "/thumb.png") != null);
     }
 
     /** The shipped picture's PNG bytes (drawn as a real texture), or null. */

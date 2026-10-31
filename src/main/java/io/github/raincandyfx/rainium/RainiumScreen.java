@@ -1021,7 +1021,7 @@ public final class RainiumScreen extends Screen {
     }
 
     private int presetCard(GuiGraphicsExtractor g, int mx, int my, Presets.Info p, int x, int y, int w) {
-        Identifier tex = p.available() ? presetTexture(p) : null;
+        Identifier tex = presetTexture(p);
         int pic = tex != null ? 30 : Thumbs.SIZE;   // sharp pictures can be drawn bigger
         int th = pic + 4;
         boolean ok = p.available();
@@ -1034,7 +1034,7 @@ public final class RainiumScreen extends Screen {
         g.fill(x, y, x + 2, y + ch, ok ? ACCENT : FAINT);
         if (tex != null) {
             int ts = presetTextureSize.get(p.id());
-            g.blit(RenderPipelines.GUI_TEXTURED, tex, x + 5, y + (ch - pic) / 2, 0, 0, pic, pic, ts, ts, ts, ts, 0xFFFFFFFF);
+            g.blit(RenderPipelines.GUI_TEXTURED, tex, x + 5, y + (ch - pic) / 2, 0, 0, pic, pic, ts, ts, ts, ts, ok ? 0xFFFFFFFF : 0x60FFFFFF);   // dimmed until the mod is found
         } else if (ok) thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, presetPicture(p));
         else g.fill(x + 5, y + (ch - Thumbs.SIZE) / 2, x + 5 + Thumbs.SIZE, y + (ch - Thumbs.SIZE) / 2 + Thumbs.SIZE, 0x30FFFFFF);   // no model to show until the mod is found
         g.text(font, body(fit(p.name(), w - 12 - th - (ok ? cwid + 4 : 0))), x + 7 + th, y + 5, ok ? TEXT : FAINT, false);

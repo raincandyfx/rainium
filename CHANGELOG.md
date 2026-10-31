@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.12 (dev build)
+
+- **Eyed wings** has a picture now (dimmed until its mod is found) and sits at the bottom of the preset list.
+
 ## 0.8.11 (dev build)
 
 - **Fixed: a sample model could sit far from you or orbit you.** Adding a sample model now replaces an older copy of its model and texture files left by an earlier version (an old, off-centre mesh combined with the new placement put Nocturne ascended about a block away). Layers you already added keep their old files' settings: remove the old Nocturne and add it again.
