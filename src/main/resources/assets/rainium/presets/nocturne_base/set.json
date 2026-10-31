@@ -10,7 +10,7 @@
         "Halo_Mat"
       ],
       "texture": "halo.png",
-      "render": "translucent_emissive",
+      "render": "cutout_no_cull",
       "fullbright": true,
       "anchor": "root",
       "offset": [
@@ -24,8 +24,8 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 90
+      "spin": 90,
+      "physics": false
     },
     {
       "name": "Body",
@@ -35,6 +35,7 @@
       ],
       "texture": "body.png",
       "render": "cutout_no_cull",
+      "fullbright": true,
       "anchor": "root",
       "offset": [
         -0.875,
@@ -47,8 +48,8 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 90
+      "spin": 90,
+      "physics": false
     },
     {
       "name": "Dress",
@@ -58,6 +59,7 @@
       ],
       "texture": "body.png",
       "render": "cutout_no_cull",
+      "fullbright": true,
       "anchor": "root",
       "offset": [
         -0.875,
@@ -70,8 +72,8 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 90
+      "spin": 90,
+      "physics": false
     },
     {
       "name": "Moon",
@@ -93,6 +95,7 @@
         90
       ],
       "scale": 1.2,
+      "spin": -30,
       "physics": false
     }
   ]

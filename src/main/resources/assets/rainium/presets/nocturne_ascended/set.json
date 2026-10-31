@@ -10,7 +10,7 @@
         "Halo_Mat"
       ],
       "texture": "halo.png",
-      "render": "translucent_emissive",
+      "render": "cutout_no_cull",
       "fullbright": true,
       "anchor": "root",
       "offset": [
@@ -24,8 +24,8 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 90
+      "spin": 90,
+      "physics": false
     },
     {
       "name": "Body",
@@ -35,6 +35,7 @@
       ],
       "texture": "body.png",
       "render": "cutout_no_cull",
+      "fullbright": true,
       "anchor": "root",
       "offset": [
         -0.875,
@@ -47,31 +48,8 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 90
-    },
-    {
-      "name": "Body glow",
-      "mesh": "model.json",
-      "groups": [
-        "Equip_Catalyst_Brisingamen_Mat"
-      ],
-      "texture": "body_glow.png",
-      "render": "emissive",
-      "anchor": "root",
-      "offset": [
-        -0.875,
-        -0.12,
-        0.5
-      ],
-      "rotation": [
-        0,
-        0,
-        90
-      ],
-      "scale": 1.2,
-      "physics": false,
-      "spin": 90
+      "spin": 90,
+      "physics": false
     },
     {
       "name": "Dress",
@@ -81,6 +59,7 @@
       ],
       "texture": "body.png",
       "render": "cutout_no_cull",
+      "fullbright": true,
       "anchor": "root",
       "offset": [
         -0.875,
@@ -93,8 +72,8 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 90
+      "spin": 90,
+      "physics": false
     },
     {
       "name": "Moon",
@@ -116,6 +95,7 @@
         90
       ],
       "scale": 1.2,
+      "spin": -30,
       "physics": false
     },
     {
@@ -139,8 +119,8 @@
         90
       ],
       "scale": 1.2,
-      "physics": false,
-      "spin": 90
+      "spin": 90,
+      "physics": false
     },
     {
       "name": "Ribbon",
@@ -150,7 +130,6 @@
       ],
       "texture": "ribbon.png",
       "render": "translucent_emissive",
-      "color": "#B3B2D9FF",
       "fullbright": true,
       "anchor": "root",
       "offset": [
@@ -164,8 +143,9 @@
         90
       ],
       "scale": 1.2,
+      "spin": 90,
       "physics": false,
-      "spin": 90
+      "color": "#B3B2D9FF"
     }
   ]
 }

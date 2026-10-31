@@ -2,6 +2,12 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.10 (dev build)
+
+- **Spin turns a model around its own middle:** "Itself" (and "Layer: ...") now mean the middle of the model's shape, not the point the model file happens to start from. A model whose file has its origin elsewhere, such as the moon, no longer swings around the player when it spins.
+- **Nocturne:** the base form uses the new tuned settings, and the ascended form is rebuilt from it (same parts, placement, spin and fullbright, with its own textures plus the moon ring and ribbon).
+- **Sharp pictures for every sample model:** Gold halo, Glow halo and both Nocturne forms have high-resolution pictures.
+
 ## 0.8.9 (dev build)
 
 - **Nocturne:** the moon is now a glow instead of a solid layer, the halo sits level (parallel to the ground), and the spin is half as fast. Nocturne ascended is built the same way as the base form: every part turns around its own centre (the moon's), so the two behave alike.

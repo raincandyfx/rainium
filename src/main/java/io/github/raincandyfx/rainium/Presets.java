@@ -75,7 +75,7 @@ final class Presets {
 
     /** True when the sample model ships a pre-rendered picture (presets/&lt;id&gt;/thumb.png in the jar). */
     boolean hasThumb(String id) {
-        return hasThumbCache.computeIfAbsent(id, k -> bundledIds().contains(k) && Presets.class.getResource(RES + k + "/thumb.png") != null);
+        return hasThumbCache.computeIfAbsent(id, k -> (bundledIds().contains(k) || k.equals(HALO)) && Presets.class.getResource(RES + k + "/thumb.png") != null);
     }
 
     /** The shipped picture's PNG bytes (drawn as a real texture), or null. */

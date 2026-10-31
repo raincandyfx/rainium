@@ -1021,16 +1021,21 @@ public final class RainiumScreen extends Screen {
     }
 
     private int presetCard(GuiGraphicsExtractor g, int mx, int my, Presets.Info p, int x, int y, int w) {
-        int th = Thumbs.SIZE + 4;
+        Identifier tex = p.available() ? presetTexture(p) : null;
+        int pic = tex != null ? 30 : Thumbs.SIZE;   // sharp pictures can be drawn bigger
+        int th = pic + 4;
         boolean ok = p.available();
         String chip = Lang.t(ok ? "preset.add" : "preset.needs_mod");
         int cwid = font.width(body(chip)) + 8;
         List<String> lines = wrapLines(p.description(), w - 12 - th, 2);
-        int ch = Math.max(19 + lines.size() * 10 + (ok ? 3 : 15), th + 6);
+        int ch = Math.max(19 + lines.size() * 10 + (ok ? 3 : 15), th + 4);
         boolean hov = in(mx, my, x, y, w, ch);
         g.fill(x, y, x + w, y + ch, ok ? (hov ? FIELD_HOVER : FIELD) : (hov ? 0xF00A1247 : 0xB0050B33));
         g.fill(x, y, x + 2, y + ch, ok ? ACCENT : FAINT);
-        if (ok) thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, presetPicture(p));
+        if (tex != null) {
+            int ts = presetTextureSize.get(p.id());
+            g.blit(RenderPipelines.GUI_TEXTURED, tex, x + 5, y + (ch - pic) / 2, 0, 0, pic, pic, ts, ts, ts, ts, 0xFFFFFFFF);
+        } else if (ok) thumb(g, x + 5, y + (ch - Thumbs.SIZE) / 2, presetPicture(p));
         else g.fill(x + 5, y + (ch - Thumbs.SIZE) / 2, x + 5 + Thumbs.SIZE, y + (ch - Thumbs.SIZE) / 2 + Thumbs.SIZE, 0x30FFFFFF);   // no model to show until the mod is found
         g.text(font, body(fit(p.name(), w - 12 - th - (ok ? cwid + 4 : 0))), x + 7 + th, y + 5, ok ? TEXT : FAINT, false);
         for (int li = 0; li < lines.size(); li++) g.text(font, body(lines.get(li)), x + 7 + th, y + 18 + li * 10, ok ? MUTED : FAINT, false);

@@ -100,23 +100,59 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         }
     }
 
-    /** Where the layer spins around, in the frame the layer is being placed in (before its anchor is applied). */
-    private static org.joml.Vector3f spinCentre(PoseStack ps, Bones bones, LayerConfig cfg, LayerConfig.Layer l, LayerConfig.Anchor own) {
+    private static final java.util.Map<Mesh.Group, float[]> boundsCache = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    /** Centre of the box around the layer's parts, in mesh coordinates (so a mesh whose origin is not its middle still turns about its middle). */
+    private static float[] meshCentre(Mesh.Group[] groups) {
+        float[] mn = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE}, mx = {-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+        for (Mesh.Group g : groups) {
+            float[] b = boundsCache.computeIfAbsent(g, k -> {
+                float[] v = k.v();
+                float[] r = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+                for (int i = 0; i + 2 < v.length; i += Mesh.STRIDE) {
+                    for (int c = 0; c < 3; c++) { r[c] = Math.min(r[c], v[i + c]); r[3 + c] = Math.max(r[3 + c], v[i + c]); }
+                }
+                return r;
+            });
+            for (int c = 0; c < 3; c++) { mn[c] = Math.min(mn[c], b[c]); mx[c] = Math.max(mx[c], b[3 + c]); }
+        }
+        if (mn[0] > mx[0]) return new float[3];
+        return new float[]{(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2};
+    }
+
+    /**
+     * Where the layer spins around, in the frame the layer is being placed in (before its anchor is applied).
+     * "Itself" and "layer" mean the middle of that layer's model (not its origin, which an imported model may
+     * have somewhere else); an anchor means that body part's origin.
+     */
+    private static org.joml.Vector3f spinCentre(PoseStack ps, Bones bones, Assets.State st, Assets.Resolved r, LayerConfig.Anchor own) {
+        LayerConfig.Layer l = r.cfg();
+        Assets.Resolved target = r;
         LayerConfig.Anchor a = own;
-        float[] off = l.offset;
         String sc = l.spinCenter;
+        boolean anchorOnly = false;
         if (sc != null && sc.startsWith("anchor:")) {
-            try { a = LayerConfig.Anchor.valueOf(sc.substring(7).toUpperCase(java.util.Locale.ROOT)); off = new float[3]; }
+            try { a = LayerConfig.Anchor.valueOf(sc.substring(7).toUpperCase(java.util.Locale.ROOT)); anchorOnly = true; }
             catch (IllegalArgumentException ignored) { }
         } else if (sc != null && sc.startsWith("layer:")) {
-            LayerConfig.Layer o = cfg.findLayer(sc.substring(6), l);
-            if (o != null) { a = o.anchor; off = o.offset; }
+            LayerConfig.Layer o = st.config().findLayer(sc.substring(6), l);
+            if (o != null) for (Assets.Resolved q : st.layers()) if (q.cfg() == o) { target = q; a = o.anchor; break; }
         }
+        LayerConfig.Layer t = target.cfg();
         org.joml.Matrix4f base = new org.joml.Matrix4f(ps.last().pose());
         ps.pushPose();
         bones.apply(ps, a);
-        ps.translate(off[0], off[1], off[2]);
-        org.joml.Vector3f p = ps.last().pose().transformPosition(new org.joml.Vector3f(0, 0, 0));
+        float[] m = new float[3];
+        if (!anchorOnly) {
+            ps.translate(t.offset[0], t.offset[1], t.offset[2]);
+            if (t.rotation[0] != 0) ps.rotateDegrees(Axis.XP, t.rotation[0]);
+            if (t.rotation[1] != 0) ps.rotateDegrees(Axis.YP, t.rotation[1]);
+            if (t.rotation[2] != 0) ps.rotateDegrees(Axis.ZP, t.rotation[2]);
+            ps.scale(t.scale[0], t.scale[1], t.scale[2]);
+            if (t.yUp) ps.rotateDegrees(Axis.XP, 180f);
+            m = meshCentre(target.groups());
+        }
+        org.joml.Vector3f p = ps.last().pose().transformPosition(new org.joml.Vector3f(m[0], m[1], m[2]));
         ps.popPose();
         return base.invert().transformPosition(p);
     }
@@ -136,7 +172,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
         }
         if (l.spin != 0 && !l.isParticles()) {   // turn around an upright axis through the spin centre (itself, an anchor or another layer)
             double secs = (where.preview() ? Recorder.previewNanos() : System.nanoTime()) / 1e9;
-            org.joml.Vector3f c = spinCentre(ps, bones, st.config(), l, anchor);
+            org.joml.Vector3f c = spinCentre(ps, bones, st, r, anchor);
             ps.translate(c.x, c.y, c.z);
             ps.rotateDegrees(Axis.YP, (float) ((secs * l.spin) % 360.0));
             ps.translate(-c.x, -c.y, -c.z);
