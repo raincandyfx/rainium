@@ -19,14 +19,13 @@
         0.5
       ],
       "rotation": [
-        0,
+        -18.8,
         0,
         90
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 180,
-      "spin_center": "layer:Moon"
+      "spin": 90
     },
     {
       "name": "Body",
@@ -49,8 +48,7 @@
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 180,
-      "spin_center": "layer:Moon"
+      "spin": 90
     },
     {
       "name": "Dress",
@@ -73,33 +71,10 @@
       ],
       "scale": 1.2,
       "physics": false,
-      "spin": 180,
-      "spin_center": "layer:Moon"
+      "spin": 90
     },
     {
       "name": "Moon",
-      "mesh": "model.json",
-      "groups": [
-        "Equip_Catalyst_Brisingamen_Moon_Mat"
-      ],
-      "texture": "moon.png",
-      "render": "cutout_no_cull",
-      "anchor": "root",
-      "offset": [
-        -0.875,
-        -0.12,
-        0.5
-      ],
-      "rotation": [
-        0,
-        0,
-        90
-      ],
-      "scale": 1.2,
-      "physics": false
-    },
-    {
-      "name": "Moon glow",
       "mesh": "model.json",
       "groups": [
         "Equip_Catalyst_Brisingamen_Moon_Mat"

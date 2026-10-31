@@ -86,7 +86,7 @@ Besides models, a layer can be a **particle emitter**. On the **Add** tab, start
 | **Nocturne** | A moon in a halo that turns in place beside your right arm, in two forms (**Base** and **Ascended**) shown under one heading. |
 | **Eyed wings** | Greyed out (with a link to the mod's page) until a compatible wing mod is in your `mods` folder (keep it disabled, it crashes Rainium while enabled). Its files are read from that mod. |
 
-Any layer can **Spin** (Edit > Behaviour): it turns around an upright axis at the speed you set, in degrees per second. **Spin around** picks the centre: the layer itself, the player, a body part, or another layer (which makes it circle that layer while the other one stays put). In a set file: `"spin": 180, "spin_center": "layer:Moon"` (or `"anchor:head"`). Nocturne uses it: everything turns around the moon at half a turn per second, and the moon stays still.
+Any layer can **Spin** (Edit > Behaviour): it turns around an upright axis at the speed you set, in degrees per second. **Spin around** picks the centre: the layer itself, the player, a body part, or another layer (which makes it circle that layer while the other one stays put). In a set file: `"spin": 180, "spin_center": "layer:Moon"` (or `"anchor:head"`). Nocturne uses it: everything turns around the moon at a quarter turn per second, and the moon stays still.
 
 You can add a preset again at any time from the **Add** tab, and **Reset to preset** puts a part back the way it came.
 

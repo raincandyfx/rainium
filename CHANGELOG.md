@@ -2,6 +2,10 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.8.9 (dev build)
+
+- **Nocturne:** the moon is now a glow instead of a solid layer, the halo sits level (parallel to the ground), and the spin is half as fast. Nocturne ascended is built the same way as the base form: every part turns around its own centre (the moon's), so the two behave alike.
+
 ## 0.8.8 (dev build)
 
 - **Spin around:** a spinning layer now turns around a centre you choose: itself, the player, a body part, or another layer (Edit > Behaviour > Spin around). Pick another layer to circle it while that layer stays still.
