@@ -147,5 +147,9 @@
       "physics": false,
       "color": "#B3B2D9FF"
     }
+  ],
+  "refresh": [
+    "Moon",
+    "Moon ring"
   ]
 }

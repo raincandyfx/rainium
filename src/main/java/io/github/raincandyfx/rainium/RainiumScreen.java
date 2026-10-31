@@ -1211,9 +1211,28 @@ public final class RainiumScreen extends Screen {
             if (folder != null) selectFolder(folder); else selectedFolder = null;
             say(Lang.t(add.size() == 1 ? "msg.added_one" : "msg.added", p.name(), add.size()), ACCENT);
             Tutorial.presetAdded(p.id());
+            refreshAfterAdd(add, assets.presets.refreshLayers(p.id()));
         } catch (Exception e) {
             say(Lang.t("msg.preset_failed", p.name(), e.getMessage()), DANGER);
         }
+    }
+
+    /** Some layers don't draw until they've been switched off and on once: hide them, then show them again a moment later. */
+    private void refreshAfterAdd(List<LayerConfig.Layer> added, List<String> names) {
+        List<LayerConfig.Layer> targets = new ArrayList<>();
+        for (LayerConfig.Layer l : added) if (names.contains(l.label) && l.enabled) targets.add(l);
+        if (targets.isEmpty()) return;
+        for (LayerConfig.Layer l : targets) l.enabled = false;
+        assets.save();
+        Thread t = new Thread(() -> {
+            try { Thread.sleep(120); } catch (InterruptedException ignored) { }
+            Minecraft.getInstance().execute(() -> {
+                for (LayerConfig.Layer l : targets) l.enabled = true;
+                assets.save();
+            });
+        }, "rainium-refresh");
+        t.setDaemon(true);
+        t.start();
     }
 
     private void addMesh(String file) {

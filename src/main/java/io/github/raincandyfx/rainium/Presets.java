@@ -290,12 +290,7 @@ final class Presets {
                 if (!(m.get(key) instanceof String f) || f.indexOf(':') >= 0) continue;   // a resource id like minecraft:... stays as it is
                 if (copy) {
                     Files.createDirectories(dst);
-                    if (!Files.exists(dst.resolve(f))) {
-                        try (InputStream in = Presets.class.getResourceAsStream(RES + id + "/" + f)) {
-                            if (in == null) throw new IOException("the mod jar is missing " + f);
-                            Files.copy(in, dst.resolve(f));
-                        }
-                    }
+                    copyFresh(RES + id + "/" + f, dst.resolve(f));
                 }
                 m.put(key, sub + "/" + f);
             }
@@ -307,19 +302,36 @@ final class Presets {
         return LayerConfig.fromJson(wrapper).layers;
     }
 
+    /**
+     * Copies a file out of the jar, replacing an older copy left by an earlier version (a stale mesh with
+     * the new placement puts the model in the wrong place). Identical files are left alone.
+     */
+    private static void copyFresh(String resource, Path dest) throws IOException {
+        byte[] fresh;
+        try (InputStream in = Presets.class.getResourceAsStream(resource)) {
+            if (in == null) throw new IOException("the mod jar is missing " + resource.substring(resource.lastIndexOf('/') + 1));
+            fresh = in.readAllBytes();
+        }
+        if (Files.isRegularFile(dest) && java.util.Arrays.equals(Files.readAllBytes(dest), fresh)) return;
+        Files.write(dest, fresh);
+    }
+
+    /** Names of layers of this sample model that are switched off and on again right after adding it (see set.json "refresh"). */
+    List<String> refreshLayers(String id) {
+        List<String> out = new ArrayList<>();
+        try {
+            if (bundledIds().contains(id) && bundledSet(id).get("refresh") instanceof List<?> l) for (Object o : l) out.add(String.valueOf(o));
+        } catch (IOException ignored) { }
+        return out;
+    }
+
     // ---------------------------------------------------------------- Gold halo
     private static final String HALO_RES = "/assets/rainium/presets/halo/";
 
     private List<LayerConfig.Layer> halo() throws IOException {
         Path dst = assets.dir().resolve("presets/halo");
         Files.createDirectories(dst);
-        for (String f : new String[]{"halo.json", "halo.png"}) {
-            if (Files.exists(dst.resolve(f))) continue;
-            try (InputStream in = Presets.class.getResourceAsStream(HALO_RES + f)) {
-                if (in == null) throw new IOException("the mod jar is missing " + f);
-                Files.copy(in, dst.resolve(f));
-            }
-        }
+        for (String f : new String[]{"halo.json", "halo.png"}) copyFresh(HALO_RES + f, dst.resolve(f));
         String mesh = "presets/halo/halo.json", tex = "presets/halo/halo.png";
         // One layer per part of the model (rings / center / rungs)
         List<String> parts = new ArrayList<>(Mesh.fromJson(Json.parse(Files.readString(dst.resolve("halo.json")))).groups.keySet());
