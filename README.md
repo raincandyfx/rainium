@@ -40,7 +40,7 @@
 
 **Open the editor** with <kbd>K</kbd> (you can rebind it in Controls), the `/rainium` command, or Mod Menu.
 
-**Try the example halo.** Rainium comes with a Gold halo that starts switched off. In the layer list on the left, click the square next to **Gold halo** to show it.
+**Try a sample model.** Open the **Add** tab and press **Add** on the Gold halo, the Glow halo or Nocturne. Click the square next to a layer in the list on the left to show or hide it.
 
 **Add your own model.**
 1. Click **Open rainium folder** (on the Add or Settings tab) and drop in your `.obj`, `.gltf` or `.glb` file, plus its `.png` texture if it has one (a texture inside a `.glb` is picked up automatically).
@@ -150,9 +150,9 @@ Yes, please! Copy [`en_us.json`](src/main/resources/assets/rainium/lang/en_us.js
 
 ## Disclaimer
 
-The Gold halo example that comes with the mod, and the models worn in the character recordings on the website, are based on designs from other works:
+Some of the sample models that come with the mod, and the models worn in the character recordings on the website, are based on designs from other works:
 
-- **Gold halo** and **dark red wings**: *Genshin Impact* (HoYoverse)
+- **Gold halo**, **Nocturne** (both forms) and **dark red wings** (Eyed wings): *Genshin Impact* (© Cognosphere PTE. LTD., HoYoverse)
 - **Floating pod**: *NieR:Automata* (Square Enix)
 - **Long red spear**: "[Lance of Longinus](https://skfb.ly/6Rxyq)" by Mr. The Rich, licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/). The weapon's original design is from *Neon Genesis Evangelion* (© khara)
 - **Small doll**: a MySekai item from *HATSUNE MIKU: COLORFUL STAGE!* (© SEGA, © Colorful Palette Inc., © Crypton Future Media, Inc.)

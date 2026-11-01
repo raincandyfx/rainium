@@ -472,7 +472,7 @@
   "rainium.tutorial.invite.note": "You can replay it any time from Settings.",
   "rainium.tutorial.news.tag": "Updated",
   "rainium.tutorial.news.title": "Rainium %s is here",
-  "rainium.tutorial.news.body": "- A short **tutorial** now helps new players find Rainium and learn the editor. Replay it from Settings.\n- Drop a **folder or .zip** of models into the rainium folder: Rainium adds every model and matches its texture for you.\n- **Dropdowns** and **i** buttons make settings easier to read and change.",
+  "rainium.tutorial.news.body": "- New **sample models** in Add > Presets: Glow halo, and Nocturne in two forms. Every one has a sharp picture.\n- Layers can **spin** around themselves, a body part or another layer.\n- Eyed wings is always listed, and lights up once its mod is found.",
   "rainium.tutorial.skip.tag": "Skip the tutorial?",
   "rainium.tutorial.skip.title": "Leave the tour",
   "rainium.tutorial.skip.body": "You're on step %s of %s. Nothing you've changed is lost, and the editor stays open.",

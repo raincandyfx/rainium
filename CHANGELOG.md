@@ -2,6 +2,21 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.0
+
+Everything from the 0.8.1 to 0.8.12 dev builds, plus:
+
+- **More sample models** in Add > Presets: **Glow halo** (a soft ring with pink sparkles) and **Nocturne** (a moon in a halo with ribbons), in two forms, **Base** and **Ascended**, shown together under one heading. **Eyed wings** is always listed: greyed out with a link to its mod until the mod is found, then it works. A fresh setup starts empty; you add what you want.
+- **Sharp pictures** for every sample model, drawn as real textures.
+- **Spin:** any layer can turn around an upright axis (Edit > Behaviour > **Spin**, in degrees per second), and **Spin around** picks the centre: the middle of its own model, the player, a body part, or another layer. Nocturne uses it.
+- **Fixed:** adding a sample model now replaces an older copy of its files left by an earlier version, which could put a model far from you or make it orbit you.
+- **Credits:** the mod's credits (and the README and website) now say that some sample models are based on designs from *Genshin Impact* (Cognosphere / HoYoverse).
+
+From the dev builds:
+
+- **Adaptive Mod Menu button** detection for the tutorial, and Mod Menu or Configure found by label.
+- Presets are data-driven: more sample models can be added as a folder with a `set.json`.
+
 ## 0.8.12 (dev build)
 
 - **Eyed wings** has a picture now (dimmed until its mod is found) and sits at the bottom of the preset list.
