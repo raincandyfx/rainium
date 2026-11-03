@@ -31,12 +31,18 @@ final class Tutorial {
         void selectHalo();
         void ensureParticle();          // add a particle starter if the player has none, and select one
         void openEditor();
+        /** Opens the reactions (nodes) screen for the Gold halo. */
+        default void openReactions() { }
+        /** A named action for a step to run when it starts (the nodes screen sets itself up for what it shows). */
+        default void enter(String what) { }
+        /** True for the nodes screen: the steps that happen inside it only start there. */
+        default boolean nodesScreen() { return false; }
     }
 
     private record Step(int num, String id, String tab, String[] spots, String[] pins, String focus, String enter) {}
 
     /** The tour. Several entries can share a number: it shows as one step. */
-    private static final int TOTAL = 7;
+    private static final int TOTAL = 13;
     private static final Step[] STEPS = {
         new Step(1, "open", null, new String[]{"mods", "configure"}, new String[]{}, null, null),
         new Step(2, "tour", "edit", new String[]{"tabs", "layers", "panel"}, new String[]{"tabs:1", "layers:2", "preview:3", "panel:4"}, null, null),
@@ -47,7 +53,19 @@ final class Tutorial {
         new Step(6, "particles", "add", new String[]{"starters"}, new String[]{}, "starters", null),
         new Step(6, "hue", "edit", new String[]{"hue", "tint"}, new String[]{}, "hue", "ensureParticle"),
         new Step(7, "settings", "settings", new String[]{"panel"}, new String[]{}, null, null),
+        // the nodes screen: where it is, the canvas, the add menu, gates, actions, trying things
+        new Step(8, "react_open", "edit", new String[]{"reactions"}, new String[]{}, "reactions", "selectHalo"),
+        new Step(9, "react_canvas", null, new String[]{"canvas"}, new String[]{}, null, "reactExample"),
+        new Step(10, "react_menu", null, new String[]{"menu"}, new String[]{"menu_search:1", "menu_tabs:2", "menu_groups:3", "menu_info:4"}, null, "menuEvents"),
+        new Step(11, "react_gates", null, new String[]{"menu"}, new String[]{"menu_tabs:1", "menu_groups:2"}, null, "menuGates"),
+        new Step(12, "react_actions", null, new String[]{"inspector"}, new String[]{}, null, "selectAction"),
+        new Step(13, "react_try", null, new String[]{"examples", "file", "canvas_event"}, new String[]{"canvas_event:1", "examples:2", "file:3"}, null, "overview"),
     };
+
+    private static int indexOf(String id) {
+        for (int i = 0; i < STEPS.length; i++) if (STEPS[i].id().equals(id)) return i;
+        return 0;
+    }
 
     private enum Mode { NONE, INVITE, NEWS, TOUR }
 
@@ -127,6 +145,21 @@ final class Tutorial {
 
     static boolean active() { return mode == Mode.TOUR; }
 
+    /** True while the tour is on a step that happens inside the nodes screen. */
+    static boolean inReactions() {
+        return mode == Mode.TOUR && STEPS[idx].id().startsWith("react_") && !STEPS[idx].id().equals("react_open");
+    }
+
+    /** The nodes screen opened: the step that pointed at its button is done. */
+    static void reactOpened() {
+        if (mode == Mode.TOUR && STEPS[idx].id().equals("react_open")) go(idx + 1);
+    }
+
+    /** The nodes screen closed: back to the step that points at its button. */
+    static void reactClosed() {
+        if (inReactions()) go(indexOf("react_open"));
+    }
+
     /** The editor opened: step 1 (finding it) is over. */
     static void editorOpened() {
         if (mode == Mode.TOUR && idx == 0) go(1);
@@ -166,6 +199,7 @@ final class Tutorial {
         Step st = STEPS[idx];
         if (idx == STEPS.length - 1) { finish(); return; }
         if (st.id().equals("open")) { if (host != null) host.openEditor(); return; }
+        if (st.id().equals("react_open")) { if (host != null) host.openReactions(); return; }
         int before = idx;
         if (host != null) {
             if (st.id().equals("halo")) host.ensureHalo();
@@ -235,12 +269,14 @@ final class Tutorial {
         holes.clear();
         Step st = mode == Mode.TOUR ? STEPS[idx] : null;
 
-        if (st != null && entered != idx) {   // first frame of a step: bring the editor to what it shows
+        boolean here = st == null || !inReactions() || (h != null && h.nodesScreen());   // a nodes-screen step starts on the nodes screen
+        if (st != null && here && entered != idx) {   // first frame of a step: bring the editor to what it shows
             entered = idx;
             if (h != null) {
                 if (st.tab() != null) h.tab(st.tab());
                 if ("selectHalo".equals(st.enter())) h.selectHalo();
                 else if ("ensureParticle".equals(st.enter())) h.ensureParticle();
+                else if (st.enter() != null) h.enter(st.enter());
             }
         }
         if (st != null && !confirm) for (String s : st.spots()) {
@@ -420,7 +456,7 @@ final class Tutorial {
             paras = t(id, "body").split("\n");
             note = Lang.optional("tutorial." + id + ".note");
             boolean last = idx == STEPS.length - 1;
-            primary = Lang.t(id.equals("open") ? "tutorial.button.open" : last ? "tutorial.button.finish" : "tutorial.button.next");
+            primary = Lang.t(id.equals("open") ? "tutorial.button.open" : id.equals("react_open") ? "tutorial.button.open_react" : last ? "tutorial.button.finish" : "tutorial.button.next");
             onPrimary = Tutorial::next;
             if (idx > 0) { secondary = Lang.t("tutorial.button.back"); final int prev = idx - 1; onSecondary = () -> go(prev); }
         }

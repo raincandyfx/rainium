@@ -77,7 +77,9 @@ public final class ReactScreen extends Screen {
     private String toast = "";
     private int toastColor = TEXT;
     private long toastUntil;
-    private String tip;
+    private String tip, menuTip;
+    private String pinText, prevPin;   // an explanation kept open by clicking its "i"
+    private int pinX, pinY;
 
     private record Hit(int x, int y, int w, int h, Runnable click, java.util.function.IntConsumer scroll) {}
     private final List<Hit> hits = new ArrayList<>();
@@ -92,7 +94,49 @@ public final class ReactScreen extends Screen {
         this.layerIndex = layer == null ? -1 : assets.editable().layers.indexOf(layer);
         React.Graph g = graph();
         if (g != null && !g.isEmpty()) fitLater = true;
+        Tutorial.reactOpened();
     }
+
+    // ------------------------------------------------------------------ the tour
+    /** Where things are this frame ({x, y, w, h}), for the tutorial to point at. */
+    private final java.util.Map<String, int[]> marks = new java.util.HashMap<>();
+
+    private void mark(String id, int x, int y, int w, int h) { if (w > 0 && h > 0) marks.put(id, new int[]{x, y, w, h}); }
+
+    /** What the tour asks of this screen (it sets itself up for what the step shows). */
+    private final Tutorial.Host tourHost = new Tutorial.Host() {
+        @Override public void tab(String name) { }
+        @Override public void ensureHalo() { }
+        @Override public void selectHalo() { }
+        @Override public void ensureParticle() { }
+        @Override public void openEditor() { }
+        @Override public boolean nodesScreen() { return true; }
+        @Override public void enter(String what) {
+            switch (what) {
+                case "reactExample" -> {   // something to look at: two small examples, only if there's nothing yet
+                    menuOpen = false;
+                    React.Graph gr = graph();
+                    if (gr == null || gr.isEmpty()) {
+                        for (String id : new String[]{"sprint_spin", "hit_flash"}) for (Template tp : TEMPLATES) if (tp.id.equals(id)) addTemplate(tp);
+                    }
+                    selected = -1;
+                    fit();
+                }
+                case "menuEvents", "menuGates" -> {
+                    openMenu(Math.max(4, cvX + 30), BAR + 6, centreX(), centreY(), -1, 0, false);
+                    menuCat = what.equals("menuEvents") ? React.Cat.EVENT : React.Cat.LOGIC;
+                    menuGroup = null;
+                }
+                case "selectAction" -> {
+                    menuOpen = false;
+                    React.Graph gr = graph();
+                    if (gr != null) for (React.Node n : gr.nodes) if (n.t() != null && n.t().isAction()) { selected = n.id; break; }
+                }
+                case "overview" -> { menuOpen = false; selected = -1; }
+                default -> { }
+            }
+        }
+    };
 
     private boolean fitLater;
 
@@ -160,14 +204,18 @@ public final class ReactScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float pt) {
         super.extractRenderState(g, mx, my, pt);
+        if (Tutorial.active() && !Tutorial.inReactions()) { Minecraft.getInstance().execute(this::back); return; }   // the tour went back to the editor
         hits.clear();
+        marks.clear();
         tip = null;
+        menuTip = null;
         editRect = null;
         int W = width, H = height;
         int insW = Math.max(150, Math.min(220, W * 34 / 100));
         cvX = 0; cvY = BAR; cvW = W - insW; cvH = H - BAR;
         React.Graph gr = graph();
         if (fitLater && cvW > 0) { fitLater = false; fit(); }
+        mark("canvas", cvX, cvY, cvW, cvH);
 
         canvas(g, mx, my, gr);
         int pvH = showPreview && H - BAR > 200 ? Math.min(118, (H - BAR) * 2 / 7) : 0;
@@ -185,7 +233,47 @@ public final class ReactScreen extends Screen {
         toast(g);
         if (fileOpen) fileMenu(g, mx, my, W);
         if (menuOpen) addMenu(g, mx, my);
-        if (tip != null && !menuOpen) tooltip(g, mx, my, tip);
+        if (menuOpen && menuTip != null) tooltip(g, mx, my, menuTip);
+        else if (tip != null && !menuOpen) tooltip(g, mx, my, tip);
+        if (pinText != null) tooltip(g, pinX - 8, pinY - 6, pinText);
+        Tutorial.draw(g, font, W, H, mx, my, marks, tourHost, true);
+    }
+
+    /**
+     * The mod's small "i": hover it for the explanation, click to keep it open. Draws at (cx, cy)
+     * and takes the clicks there, so it goes after the row it sits on.
+     */
+    private void infoIcon(GuiGraphicsExtractor g, int mx, int my, int cx, int cy, String text, boolean inMenu) {
+        boolean hov = in(mx, my, cx - 6, cy - 6, 12, 12), shown = hov || text.equals(pinText);
+        int col = shown ? PAPER : CYAN;
+        if (shown) disc(g, cx, cy, 4.4f, col); else ring(g, cx, cy, 4.4f, 1f, col);
+        int mark = shown ? INK : col;   // a dot over a stem, inside the circle
+        disc(g, cx, cy - 1.9f, 0.75f, mark);
+        fillShape(g, cy - 0.7f, cy + 2.3f, yy -> new float[]{cx - 0.65f, cx + 0.65f}, mark);
+        if (hov && !text.equals(pinText)) { if (inMenu) menuTip = text; else tip = text; }
+        hits.add(new Hit(cx - 6, cy - 6, 12, 12, () -> { pinText = text.equals(prevPin) ? null : text; pinX = cx; pinY = cy; }, null));
+    }
+
+    private void disc(GuiGraphicsExtractor g, float cx, float cy, float r, int color) {
+        fillShape(g, cy - r, cy + r, yy -> {
+            float d = r * r - (yy - cy) * (yy - cy);
+            if (d < 0) return null;
+            float dx = (float) Math.sqrt(d);
+            return new float[]{cx - dx, cx + dx};
+        }, color);
+    }
+
+    private void ring(GuiGraphicsExtractor g, float cx, float cy, float r, float thick, int color) {
+        float ri = r - thick;
+        for (int side = -1; side <= 1; side += 2) {
+            final int sd = side;
+            fillShape(g, cy - r, cy + r, yy -> {
+                float dy = yy - cy, d = r * r - dy * dy;
+                if (d < 0) return null;
+                float o = (float) Math.sqrt(d), di = ri * ri - dy * dy, in = di > 0 ? (float) Math.sqrt(di) : 0f;
+                return sd < 0 ? new float[]{cx - o, cx - in} : new float[]{cx + in, cx + o};
+            }, color);
+        }
     }
 
     // ------------------------------------------------------------------ top bar
@@ -217,6 +305,7 @@ public final class ReactScreen extends Screen {
         right -= strong(fileS) + 14;
         chip(g, mx, my, right, 5, fileS, fileOpen, () -> { fileOpen = !fileOpen; importOpen = false; confirmClear = false; });
         fileX = right;
+        mark("file", right, 5, strong(fileS) + 14, 14);
         right -= 4;
         String addS = "+ " + Lang.t("react.add").toUpperCase(Locale.ROOT);
         int aw = strong(addS) + 14;
@@ -246,6 +335,7 @@ public final class ReactScreen extends Screen {
 
     private void back() {
         commitEdit();
+        Tutorial.reactClosed();
         Minecraft.getInstance().gui.setScreen(parent);
     }
 
@@ -370,6 +460,11 @@ public final class ReactScreen extends Screen {
         double since = lv == null || lv[1] < 0 ? 99 : now - lv[1];
         float level = lv == null ? 0 : (float) lv[0];
         boolean hov = cmx >= x && cmx < x + NW && cmy >= y && cmy < y + h;
+        if (t.cat() == React.Cat.EVENT && !marks.containsKey("canvas_event")) {   // the tour points at the first event's play button
+            int sx = cvX + Math.round((x + panX) * zoom), sy = cvY + Math.round((y + panY) * zoom);
+            int sw = Math.round(NW * zoom), sh = Math.round(HEAD * zoom);
+            if (sx >= cvX && sy >= cvY && sx + sw <= cvX + cvW && sy + sh <= cvY + cvH) mark("canvas_event", sx, sy, sw, sh);
+        }
         // body
         g.fill(x + 2, y + 2, x + NW + 2, y + h + 2, 0x60000000);   // shadow
         g.fill(x, y, x + NW, y + h, sel ? 0xF81A2D86 : 0xF00A1450);
@@ -448,6 +543,17 @@ public final class ReactScreen extends Screen {
                 case "shake" -> num(n.num("strength"));
                 case "bob" -> num(n.num("amount"));
                 case "particles" -> "+" + (int) n.num("burst") + " · " + num(n.num("rate")) + "×";
+                case "blink" -> num(n.num("speed")) + " Hz";
+                case "flicker", "glow_pulse" -> pct(n.num("strength"));
+                case "tint_pulse" -> n.str("color");
+                case "pulse", "heartbeat" -> "+" + pct(n.num("amount"));
+                case "sway" -> n.str("axis") + " " + num(n.num("amount"));
+                case "orbit" -> num(n.num("radius"));
+                case "drift" -> num(n.num("amount"));
+                case "wobble" -> n.str("axis") + " " + num(n.num("angle")) + "°";
+                case "roll" -> n.str("axis") + " " + num(n.num("speed")) + "°/s";
+                case "shiver" -> num(n.num("angle")) + "°";
+                case "glitch" -> num(n.num("strength"));
                 default -> "";
             };
             String time = in == React.Port.EVENT
@@ -462,7 +568,7 @@ public final class ReactScreen extends Screen {
             b.append(valueText(n, q));
         }
         if (t.cat() == React.Cat.LOGIC) {
-            for (int i = 0; i < t.in().length; i++) if (gr.input(n.id, i) == null && !n.type.equals("gate") && !n.type.equals("either") && !n.type.equals("and") && !n.type.equals("or") && !n.type.equals("switch")) return "! " + Lang.t("react.sum.needs_input");
+            for (int i = 0; i < t.in().length; i++) if (gr.input(n.id, i) == null && !n.type.equals("gate") && !n.type.equals("unless") && !n.type.equals("either") && !n.type.equals("and") && !n.type.equals("or") && !n.type.equals("switch")) return "! " + Lang.t("react.sum.needs_input");
         }
         return b.toString();
     }
@@ -575,6 +681,7 @@ public final class ReactScreen extends Screen {
         g.fill(x, y, x + 1, y + h, 0x50FFFFFF);
         int cx = x + PAD, cw = w - PAD * 2 - 3, top = y + 6, bottom = y + h - 4;
         int viewH = bottom - top;
+        mark("inspector", x, y, w, h);
         inspScroll = Math.max(0, Math.min(inspScroll, Math.max(0, inspContent - viewH)));
         int before = hits.size();
         g.enableScissor(x + 1, top, x + w, bottom);
@@ -597,10 +704,11 @@ public final class ReactScreen extends Screen {
     /** With nothing selected: what this is, how to use it, and ready-made examples. */
     private int overview(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, React.Graph gr) {
         y = heading(g, x, y, w, Lang.t("react.section.reactions"));
-        y = wrapped(g, x, y, w, Lang.t(folder != null ? "react.intro_folder" : "react.intro", targetName()), MUTED) + 4;
+        infoIcon(g, mx, my, x + w - 6, y - 10, Lang.t(folder != null ? "react.intro_folder" : "react.intro", targetName()), false);
         int nodes = gr == null ? 0 : gr.nodes.size();
         g.text(font, RainiumScreen.body(Lang.t("react.count", nodes, gr == null ? 0 : gr.wires.size())), x, y, FAINT, false);
         y += 13;
+        int exTop = y + 2;
         y = heading(g, x, y + 2, w, Lang.t("react.section.examples"));
         for (Template tp : TEMPLATES) {
             if (tp.particlesOnly && !targetIsParticles()) continue;
@@ -615,13 +723,18 @@ public final class ReactScreen extends Screen {
             hits.add(new Hit(x, y, w, bh, () -> addTemplate(tp), null));
             y += bh + 2;
         }
+        mark("examples", x - 2, exTop, w + 4, Math.min(60, y - exTop));
         y = heading(g, x, y + 4, w, Lang.t("react.section.how"));
+        int[] howCol = {catColor(React.Cat.EVENT), catColor(React.Cat.STATE), PAPER, catColor(React.Cat.ACTION), catColor(React.Cat.LOGIC), CYAN};
         for (int i = 1; i <= 6; i++) {
-            String s = Lang.optional("react.how." + i);
-            if (s == null) break;
-            y = wrapped(g, x, y, w, "• " + s, MUTED) + 2;
+            String how = Lang.optional("react.how." + i);
+            if (how == null) break;
+            g.fill(x, y + 1, x + 2, y + 10, howCol[(i - 1) % howCol.length]);
+            g.text(font, RainiumScreen.styled(Lang.t("react.how.t." + i), false, true), x + 6, y + 1, TEXT, false);
+            infoIcon(g, mx, my, x + w - 6, y + 5, how, false);
+            y += 13;
         }
-        return y;
+        return y + 2;
     }
 
     private int nodePanel(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, React.Graph gr, React.Node n) {
@@ -638,9 +751,10 @@ public final class ReactScreen extends Screen {
         hits.add(new Hit(bx, y, 10, 11, () -> selected = -1, null));
         y += 14;
         String name = Lang.t("react.node." + n.type);
-        g.text(font, RainiumScreen.styled(fitStrong(name.toUpperCase(Locale.ROOT), w), true, true), x, y, PAPER, false);
-        y += 13;
-        y = wrapped(g, x, y, w, Lang.t("react.node." + n.type + ".desc"), MUTED) + 3;
+        String nu = fitStrong(name.toUpperCase(Locale.ROOT), w - 16);
+        g.text(font, RainiumScreen.styled(nu, true, true), x, y, PAPER, false);
+        infoIcon(g, mx, my, x + strong(nu) + 9, y + 4, Lang.t("react.node." + n.type + ".desc"), false);
+        y += 15;
         if (t.self()) y = wrapped(g, x, y, w, Lang.t("react.you_only"), WARN) + 3;
         if (t.isAction() && n.type.equals("particles") && !targetIsParticles()) y = wrapped(g, x, y, w, Lang.t("react.particles_only"), WARN) + 3;
 
@@ -655,8 +769,13 @@ public final class ReactScreen extends Screen {
 
         if (t.isAction()) {
             React.Port in = gr.incoming(n, 0);
-            String how = in == null ? Lang.t("react.input.none") : in == React.Port.EVENT ? Lang.t("react.input.event") : Lang.t("react.input.level");
-            y = wrapped(g, x, y + 2, w, how, in == null ? WARN : TEXT) + 4;
+            if (in == null) y = wrapped(g, x, y + 2, w, Lang.t("react.input.none"), WARN) + 4;
+            else {
+                String how = Lang.t(in == React.Port.EVENT ? "react.input.event.short" : "react.input.level.short");
+                g.text(font, RainiumScreen.styled(how, false, true), x, y + 2, TEXT, false);
+                infoIcon(g, mx, my, x + font.width(RainiumScreen.styled(how, false, true)) + 9, y + 6, Lang.t(in == React.Port.EVENT ? "react.input.event" : "react.input.level"), false);
+                y += 16;
+            }
             y = envelope(g, x, y, w, n, in);
         }
 
@@ -1010,6 +1129,8 @@ public final class ReactScreen extends Screen {
 
         // the search bar: typing anywhere in the menu goes into it
         int sx = x + 4, sy = y + 4, sw = w - 8;
+        mark("menu", x, y, w, h);
+        mark("menu_search", sx, sy, sw, 14);
         g.fill(sx, sy, sx + sw, sy + 14, INK);
         g.outline(sx, sy, sw, 14, searching ? CYAN : FIELD_EDGE);
         magnifier(g, sx + 6, sy + 7, searching ? CYAN : FAINT);
@@ -1025,6 +1146,7 @@ public final class ReactScreen extends Screen {
 
         // tabs, then the tab's groups (both hidden while searching: results come from every tab)
         if (!searching) {
+            mark("menu_tabs", x + 4, ty, w - 8, 12);
             int tx = x + 4;
             for (React.Cat c : React.Cat.values()) {
                 String s = Lang.t("react.cat." + c.name().toLowerCase(Locale.ROOT) + "s").toUpperCase(Locale.ROOT);
@@ -1037,6 +1159,7 @@ public final class ReactScreen extends Screen {
                 tx += cw + 2;
             }
             ty += 15;
+            mark("menu_groups", x + 4, ty, w - 8, 11);
             List<String> groups = new ArrayList<>();
             groups.add(null);
             for (String gname : React.GROUPS.getOrDefault(menuCat, List.of())) if (!menuTypes(menuCat, gname).isEmpty()) groups.add(gname);
@@ -1054,9 +1177,8 @@ public final class ReactScreen extends Screen {
             ty += 14;
         }
 
-        int lt = ty, lb = y + h - 12;
+        int lt = ty, lb = y + h - 3;
         g.fill(x + 1, lt - 2, x + w - 1, lt - 1, 0x30FFFFFF);
-        g.text(font, RainiumScreen.body(fit(Lang.t(searching ? "react.menu.hint_search" : "react.menu.hint"), w - 8)), x + 4, y + h - 10, FAINT, false);
         List<React.Type> list = searching ? searchTypes() : menuTypes(menuCat, menuGroup);
         int viewH = lb - lt;
         menuScroll = Math.max(0, Math.min(menuScroll, Math.max(0, menuContent - viewH)));
@@ -1080,18 +1202,16 @@ public final class ReactScreen extends Screen {
                 lastHead = head;
             }
             String nm = Lang.t("react.node." + t.id());
-            List<String> d = wrap(Lang.t("react.node." + t.id() + ".desc"), w - 16);
-            if (d.size() > 2) d = List.of(d.get(0), fit(d.get(1) + "…", w - 16));
-            int rh = 12 + d.size() * 9 + 2;
+            int rh = 14;
             boolean hov = in(mx, my, x + 2, cy, w - 4, rh) && my >= lt && my < lb;
             if (hov) g.fill(x + 2, cy, x + w - 2, cy + rh, FIELD_HOVER);
             g.fill(x + 3, cy + 2, x + 5, cy + rh - 2, catColor(t.cat()));
-            g.text(font, RainiumScreen.styled(nm, false, true), x + 8, cy + 2, PAPER, false);
-            if (t.self()) { String you = Lang.t("react.you_only_short"); g.text(font, RainiumScreen.body(you), x + w - 6 - font.width(RainiumScreen.body(you)), cy + 2, FAINT, false); }
-            int dy = cy + 12;
-            for (String line : d) { g.text(font, RainiumScreen.body(line), x + 8, dy, MUTED, false); dy += 9; }
+            g.text(font, RainiumScreen.styled(fit(nm, w - 50), false, true), x + 8, cy + 3, PAPER, false);
+            if (t.self()) { String you = Lang.t("react.you_only_short"); g.text(font, RainiumScreen.body(you), x + w - 24 - font.width(RainiumScreen.body(you)), cy + 3, FAINT, false); }
             final React.Type tt = t;
             hits.add(new Hit(x + 2, cy, w - 4, rh, () -> addFromMenu(tt), null));
+            if (cy >= lt - 6 && cy < lb && !marks.containsKey("menu_info")) mark("menu_info", x + w - 20, cy, 12, 14);
+            if (cy >= lt - 6 && cy < lb) infoIcon(g, mx, my, x + w - 14, cy + 7, Lang.t("react.node." + t.id() + ".desc"), true);
             cy += rh + 1;
         }
         g.disableScissor();
@@ -1254,25 +1374,63 @@ public final class ReactScreen extends Screen {
     // ------------------------------------------------------------------ examples
     private record Template(String id, boolean particlesOnly, String[] types, double[][] at, int[][] wires, Object[][] settings) {}
 
+    private static final double[][] ONE = {{0, 0}, {150, 0}};
+    private static final double[][] FORK = {{0, 0}, {150, -34}, {150, 50}};
+    private static final int[][] LINE = {{0, 1, 0}};
+    private static final int[][] SPLIT = {{0, 1, 0}, {0, 2, 0}};
+    private static final Object[] NO = {};
+
+    /** Ready-made graphs, listed in the overview. `settings` are key, value pairs for each node (everything else stays default). */
     private static final List<Template> TEMPLATES = List.of(
-        new Template("totem_show", false, new String[]{"totem_opponent", "show"}, new double[][]{{0, 0}, {150, 0}}, new int[][]{{0, 1, 0}},
-            new Object[][]{{}, {"hold", 3.0, "in", 0.25, "out", 0.6}}),
-        new Template("hurt_flash", false, new String[]{"hurt", "tint"}, new double[][]{{0, 0}, {150, 0}}, new int[][]{{0, 1, 0}},
-            new Object[][]{{}, {"color", "#FF2030", "in", 0.05, "hold", 0.15, "out", 0.6}}),
-        new Template("combat_glow", false, new String[]{"in_combat", "glow"}, new double[][]{{0, 0}, {150, 0}}, new int[][]{{0, 1, 0}},
-            new Object[][]{{}, {"in", 0.5, "out", 1.5}}),
-        new Template("sprint_spin", false, new String[]{"sprinting", "spin"}, new double[][]{{0, 0}, {150, 0}}, new int[][]{{0, 1, 0}},
-            new Object[][]{{}, {"speed", 360.0, "in", 0.6, "out", 1.0}}),
-        new Template("hold_totem", false, new String[]{"holding", "show"}, new double[][]{{0, 0}, {150, 0}}, new int[][]{{0, 1, 0}},
-            new Object[][]{{}, {"in", 0.3, "out", 0.3}}),
-        new Template("sneak_fade", false, new String[]{"sneaking", "opacity"}, new double[][]{{0, 0}, {150, 0}}, new int[][]{{0, 1, 0}},
-            new Object[][]{{}, {"value", 0.25, "in", 0.3, "out", 0.3}}),
+        new Template("hit_flash", false, new String[]{"hurt", "tint", "shake"}, FORK, SPLIT,
+            new Object[][]{NO, {"color", "#FF2030", "in", 0.05, "hold", 0.15, "out", 0.6}, {"strength", 0.05, "speed", 30.0, "in", 0.02, "hold", 0.2, "out", 0.2}}),
+        new Template("sprint_spin", false, new String[]{"sprinting", "spin"}, ONE, LINE,
+            new Object[][]{NO, {"speed", 360.0, "in", 0.6, "out", 1.0}}),
+        new Template("sneak_ghost", false, new String[]{"sneaking", "opacity"}, ONE, LINE,
+            new Object[][]{NO, {"value", 0.25, "in", 0.3, "out", 0.3}}),
+        new Template("totem_pop", false, new String[]{"totem", "scale", "glow"}, FORK, SPLIT,
+            new Object[][]{NO, {"factor", 1.5, "in", 0.12, "in_curve", "back_out", "hold", 0.2, "out", 0.6}, {"strength", 1.0, "in", 0.05, "hold", 0.4, "out", 0.8}}),
+        new Template("enemy_totem", false, new String[]{"totem_opponent", "tint_pulse"}, ONE, LINE,
+            new Object[][]{NO, {"color", "#FFD040", "strength", 0.9, "speed", 4.0, "in", 0.1, "hold", 1.5, "out", 0.5}}),
+        new Template("heartbeat_low", false, new String[]{"health", "heartbeat", "tint_pulse"}, FORK, SPLIT,
+            new Object[][]{{"mode", "below", "percent", 30.0}, {"amount", 0.15, "speed", 1.6, "in", 0.5, "out", 0.8}, {"color", "#FF2030", "strength", 0.5, "speed", 1.6, "in", 0.5, "out", 0.8}}),
+        new Template("danger_zone", false, new String[]{"health", "in_combat", "and", "shiver", "tint"},
+            new double[][]{{0, -34}, {0, 50}, {150, 8}, {300, -34}, {300, 50}}, new int[][]{{0, 2, 0}, {1, 2, 1}, {2, 3, 0}, {2, 4, 0}},
+            new Object[][]{{"mode", "below", "percent", 40.0}, NO, NO, {"angle", 5.0, "in", 0.2, "out", 0.5}, {"color", "#FF2030", "strength", 0.45, "in", 0.3, "out", 0.8}}),
+        new Template("combat_aura", false, new String[]{"in_combat", "glow_pulse"}, ONE, LINE,
+            new Object[][]{NO, {"strength", 0.8, "speed", 1.0, "in", 0.4, "out", 2.0}}),
+        new Template("kill_party", false, new String[]{"kill", "rainbow", "spin"}, FORK, SPLIT,
+            new Object[][]{NO, {"speed", 1.5, "strength", 0.9, "in", 0.2, "hold", 3.0, "out", 1.0}, {"speed", 720.0, "in", 0.2, "hold", 2.0, "out", 1.0}}),
+        new Template("streak_orbit", false, new String[]{"kill_streak", "orbit", "glow"}, FORK, SPLIT,
+            new Object[][]{{"count", 3.0}, {"radius", 0.4, "speed", 0.8, "in", 0.5, "hold", 10.0, "out", 1.5}, {"strength", 0.6, "in", 0.5, "hold", 10.0, "out", 1.5}}),
+        new Template("death_hide", false, new String[]{"death", "respawn", "switch", "hide"},
+            new double[][]{{0, -34}, {0, 50}, {150, 8}, {300, 8}}, new int[][]{{0, 2, 0}, {1, 2, 1}, {2, 3, 0}},
+            new Object[][]{NO, NO, NO, {"in", 0.3, "out", 0.6}}),
+        new Template("fight_only", false, new String[]{"in_combat", "show"}, ONE, LINE,
+            new Object[][]{{"seconds", 8.0}, {"in", 0.3, "out", 1.5}}),
+        new Template("hold_totem", false, new String[]{"holding", "show"}, ONE, LINE,
+            new Object[][]{NO, {"in", 0.3, "out", 0.3}}),
+        new Template("mace_slam", false, new String[]{"mace_smash", "shake", "scale"}, FORK, SPLIT,
+            new Object[][]{NO, {"strength", 0.12, "speed", 30.0, "in", 0.02, "hold", 0.35, "out", 0.4}, {"factor", 1.3, "in", 0.08, "in_curve", "back_out", "hold", 0.15, "out", 0.5}}),
+        new Template("swing_miss", false, new String[]{"swing", "hit", "without", "shiver"},
+            new double[][]{{0, -34}, {0, 50}, {150, 8}, {300, 8}}, new int[][]{{0, 2, 0}, {1, 2, 1}, {2, 3, 0}},
+            new Object[][]{NO, NO, {"within", 0.5}, {"angle", 8.0, "speed", 30.0, "in", 0.02, "hold", 0.3, "out", 0.3}}),
+        new Template("trade", false, new String[]{"hit", "hurt", "both", "tint_pulse"},
+            new double[][]{{0, -34}, {0, 50}, {150, 8}, {300, 8}}, new int[][]{{0, 2, 0}, {1, 2, 1}, {2, 3, 0}},
+            new Object[][]{NO, NO, {"within", 0.5}, {"color", "#FFD040", "strength", 0.8, "speed", 5.0, "in", 0.05, "hold", 1.0, "out", 0.5}}),
+        new Template("pearl_blink", false, new String[]{"pearl_teleport", "blink"}, ONE, LINE,
+            new Object[][]{NO, {"speed", 12.0, "visible", 0.4, "in", 0.0, "hold", 0.8, "out", 0.1}}),
+        new Template("tumble", false, new String[]{"launched", "roll"}, ONE, LINE,
+            new Object[][]{NO, {"axis", "x", "speed", 900.0, "in", 0.05, "hold", 0.8, "out", 0.4}}),
+        new Template("night_glow", false, new String[]{"night", "raining", "not", "and", "glow"},
+            new double[][]{{0, -34}, {0, 50}, {150, 50}, {300, 8}, {450, 8}}, new int[][]{{1, 2, 0}, {0, 3, 0}, {2, 3, 1}, {3, 4, 0}},
+            new Object[][]{NO, NO, NO, NO, {"strength", 0.6, "in", 2.0, "out", 2.0}}),
+        new Template("worn_armour", false, new String[]{"low_durability", "flicker"}, ONE, LINE,
+            new Object[][]{{"slot", "armor", "percent", 15.0}, {"strength", 0.6, "speed", 10.0, "in", 0.5, "out", 0.5}}),
         new Template("combo_grow", false, new String[]{"hit", "combo", "scale"}, new double[][]{{0, 0}, {140, 0}, {280, 0}}, new int[][]{{0, 1, 0}, {1, 2, 0}},
-            new Object[][]{{}, {"count", 3.0, "within", 2.0}, {"factor", 1.4, "hold", 2.0, "in", 0.1, "out", 0.8, "in_curve", "back_out"}}),
-        new Template("low_health_shake", false, new String[]{"health", "shake", "tint"}, new double[][]{{0, 0}, {150, -10}, {150, 50}}, new int[][]{{0, 1, 0}, {0, 2, 0}},
-            new Object[][]{{"percent", 25.0}, {"strength", 0.03}, {"color", "#FF2030", "strength", 0.6}}),
-        new Template("kill_burst", true, new String[]{"kill", "particles"}, new double[][]{{0, 0}, {150, 0}}, new int[][]{{0, 1, 0}},
-            new Object[][]{{}, {"burst", 40.0, "rate", 1.0, "hold", 0.2}})
+            new Object[][]{NO, {"count", 3.0, "within", 2.0}, {"factor", 1.4, "in", 0.1, "in_curve", "back_out", "hold", 2.0, "out", 0.8}}),
+        new Template("kill_burst", true, new String[]{"kill", "particles"}, ONE, LINE,
+            new Object[][]{NO, {"burst", 40.0, "rate", 1.0, "hold", 0.2}})
     );
 
     private void addTemplate(Template tp) {
@@ -1339,8 +1497,11 @@ public final class ReactScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         double mx = event.x(), my = event.y();
+        if (Tutorial.click(mx, my)) return true;
         lastMx = mx; lastMy = my;
         int button = buttonOf(event);
+        prevPin = pinText;
+        pinText = null;
         if (editId != null) {
             if (editRect != null && in(mx, my, editRect[0], editRect[1], editRect[2], editRect[3])) return true;
             commitEdit();
@@ -1485,6 +1646,7 @@ public final class ReactScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+        if (Tutorial.blocks(mx, my)) return true;
         lastMx = mx; lastMy = my;
         int d = sy > 0 ? 1 : sy < 0 ? -1 : 0;
         if (d == 0) return false;
@@ -1498,7 +1660,9 @@ public final class ReactScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
+        pinText = null;
         int k = event.key();
+        if (editId == null && Tutorial.key(k, true)) return true;   // the tour owns Esc and the keys
         boolean ctrl = RainiumScreen.down(RainiumScreen.SC_LCTRL) || RainiumScreen.down(RainiumScreen.SC_RCTRL) || RainiumScreen.down(RainiumScreen.SC_LGUI) || RainiumScreen.down(RainiumScreen.SC_RGUI);
         boolean shift = RainiumScreen.down(RainiumScreen.SC_LSHIFT) || RainiumScreen.down(RainiumScreen.SC_RSHIFT);
         if (editId != null) {

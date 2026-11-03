@@ -194,6 +194,14 @@ public final class RainiumScreen extends Screen {
             addParticles(ParticleStarters.NAMES[0]);
         }
         @Override public void openEditor() { }
+        @Override public void openReactions() {
+            if (haloIndex() < 0) ensureHalo();
+            int i = haloIndex();
+            if (i < 0) return;
+            selectHalo();
+            commitEdit();
+            Minecraft.getInstance().gui.setScreen(new ReactScreen(RainiumScreen.this, assets.editable().layers.get(i), null));
+        }
     };
 
     private int haloIndex() {
@@ -870,6 +878,7 @@ public final class RainiumScreen extends Screen {
 
     /** The Reactions section of a layer or folder: what it has, and a button to open the reactions editor. */
     private int reactionsSection(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, React.Graph r, LayerConfig.Layer layer, String folder) {
+        int top0 = y;
         y = section(g, x, y, w, "reactions");
         int n = r == null ? 0 : r.nodes.size(), acts = 0;
         if (r != null) for (React.Node nd : r.nodes) if (nd.t() != null && nd.t().isAction()) acts++;
@@ -880,6 +889,7 @@ public final class RainiumScreen extends Screen {
             Minecraft.getInstance().gui.setScreen(new ReactScreen(this, layer, folder));
         });
         tip(mx, my, x, y - ROW - GAP - 4, w, ROW + 2, "reactions");
+        mark("reactions", x - 2, top0, w + 4, y - top0);
         return y;
     }
 

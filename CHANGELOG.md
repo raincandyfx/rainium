@@ -2,6 +2,24 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.4 (dev build)
+
+- **Logic gates, sorted by what they join** (Logic tab):
+  - **State gates:** and, or, not, nand, nor, xor, xnor.
+  - **Event gates:** either, both, then, without, one of. Both, then, without and one of have a **Tolerance** (how close in time the two events must be).
+  - **State + event:** only while, unless.
+  - Hold, toggle, on/off, starts, stops and the filters (chance, cooldown, every Nth, combo, delay) are in their own groups.
+- **13 more actions**, built from what actions already do, so nothing existing changed:
+  - **Visibility:** blink, flicker.
+  - **Colour:** colour pulse, glow pulse.
+  - **Motion:** pulse, heartbeat, sway, orbit, drift, wobble, roll, shiver.
+  - **Effects:** glitch.
+  - Sway, wobble and roll pick an axis.
+- **New reaction examples:** 21 replace the old ones, such as red flash and shake when hurt, spin while sprinting, ghost fade when you sneak, heartbeat at low health, kill streak orbit, mace slam, pearl blink and a combo that grows.
+- **The add menu is tidier:** one line per node, with the description behind an **i** icon (hover it, or click to keep it open), like the rest of Rainium. The same goes for the node panel, the inputs and the Reactions overview.
+- **Nocturne ascended has new default settings and ships with its reactions** (6 nodes) on its folder.
+- **The tutorial now covers the reactions editor:** 13 steps (was 7). It opens the editor for you and walks through the canvas, the add menu, logic gates, actions, and trying it out and sharing.
+
 ## 0.9.3 (dev build)
 
 - **Many more reaction triggers**, with PvP ones first:

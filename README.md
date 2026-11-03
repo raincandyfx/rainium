@@ -102,10 +102,14 @@ A layer (or a whole folder) can react to what happens to the player wearing it: 
   - **Items:** shoot, eat or drink, effect gained / ended, block broken / placed, picked up, fishing catch, level up.
   - **World:** lightning nearby, a chat word, every few seconds.
 - **States** (blue) are true for a while: health, absorption, on fire; in combat, blocking, falling; your opponent's health, distance, held item, shield, and whether they're looking at you; sneaking, sprinting, moving, gliding, swimming, in water or lava, on the ground, in the air, riding, sleeping, in a cobweb; holding or using an item, an effect, hunger, low durability, few totems left, an item cooling down, shield disabled; night, rain, thunder, a dimension, a biome, game mode.
-- **Logic** (purple) combines and shapes them: both, either, not, only while, stay on for, toggle, on/off, when it starts or stops, chance, cooldown, every Nth, combo, delay.
-- **Actions** (pink) change the layer: show, hide, tint, opacity, glow, rainbow, size, move, rotate, spin, shake, bob, and particle bursts on particle layers. Each fades in, holds (after an event) and fades out, with a curve for each way in and out (ease in/out, overshoot, elastic, bounce, step, or a custom curve with handles).
+- **Logic** (purple) combines and shapes them, in groups:
+  - **State gates:** and, or, not, nand, nor, xor, xnor.
+  - **Event gates:** either, both, then, without, one of. Both, then, without and one of have a **Tolerance**: how close in time the two events must be.
+  - **State + event:** only while, unless.
+  - **Convert:** stay on for, toggle, on/off, when it starts, when it stops. **Filter:** chance, cooldown, every Nth, combo, delay.
+- **Actions** (pink) change the layer: show, hide, tint, opacity, glow, rainbow, size, move, rotate, spin, shake, bob, blink, flicker, colour and glow pulses, pulse, heartbeat, sway, orbit, drift, wobble, roll, shiver, glitch, and particle bursts on particle layers. Each fades in, holds (after an event) and fades out, with a curve for each way in and out (ease in/out, overshoot, elastic, bounce, step, or a custom curve with handles).
 
-The add menu has a search bar (type to search every node) and a chip for each group. Drag from an output to an input to wire nodes; drop a wire on empty space to add a node already wired. ▶ on an event fires it on you, and the square on a state pretends it's on, so you can try things in the live preview. There are ready-made examples to start from.
+The add menu has a search bar (type to search every node) and a chip for each group. Drag from an output to an input to wire nodes; drop a wire on empty space to add a node already wired. ▶ on an event fires it on you, and the square on a state pretends it's on, so you can try things in the live preview. Hover or click an **i** for what a node does. There are ready-made examples to start from, and the tutorial (Settings > Replay tutorial) walks through the editor.
 
 Reactions are saved with the layer, so **Export as zip** (and **Export layer**) carry them. **File** in the editor copies them as text, pastes them, or saves and loads `.reactions.json` files in `config/rainium/exports`. Your reactions show on everyone your layer is drawn on, each reacting to what happens to them; a few things (effects, hunger, eating, level-ups, durability, cooldowns, totems left, block breaking and placing, dimension changes) are only known about you.
 

@@ -159,6 +159,10 @@ final class Presets {
         if (bundledIds().contains(id)) {
             String f = assets.editable().uniqueFolderName(String.valueOf(bundledSet(id).get("name")));
             for (LayerConfig.Layer l : layers) l.folder = f;
+            if (bundledSet(id).get("reactions") instanceof java.util.Map<?, ?> rm) {   // the model's own reactions, on its folder
+                React.Graph rg = React.Graph.fromJson(rm);
+                if (!rg.isEmpty()) assets.editable().folder(f).reactions = rg;
+            }
             return layers;
         }
         String folder = assets.editable().uniqueFolderName(folderName(id));

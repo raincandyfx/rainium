@@ -197,16 +197,29 @@ final class React {
         st("game_mode", choice("mode", "creative", "survival", "creative", "spectator"));
 
         // ---- logic (combine and shape)
-        group = "combine";
-        type("and", Cat.LOGIC, new Port[]{Port.LEVEL, Port.LEVEL}, Port.LEVEL, false);
-        type("or", Cat.LOGIC, new Port[]{Port.LEVEL, Port.LEVEL}, Port.LEVEL, false);
+        // logic gates: state·state (levels), event·event (with a time tolerance), state·event
+        group = "gates_state";
+        Port[] LL = {Port.LEVEL, Port.LEVEL}, EE = {Port.EVENT, Port.EVENT}, EL = {Port.EVENT, Port.LEVEL};
+        type("and", Cat.LOGIC, LL, Port.LEVEL, false);
+        type("or", Cat.LOGIC, LL, Port.LEVEL, false);
         type("not", Cat.LOGIC, LV, Port.LEVEL, false);
-        type("either", Cat.LOGIC, new Port[]{Port.EVENT, Port.EVENT}, Port.EVENT, false);
+        type("nand", Cat.LOGIC, LL, Port.LEVEL, false);
+        type("nor", Cat.LOGIC, LL, Port.LEVEL, false);
+        type("xor", Cat.LOGIC, LL, Port.LEVEL, false);
+        type("xnor", Cat.LOGIC, LL, Port.LEVEL, false);
+        group = "gates_event";
+        type("either", Cat.LOGIC, EE, Port.EVENT, false);
+        type("both", Cat.LOGIC, EE, Port.EVENT, false, num("within", 0.5, 0.05, 30, 0.05, "s"));
+        type("then", Cat.LOGIC, EE, Port.EVENT, false, num("within", 1, 0.05, 30, 0.05, "s"));
+        type("without", Cat.LOGIC, EE, Port.EVENT, false, num("within", 0.5, 0.05, 30, 0.05, "s"));
+        type("one_of", Cat.LOGIC, EE, Port.EVENT, false, num("within", 0.5, 0.05, 30, 0.05, "s"));
+        group = "gates_mixed";
+        type("gate", Cat.LOGIC, EL, Port.EVENT, false);
+        type("unless", Cat.LOGIC, EL, Port.EVENT, false);
         group = "convert";
-        type("gate", Cat.LOGIC, new Port[]{Port.EVENT, Port.LEVEL}, Port.EVENT, false);
         type("hold", Cat.LOGIC, EV, Port.LEVEL, false, num("seconds", 3, 0.05, 600, 0.25, "s"));
         type("toggle", Cat.LOGIC, EV, Port.LEVEL, false);
-        type("switch", Cat.LOGIC, new Port[]{Port.EVENT, Port.EVENT}, Port.LEVEL, false);
+        type("switch", Cat.LOGIC, EE, Port.LEVEL, false);
         type("starts", Cat.LOGIC, LV, Port.EVENT, false);
         type("stops", Cat.LOGIC, LV, Port.EVENT, false);
         group = "filter";
@@ -221,10 +234,14 @@ final class React {
         type("show", Cat.ACTION, ANY, null, false);
         type("hide", Cat.ACTION, ANY, null, false);
         type("opacity", Cat.ACTION, ANY, null, false, num("value", 0.3, 0, 1, 0.05, "×"));
+        type("blink", Cat.ACTION, ANY, null, false, num("speed", 3, 0.25, 20, 0.25, "Hz"), num("visible", 0.5, 0.05, 0.95, 0.05, "×"));
+        type("flicker", Cat.ACTION, ANY, null, false, num("strength", 0.7, 0, 1, 0.05, "×"), num("speed", 12, 1, 40, 0.5, "Hz"));
         group = "colour";
         type("tint", Cat.ACTION, ANY, null, false, color("color", 0xFF3050), num("strength", 1, 0, 1, 0.05, "×"));
         type("glow", Cat.ACTION, ANY, null, false, num("strength", 1, 0, 1, 0.05, "×"));
         type("rainbow", Cat.ACTION, ANY, null, false, num("speed", 0.5, 0.05, 10, 0.05, "Hz"), num("strength", 0.8, 0, 1, 0.05, "×"));
+        type("tint_pulse", Cat.ACTION, ANY, null, false, color("color", 0xFF3050), num("strength", 0.8, 0, 1, 0.05, "×"), num("speed", 1.5, 0.1, 10, 0.1, "Hz"));
+        type("glow_pulse", Cat.ACTION, ANY, null, false, num("strength", 1, 0, 1, 0.05, "×"), num("speed", 1.5, 0.1, 10, 0.1, "Hz"));
         group = "motion";
         type("scale", Cat.ACTION, ANY, null, false, num("factor", 1.5, 0, 10, 0.05, "×"));
         type("move", Cat.ACTION, ANY, null, false, num("x", 0, -10, 10, 0.05, "blocks"), num("y", -0.25, -10, 10, 0.05, "blocks"), num("z", 0, -10, 10, 0.05, "blocks"));
@@ -232,8 +249,17 @@ final class React {
         type("spin", Cat.ACTION, ANY, null, false, num("speed", 180, -1440, 1440, 15, "°/s"));
         type("shake", Cat.ACTION, ANY, null, false, num("strength", 0.04, 0, 1, 0.01, "blocks"), num("speed", 14, 0.5, 40, 0.5, "Hz"));
         type("bob", Cat.ACTION, ANY, null, false, num("amount", 0.1, 0, 2, 0.01, "blocks"), num("speed", 1, 0.05, 10, 0.05, "Hz"));
+        type("pulse", Cat.ACTION, ANY, null, false, num("amount", 0.15, 0, 3, 0.01, "×"), num("speed", 1.5, 0.1, 10, 0.1, "Hz"));
+        type("heartbeat", Cat.ACTION, ANY, null, false, num("amount", 0.2, 0, 3, 0.01, "×"), num("speed", 1.2, 0.2, 5, 0.1, "Hz"));
+        type("sway", Cat.ACTION, ANY, null, false, choice("axis", "x", "x", "y", "z"), num("amount", 0.1, 0, 3, 0.01, "blocks"), num("speed", 0.5, 0.05, 10, 0.05, "Hz"));
+        type("orbit", Cat.ACTION, ANY, null, false, num("radius", 0.3, 0, 3, 0.01, "blocks"), num("speed", 0.5, -5, 5, 0.05, "Hz"));
+        type("drift", Cat.ACTION, ANY, null, false, num("amount", 0.15, 0, 3, 0.01, "blocks"), num("speed", 0.4, 0.05, 5, 0.05, "Hz"));
+        type("wobble", Cat.ACTION, ANY, null, false, choice("axis", "z", "x", "y", "z"), num("angle", 15, 0, 180, 1, "°"), num("speed", 1.5, 0.1, 10, 0.1, "Hz"));
+        type("roll", Cat.ACTION, ANY, null, false, choice("axis", "x", "x", "y", "z"), num("speed", 180, -1440, 1440, 15, "°/s"));
+        type("shiver", Cat.ACTION, ANY, null, false, num("angle", 4, 0, 90, 0.5, "°"), num("speed", 25, 1, 60, 1, "Hz"));
         group = "effects";
         type("particles", Cat.ACTION, ANY, null, false, integer("burst", 20, 0, 500), num("rate", 3, 0, 20, 0.25, "×"));
+        type("glitch", Cat.ACTION, ANY, null, false, num("strength", 0.15, 0, 2, 0.01, "blocks"), num("speed", 8, 0.5, 30, 0.5, "Hz"));
     }
 
     static Type type(String id) { return TYPES.get(id); }
@@ -629,6 +655,7 @@ final class React {
         int count;
         boolean on, active, up;
         final java.util.ArrayDeque<Double> q = new java.util.ArrayDeque<>();
+        final java.util.ArrayDeque<Double> q2 = new java.util.ArrayDeque<>();   // the second input's moments (event gates)
     }
 
     /** A signal this frame: a level, and the moments (seconds) an event fired. */
@@ -744,7 +771,19 @@ final class React {
                 case "and" -> s.level = Math.min(lv(in[0], 1), lv(in[1], 1)) * (in[0] == null && in[1] == null ? 0 : 1);
                 case "or" -> s.level = Math.max(lv(in[0], 0), lv(in[1], 0));
                 case "not" -> s.level = in[0] == null ? 0 : 1 - in[0].level;
+                case "nand", "nor", "xor", "xnor" -> {
+                    if (in[0] == null && in[1] == null) { s.level = 0; break; }
+                    float a = lv(in[0], 0), b = lv(in[1], 0);
+                    s.level = switch (n.type) {
+                        case "nand" -> 1 - Math.min(a, b);
+                        case "nor" -> 1 - Math.max(a, b);
+                        case "xor" -> Math.abs(a - b);
+                        default -> 1 - Math.abs(a - b);
+                    };
+                }
                 case "gate" -> { if (in[0] != null && (in[1] == null || in[1].level >= 0.5f)) for (int i = 0; i < in[0].n; i++) s.fire(in[0].fires[i]); }
+                case "unless" -> { if (in[0] != null && (in[1] == null || in[1].level < 0.5f)) for (int i = 0; i < in[0].n; i++) s.fire(in[0].fires[i]); }
+                case "both", "then", "without", "one_of" -> pairGate(n, in, t, s, ns);
                 case "either" -> {
                     for (Sig x : in) if (x != null) for (int i = 0; i < x.n; i++) s.fire(x.fires[i]);
                     Arrays.sort(s.fires, 0, s.n);
@@ -797,6 +836,68 @@ final class React {
         }
 
         private static float lv(Sig s, float missing) { return s == null ? missing : s.level; }
+
+        /**
+         * The event gates that look at two events close in time (within the node's tolerance):
+         * both = A and B, then = A and then B, without = A with no B, one_of = A or B but not both.
+         * Moments are matched across frames, so the two can arrive in different ticks.
+         */
+        private void pairGate(Node n, Sig[] in, double t, Sig s, NState ns) {
+            double within = n.num("within");
+            List<double[]> all = new ArrayList<>();   // {time, which input}
+            for (int p = 0; p < 2; p++) if (in[p] != null) for (int i = 0; i < in[p].n; i++) all.add(new double[]{in[p].fires[i], p});
+            all.sort((a, b) -> a[0] != b[0] ? Double.compare(a[0], b[0]) : Double.compare(a[1], b[1]));
+            boolean waits = n.type.equals("without") || n.type.equals("one_of");   // these answer only once the tolerance has passed
+            for (double[] e : all) {
+                double f = e[0];
+                int p = (int) e[1];
+                java.util.ArrayDeque<Double> mine = p == 0 ? ns.q : ns.q2, other = p == 0 ? ns.q2 : ns.q;
+                if (waits) dueBefore(ns, f, within, s);
+                switch (n.type) {
+                    case "both" -> {
+                        while (!other.isEmpty() && other.peekFirst() < f - within) other.pollFirst();
+                        if (!other.isEmpty()) { other.pollFirst(); s.fire(f); } else mine.addLast(f);
+                    }
+                    case "then" -> {
+                        if (p == 0) { ns.q.addLast(f); break; }
+                        while (!ns.q.isEmpty() && ns.q.peekFirst() < f - within) ns.q.pollFirst();
+                        if (!ns.q.isEmpty()) { ns.q.clear(); s.fire(f); }
+                    }
+                    case "without" -> {
+                        if (p == 1) {   // a B cancels the waiting As, and shields the next As that are close to it
+                            ns.q.clear();
+                            ns.q2.clear();
+                            ns.q2.addLast(f);
+                        } else {
+                            while (!ns.q2.isEmpty() && ns.q2.peekFirst() < f - within) ns.q2.pollFirst();
+                            if (ns.q2.isEmpty() && ns.q.size() < 256) ns.q.addLast(f);
+                        }
+                    }
+                    default -> {   // one_of
+                        while (!other.isEmpty() && other.peekFirst() < f - within) { double d = other.pollFirst(); s.fire(d + within); }
+                        if (!other.isEmpty()) other.pollFirst();   // the pair cancels out
+                        else if (mine.size() < 256) mine.addLast(f);
+                    }
+                }
+            }
+            if (waits) {   // whatever has waited out its tolerance is a real answer
+                java.util.ArrayDeque<Double> a = ns.q, b = ns.q2;
+                if (n.type.equals("without")) {
+                    while (!a.isEmpty() && a.peekFirst() + within <= t) s.fire(a.pollFirst() + within);
+                    while (!b.isEmpty() && b.peekFirst() + within <= t) b.pollFirst();
+                } else {
+                    for (java.util.ArrayDeque<Double> d : List.of(a, b)) while (!d.isEmpty() && d.peekFirst() + within <= t) s.fire(d.pollFirst() + within);
+                }
+                Arrays.sort(s.fires, 0, s.n);
+            } else {
+                for (java.util.ArrayDeque<Double> d : List.of(ns.q, ns.q2)) while (!d.isEmpty() && d.peekFirst() < t - within) d.pollFirst();
+            }
+        }
+
+        /** Lets waiting moments that ran out of time before `f` answer first (so the order stays right). */
+        private static void dueBefore(NState ns, double f, double within, Sig s) {
+            if (ns.type.equals("without")) { while (!ns.q.isEmpty() && ns.q.peekFirst() + within < f) s.fire(ns.q.pollFirst() + within); }
+        }
 
         /**
          * How strongly an action applies now (0..1). After an event: fade in, hold, fade out. While a
@@ -868,9 +969,40 @@ final class React {
                 if (s.angle != 0) { o.spin += (float) s.angle; o.any = true; }
                 return;
             }
+            if (n.type.equals("roll")) {   // like spin, round another axis
+                s.angle = (s.angle + n.num("speed") * lv * dt) % 360.0;
+                if (s.angle != 0) { o.rotation[axisOf(n)] += (float) s.angle; o.any = true; }
+                return;
+            }
             if (lv <= 0) return;
             o.any = true;
+            double wave = 0.5 - 0.5 * Math.cos(t * n.num("speed") * Math.PI * 2);   // 0..1, for the "pulse" family (their speed is in Hz)
             switch (n.type) {
+                case "blink" -> { if ((t * n.num("speed")) % 1.0 >= n.num("visible")) o.alpha *= 1 - lv; }
+                case "flicker" -> o.alpha *= 1 - (float) (n.num("strength") * lv * Math.max(0, (noise(t * n.num("speed") + n.id * 7.7) - 0.35) / 0.65));
+                case "tint_pulse" -> o.addTint(n.rgb("color"), (float) (n.num("strength") * lv * wave));
+                case "glow_pulse" -> o.glow = Math.max(o.glow, (float) (n.num("strength") * lv * wave));
+                case "pulse" -> o.scale *= 1 + (float) (n.num("amount") * lv * wave);
+                case "heartbeat" -> {
+                    double p = (t * n.num("speed")) % 1.0, b = Math.min(1, hat(p, 0.08, 0.08) + 0.7 * hat(p, 0.3, 0.1));
+                    o.scale *= 1 + (float) (n.num("amount") * lv * b);
+                }
+                case "sway" -> o.offset[axisOf(n)] += (float) (n.num("amount") * lv * Math.sin(t * n.num("speed") * Math.PI * 2));
+                case "orbit" -> {
+                    double a = t * n.num("speed") * Math.PI * 2;
+                    o.offset[0] += (float) (n.num("radius") * lv * Math.cos(a));
+                    o.offset[2] += (float) (n.num("radius") * lv * Math.sin(a));
+                }
+                case "drift" -> { for (int i = 0; i < 3; i++) o.offset[i] += (float) (n.num("amount") * lv * (noise(t * n.num("speed") + n.id * 7.7 + i * 17.3) - 0.5) * 2); }
+                case "wobble" -> o.rotation[axisOf(n)] += (float) (n.num("angle") * lv * Math.sin(t * n.num("speed") * Math.PI * 2));
+                case "shiver" -> { for (int i = 0; i < 3; i++) o.rotation[i] += (float) (n.num("angle") * lv * (noise(t * n.num("speed") + n.id * 7.7 + i * 31.7) - 0.5) * 2); }
+                case "glitch" -> {
+                    long slot = (long) Math.floor(t * n.num("speed")) + n.id * 101L;
+                    if (hash(slot) > 0.55) {   // now and then it jumps aside and dims for a moment
+                        for (int i = 0; i < 3; i++) o.offset[i] += (float) (n.num("strength") * lv * (hash(slot + 11 + i) - 0.5) * 2);
+                        if (hash(slot + 23) > 0.6) o.alpha *= 1 - 0.6f * lv;
+                    }
+                }
                 case "hide" -> o.alpha *= 1 - lv;
                 case "opacity" -> o.alpha *= 1 + ((float) n.num("value") - 1) * lv;
                 case "tint" -> o.addTint(n.rgb("color"), (float) n.num("strength") * lv);
@@ -961,6 +1093,25 @@ final class React {
             case "magic", "indirect_magic", "wither", "dragon_breath", "sonic_boom", "thorns" -> "magic";
             default -> "other";
         };
+    }
+
+    private static int axisOf(Node n) { return switch (n.str("axis")) { case "y" -> 1; case "z" -> 2; default -> 0; }; }
+
+    /** A triangle bump of height 1 at `c`, `w` wide each way, eased. */
+    private static double hat(double p, double c, double w) { double k = Math.max(0, 1 - Math.abs(p - c) / w); return k * k * (3 - 2 * k); }
+
+    /** Repeatable 0..1 noise for step number i. */
+    private static double hash(long i) {
+        int h = (int) (i * 0x9E3779B1L) ^ (int) (i >>> 32);
+        h ^= h >>> 15; h *= 0x85EBCA6B; h ^= h >>> 13; h *= 0xC2B2AE35; h ^= h >>> 16;
+        return (h & 0xFFFFFF) / (double) 0x1000000;
+    }
+
+    /** Smooth 0..1 noise along x. */
+    private static double noise(double x) {
+        long i = (long) Math.floor(x);
+        double f = x - i, u = f * f * (3 - 2 * f), a = hash(i), b = hash(i + 1);
+        return a + (b - a) * u;
     }
 
     private static float clamp01(double v) { return (float) Math.max(0, Math.min(1, v)); }
