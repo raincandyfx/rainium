@@ -74,7 +74,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
                 if (cfg.playersFor(l) == LayerConfig.ShowOn.LISTED && name[0] == null) name[0] = entityName(state.id);
                 if (!cfg.showsOnPlayer(l, self, name[0])) continue;
             }
-            submitAll(ps, collector, light, hurtOverlay, bones, sp, st, r, new Where("p" + state.id + (editorPreview ? "e" : ""), state.x, state.y, state.z, editorPreview));
+            submitAll(ps, collector, light, hurtOverlay, bones, sp, st, r, new Where("p" + state.id + (editorPreview ? "e" : ""), state.x, state.y, state.z, editorPreview, state.id));
         }
     }
 
@@ -82,21 +82,43 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
     interface Bones { void apply(PoseStack ps, LayerConfig.Anchor anchor); }
 
     /** Which entity is being drawn (for particle emitters): a key, its position, and whether it's the editor's preview. */
-    record Where(String key, double x, double y, double z, boolean preview) {}
+    record Where(String key, double x, double y, double z, boolean preview, int entityId) {}
+
+    /** What the layer's reactions (and its folder's) do to it right now on this wearer. */
+    static React.Mods reactions(Assets.State st, Assets.Resolved r, Where where) {
+        LayerConfig.Layer l = r.cfg();
+        LayerConfig.Folder f = l.folder == null ? null : st.config().folders.get(l.folder);
+        boolean own = l.reactions != null && l.reactions.enabled && !l.reactions.isEmpty();
+        boolean fold = f != null && f.reactions != null && f.reactions.enabled && !f.reactions.isEmpty();
+        if (!own && !fold) return React.Mods.NONE;
+        try {
+            React.Wearer w = where.entityId() >= 0 ? ReactSensors.wearer(where.entityId()) : React.NOBODY;
+            String wk = where.entityId() >= 0 ? ReactSensors.key(where.entityId()) : where.key();
+            long now = System.nanoTime();
+            React.Mods m = new React.Mods();
+            if (fold) m.add(React.eval(wk, React.folderKey(l.folder), f.reactions, w, now));
+            if (own) m.add(React.eval(wk, React.layerKey(l), l.reactions, w, now));
+            return m;
+        } catch (RuntimeException e) {   // a broken graph never stops the player being drawn
+            return React.Mods.NONE;
+        }
+    }
 
     static void submitAll(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, Bones bones, Sway.Pose sp,
                           Assets.State st, Assets.Resolved r, Where where) {
         LayerConfig.Layer l = r.cfg();
+        React.Mods m = reactions(st, r, where);
+        if (m.hidden() && !l.isParticles()) return;
         if (l.anchor.limb()) {
             // On an arm or leg, "Mirrored copy" means a copy on the opposite limb.
-            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_NONE, where);
-            if (l.mirror) submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor.opposite(), MIRROR_LIMB, where);
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_NONE, where, m);
+            if (l.mirror) submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor.opposite(), MIRROR_LIMB, where, m);
         } else if (l.isParticles() && l.mirror) {
             // a mirrored emitter is a second emitter on the other side
-            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_NONE, where);
-            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_LIMB, where);
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_NONE, where, m);
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, MIRROR_LIMB, where, m);
         } else {
-            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, l.mirror ? MIRROR_BOTH : MIRROR_NONE, where);
+            submitLayer(ps, collector, light, hurtOverlay, bones, sp, st, r, l.anchor, l.mirror ? MIRROR_BOTH : MIRROR_NONE, where, m);
         }
     }
 
@@ -160,7 +182,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
     private static final int MIRROR_NONE = 0, MIRROR_BOTH = 1, MIRROR_LIMB = 2;
 
     private static void submitLayer(PoseStack ps, SubmitNodeCollector collector, int light, int hurtOverlay, Bones bones, Sway.Pose sp,
-                                    Assets.State st, Assets.Resolved r, LayerConfig.Anchor anchor, int mirrorMode, Where where) {
+                                    Assets.State st, Assets.Resolved r, LayerConfig.Anchor anchor, int mirrorMode, Where where, React.Mods m) {
         LayerConfig.Layer l = r.cfg();
         ps.pushPose();
         if (l.physics) {
@@ -170,45 +192,64 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
                 ps.rotateDegrees(Axis.YP, sp.yawDeg() * k);
             }
         }
-        if (l.spin != 0 && !l.isParticles()) {   // turn around an upright axis through the spin centre (itself, an anchor or another layer)
+        if ((l.spin != 0 || m.spin != 0) && !l.isParticles()) {   // turn around an upright axis through the spin centre (itself, an anchor or another layer)
             double secs = (where.preview() ? Recorder.previewNanos() : System.nanoTime()) / 1e9;
             org.joml.Vector3f c = spinCentre(ps, bones, st, r, anchor);
             ps.translate(c.x, c.y, c.z);
-            ps.rotateDegrees(Axis.YP, (float) ((secs * l.spin) % 360.0));
+            ps.rotateDegrees(Axis.YP, (float) ((secs * l.spin + m.spin) % 360.0));
             ps.translate(-c.x, -c.y, -c.z);
         }
         bones.apply(ps, anchor);
         // The copy on the opposite limb is the layer reflected left/right: reflect the layer's own
         // placement here and its vertices in emit (two reflections, so faces keep their winding).
         if (mirrorMode == MIRROR_LIMB) ps.scale(-1f, 1f, 1f);
-        ps.translate(l.offset[0], l.offset[1], l.offset[2]);
-        if (l.rotation[0] != 0) ps.rotateDegrees(Axis.XP, l.rotation[0]);
-        if (l.rotation[1] != 0) ps.rotateDegrees(Axis.YP, l.rotation[1]);
-        if (l.rotation[2] != 0) ps.rotateDegrees(Axis.ZP, l.rotation[2]);
+        ps.translate(l.offset[0] + m.offset[0], l.offset[1] + m.offset[1], l.offset[2] + m.offset[2]);
+        float rx = l.rotation[0] + m.rotation[0], ry = l.rotation[1] + m.rotation[1], rz = l.rotation[2] + m.rotation[2];
+        if (rx != 0) ps.rotateDegrees(Axis.XP, rx);
+        if (ry != 0) ps.rotateDegrees(Axis.YP, ry);
+        if (rz != 0) ps.rotateDegrees(Axis.ZP, rz);
         if (!l.isParticles()) {
-            ps.scale(l.scale[0], l.scale[1], l.scale[2]);
+            ps.scale(l.scale[0] * m.scale, l.scale[1] * m.scale, l.scale[2] * m.scale);
             if (l.yUp) ps.rotateDegrees(Axis.XP, 180f); // Y-up/front +Z  ->  model space (Y down, back +Z)
         }
 
         boolean emissive = l.render == LayerConfig.Render.EMISSIVE || l.render == LayerConfig.Render.TRANSLUCENT_EMISSIVE;
-        int lightValue = (l.fullbright || emissive) ? FULL_BRIGHT : light;
+        int lightValue = (l.fullbright || emissive) ? FULL_BRIGHT : m.glow > 0 ? brighter(light, m.glow) : light;
         int overlay = emissive ? OverlayTexture.NO_OVERLAY : hurtOverlay;
         int order = l.order >= 0 ? l.order : defaultOrder(l.render);
         final Mesh.Group[] groups = r.groups();
         // Hue recolours the texture itself; the layer's colour (its tint) only follows the hue when the
         // texture can't be recoloured (Minecraft's own textures, or no texture)
         boolean recoloured = l.texture != null && !LayerConfig.isResourceId(l.texture);
-        final int color = l.hue == 0 || recoloured ? l.color : Hue.rotateArgb(l.color, l.hue);
+        int baseColor = l.hue == 0 || recoloured ? l.color : Hue.rotateArgb(l.color, l.hue);
+        LayerConfig.Render style = l.render;
+        if (m.any) {
+            baseColor = m.color(baseColor);
+            int a = baseColor >>> 24;
+            if (a < 255) {   // fading: draw see-through (cut-out styles can't be), or darken an additive glow
+                if (style == LayerConfig.Render.CUTOUT || style == LayerConfig.Render.CUTOUT_NO_CULL) style = LayerConfig.Render.TRANSLUCENT;
+                else if (style == LayerConfig.Render.EMISSIVE) baseColor = 0xFF000000 | React.mix(0, baseColor & 0xFFFFFF, a / 255f);
+            }
+        }
+        final int color = baseColor;
         if (l.isParticles()) {
             String key = where.key() + "|" + st.config().layers.indexOf(l) + "|" + anchor + "|" + mirrorMode;   // survives saves (layers are rebuilt on each)
-            ParticleFx.submit(key, l, ps, where.preview(), where.x(), where.y(), where.z(), collector, order, renderType(l.render, r.texture()), color, lightValue, overlay);
+            ParticleFx.submit(key, l, ps, where.preview(), where.x(), where.y(), where.z(), collector, order, renderType(style, r.texture()), color, lightValue, overlay, m);
             ps.popPose();
             return;
         }
         SubmitNodeCollector.CustomGeometryRenderer geo = (pose, vc) -> emit(groups, pose, vc, color, lightValue, overlay, mirrorMode);
         OrderedSubmitNodeCollector target = order == 0 ? collector : collector.order(order);
-        target.submitCustomGeometry(ps, renderType(l.render, r.texture()), geo);
+        target.submitCustomGeometry(ps, renderType(style, r.texture()), geo);
         ps.popPose();
+    }
+
+    /** Packed light moved towards full brightness by k (0..1). */
+    private static int brighter(int light, float k) {
+        int block = (light >> 4) & 0xF, sky = (light >> 20) & 0xF;
+        block = Math.round(block + (15 - block) * k);
+        sky = Math.round(sky + (15 - sky) * k);
+        return (block << 4) | (sky << 20);
     }
 
     /** The name of the entity with this id, or null. */

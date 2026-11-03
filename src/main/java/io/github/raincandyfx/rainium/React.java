@@ -204,7 +204,6 @@ final class React {
         boolean enabled = true;
         final List<Node> nodes = new ArrayList<>();
         final List<Wire> wires = new ArrayList<>();
-        transient int version;   // bumped by the editor; lets the runtime pick up changes without a save
 
         boolean isEmpty() { return nodes.isEmpty(); }
 

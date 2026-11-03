@@ -2,6 +2,13 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.1 (dev build)
+
+- **New: Reactions.** A layer or a folder can react to what happens to the player wearing it. **Edit reactions** (in the layer's or folder's panel) opens a full-screen node editor: wire **events** (hit, crit, hurt, healed, totem pop for you and for your opponent, kill, death, respawn, shield block and break, swing, jump, land, shoot, eat, level up, a timer) and **states** (health, absorption, in combat, on fire, blocking, sneaking, sprinting, moving, gliding, swimming, water, lava, ground, air, riding, holding or using an item, effects, hunger, night, rain, thunder, dimension, biome) through **logic** (both, either, not, only while, stay on for, toggle, on/off, starts, stops, chance, cooldown, every Nth, combo, delay) into **actions** on the layer (show, hide, tint, opacity, glow, rainbow, size, move, rotate, spin, shake, bob, particle bursts). Actions fade in, hold after an event and fade out, each with its own curve (or a custom one with handles).
+- Try things without waiting for a fight: fire an event on yourself, or pretend a state is on, and watch the live preview. Ready-made examples to start from.
+- Reactions are saved with the layer and travel in exported zips. The editor can also copy them as text, paste them, and save or load `.reactions.json` files.
+- **Export layer (zip)** shares a single layer (with its reactions), not only whole folders.
+
 ## 0.9.0
 
 Everything from the 0.8.1 to 0.8.12 dev builds, plus:

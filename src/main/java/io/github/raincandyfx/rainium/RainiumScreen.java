@@ -825,7 +825,19 @@ public final class RainiumScreen extends Screen {
         y = audience(g, mx, my, x, y + 4, w, l.show, l.folder == null ? null : assets.editable().folders.get(l.folder));
         if (!l.isParticles()) y = cycle(g, mx, my, x, y, w, "model_axes", Lang.t(l.yUp ? "value.axes.blender" : "value.axes.minecraft"), List.of(Lang.t("value.axes.minecraft"), Lang.t("value.axes.blender")), l.yUp ? 1 : 0, d -> { l.yUp = !l.yUp; save(); });
 
+        y = reactionsSection(g, mx, my, x, y + 4, w, l.reactions, l, null);
+
         y = section(g, x, y + 4, w, "layer");
+        y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.export_layer"), () -> {
+            try {
+                java.nio.file.Path zp = assets.exportLayer(l);
+                refreshFiles(true);
+                say(Lang.t("msg.exported", "exports/" + zp.getFileName()), ACCENT);
+            } catch (Exception ex) {
+                say(Lang.t("msg.export_failed", ex.getMessage()), DANGER);
+            }
+        });
+        tip(mx, my, x, y - ROW - GAP, w, ROW, "export_layer");
         int half = (w - GAP) / 2, dx = x, dw = w;
         if (l.preset != null) {
             secondaryButton(g, mx, my, x, y, half, Lang.t("button.reset_preset"), () -> {
@@ -853,6 +865,21 @@ public final class RainiumScreen extends Screen {
             say(Lang.t("msg.removed", n), MUTED);
         }, null));
         y += ROW + GAP;
+        return y;
+    }
+
+    /** The Reactions section of a layer or folder: what it has, and a button to open the reactions editor. */
+    private int reactionsSection(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, React.Graph r, LayerConfig.Layer layer, String folder) {
+        y = section(g, x, y, w, "reactions");
+        int n = r == null ? 0 : r.nodes.size(), acts = 0;
+        if (r != null) for (React.Node nd : r.nodes) if (nd.t() != null && nd.t().isAction()) acts++;
+        String line = n == 0 ? Lang.t("react.none_yet") : Lang.t(r.enabled ? "react.summary" : "react.summary_off", n, acts);
+        y = wrapped(g, x, y, w, line, n == 0 ? FAINT : MUTED) + 2;
+        y = primaryButtonRow(g, mx, my, x, y, w, Lang.t(n == 0 ? "button.add_reactions" : "button.edit_reactions"), () -> {
+            commitEdit();
+            Minecraft.getInstance().gui.setScreen(new ReactScreen(this, layer, folder));
+        });
+        tip(mx, my, x, y - ROW - GAP - 4, w, ROW + 2, "reactions");
         return y;
     }
 
@@ -913,6 +940,8 @@ public final class RainiumScreen extends Screen {
         }
 
         y = audience(g, mx, my, x, y + 4, w, f.show, null);
+
+        y = reactionsSection(g, mx, my, x, y + 4, w, f.reactions, null, name);
 
         y = section(g, x, y + 4, w, "share");
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.export_zip"), () -> {
@@ -1729,7 +1758,7 @@ public final class RainiumScreen extends Screen {
         toastUntil = System.currentTimeMillis() + 3500;
     }
 
-    private void save() {
+    void save() {
         String before = currentSnapshot;
         assets.save();
         String after = assets.snapshot();
@@ -1748,7 +1777,7 @@ public final class RainiumScreen extends Screen {
         if (assets.lastError() != null) say(Lang.t("msg.saved_problem", assets.lastError()), DANGER);
     }
 
-    private void undo() {
+    void undo() {
         commitEdit();
         if (undoStack.isEmpty()) { say(Lang.t("msg.nothing_undo"), MUTED); return; }
         redoStack.push(currentSnapshot);
@@ -1758,7 +1787,7 @@ public final class RainiumScreen extends Screen {
         say(Lang.t("msg.undone"), MUTED);
     }
 
-    private void redo() {
+    void redo() {
         commitEdit();
         if (redoStack.isEmpty()) { say(Lang.t("msg.nothing_redo"), MUTED); return; }
         undoStack.push(currentSnapshot);
@@ -1894,17 +1923,17 @@ public final class RainiumScreen extends Screen {
 
     // @port keys begin  (the 1.21.11 build swaps this block for GLFW key codes)
     // SDL scancodes (Minecraft 26.x reports physical keys as SDL scancodes)
-    private static final int SC_A = 4, SC_Z = 29, SC_1 = 30, SC_0 = 39, SC_ENTER = 40, SC_ESC = 41, SC_BACKSPACE = 42,
+    static final int SC_A = 4, SC_Z = 29, SC_1 = 30, SC_0 = 39, SC_ENTER = 40, SC_ESC = 41, SC_BACKSPACE = 42,
         SC_SPACE = 44, SC_MINUS = 45, SC_COMMA = 54, SC_PERIOD = 55, SC_DELETE = 76, SC_KP_MINUS = 86, SC_KP_ENTER = 88,
-        SC_KP_1 = 89, SC_KP_0 = 98, SC_KP_PERIOD = 99, SC_Y = 28, SC_V = 25,
+        SC_KP_1 = 89, SC_KP_0 = 98, SC_KP_PERIOD = 99, SC_Y = 28, SC_V = 25, SC_SEMICOLON = 51, SC_SLASH = 56, SC_TAB = 43,
         SC_LCTRL = 224, SC_LSHIFT = 225, SC_LGUI = 227, SC_RCTRL = 228, SC_RSHIFT = 229, SC_RGUI = 231;
 
-    private static boolean down(int sc) {
+    static boolean down(int sc) {
         try { return InputConstants.isKeyDown(sc); } catch (Throwable t) { return false; }
     }
 
     /** The digit a key types (number row or keypad), or 0. */
-    private static char digit(int k) {
+    static char digit(int k) {
         if (k >= SC_1 && k <= SC_0) return k == SC_0 ? '0' : (char) ('1' + (k - SC_1));
         if (k >= SC_KP_1 && k <= SC_KP_0) return k == SC_KP_0 ? '0' : (char) ('1' + (k - SC_KP_1));
         return 0;
