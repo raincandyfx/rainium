@@ -2,6 +2,11 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.2 (dev build)
+
+- **Reactions only watch what's used.** Each check (health changes, jumps and landings, bow shots, level-ups, kills, damage, crits, swings, totem pops, shield events, eating) runs only while a switched-on layer or folder has a graph that uses it. With no reactions anywhere, nothing is watched at all.
+- Other players are only watched when a layer with reactions is shown on them; otherwise only you are.
+
 ## 0.9.1 (dev build)
 
 - **New: Reactions.** A layer or a folder can react to what happens to the player wearing it. **Edit reactions** (in the layer's or folder's panel) opens a full-screen node editor: wire **events** (hit, crit, hurt, healed, totem pop for you and for your opponent, kill, death, respawn, shield block and break, swing, jump, land, shoot, eat, level up, a timer) and **states** (health, absorption, in combat, on fire, blocking, sneaking, sprinting, moving, gliding, swimming, water, lava, ground, air, riding, holding or using an item, effects, hunger, night, rain, thunder, dimension, biome) through **logic** (both, either, not, only while, stay on for, toggle, on/off, starts, stops, chance, cooldown, every Nth, combo, delay) into **actions** on the layer (show, hide, tint, opacity, glow, rainbow, size, move, rotate, spin, shake, bob, particle bursts). Actions fade in, hold after an event and fade out, each with its own curve (or a custom one with handles).

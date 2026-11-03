@@ -812,6 +812,36 @@ final class React {
 
     private static float clamp01(double v) { return (float) Math.max(0, Math.min(1, v)); }
 
+    // =================================================================== what's in use
+    /**
+     * Which node types the switched-on graphs of a config use, and whether any reactive layer can be
+     * drawn on players other than you. The sensors only run the checks this asks for.
+     */
+    record Usage(Set<String> types, boolean others) {
+        static final Usage NONE = new Usage(Set.of(), false);
+        boolean isEmpty() { return types.isEmpty(); }
+        boolean has(String type) { return types.contains(type); }
+        boolean any(String... ts) { for (String t : ts) if (types.contains(t)) return true; return false; }
+    }
+
+    static Usage usage(LayerConfig cfg) {
+        if (cfg == null || !cfg.enabled) return Usage.NONE;
+        Set<String> types = new HashSet<>();
+        boolean others = false;
+        for (LayerConfig.Layer l : cfg.layers) {
+            if (!cfg.isActive(l)) continue;
+            LayerConfig.Folder f = l.folder == null ? null : cfg.folders.get(l.folder);
+            boolean any = false;
+            for (Graph g : new Graph[]{l.reactions, f == null ? null : f.reactions}) {
+                if (g == null || !g.enabled || g.isEmpty()) continue;
+                for (Node n : g.nodes) types.add(n.type);
+                any = true;
+            }
+            if (any) { LayerConfig.ShowOn on = cfg.playersFor(l); if (on != LayerConfig.ShowOn.SELF && on != LayerConfig.ShowOn.NOBODY) others = true; }
+        }
+        return types.isEmpty() ? Usage.NONE : new Usage(Set.copyOf(types), others);
+    }
+
     // =================================================================== all running graphs
     private static final Map<String, Runtime> RUNS = new HashMap<>();
     private static long lastPrune;

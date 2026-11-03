@@ -14,6 +14,6 @@ public abstract class LivingEntitySwingMixin {
     @Inject(method = "swing(Lnet/minecraft/world/InteractionHand;Z)V", at = @At("HEAD"))
     private void rainium$swing(CallbackInfo ci) {
         Object self = this;
-        if (self instanceof Entity e && e.level().isClientSide()) ReactHooks.swing(e);
+        if (self instanceof Entity e) ReactHooks.swing(e);   // returns at once unless a graph uses Swing
     }
 }
