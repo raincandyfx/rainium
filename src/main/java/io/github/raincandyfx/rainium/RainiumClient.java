@@ -49,6 +49,7 @@ public final class RainiumClient implements ClientModInitializer {
         openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.rainium.open", InputConstants.Type.KEYBOARD, KEY_K, category));
 
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+            try { ReactSensors.tick(mc); } catch (Throwable t) { reactProblem(t); }   // reactions are optional; never stop the game
             while (openKey.consumeClick()) {
                 if (mc.gui.screen() == null) openNextTick = true;
             }
@@ -73,6 +74,13 @@ public final class RainiumClient implements ClientModInitializer {
     }
 
     static void open() { openNextTick = true; }
+
+    private static boolean reactWarned;
+    private static void reactProblem(Throwable t) {
+        if (reactWarned) return;
+        reactWarned = true;
+        Assets.LOG.warn("[rainium] reactions stopped watching events: " + t);
+    }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void registerStandLayer(Object renderer, LivingEntityRenderLayerRegistrationCallback.RegistrationHelper helper) {
