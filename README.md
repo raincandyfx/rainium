@@ -90,6 +90,19 @@ Any layer can **Spin** (Edit > Behaviour): it turns around an upright axis at th
 
 You can add a preset again at any time from the **Add** tab, and **Reset to preset** puts a part back the way it came.
 
+## Reactions
+
+A layer (or a whole folder) can react to what happens to the player wearing it: show for a few seconds when your opponent pops a totem, flash red when you're hit, glow while you're in combat, spin while you sprint. Open it with **Edit reactions** in the layer's or folder's panel. It's a full-screen node editor:
+
+- **Events** (yellow) are moments: hit, critical hit, hurt, healed, totem pop (yours, and your opponent's: whoever you last hit or who last hit you in the last 15 s), kill, death, respawn, shield block, shield broken, swing, jump, land, shoot, eat or drink, level up, every few seconds.
+- **States** (blue) are true for a while: health below/above a percentage (or how much is missing), absorption, in combat, on fire, blocking, sneaking, sprinting, moving, gliding, swimming, in water or lava, on the ground, in the air, riding, holding an item, using an item, an effect, hunger, night, rain, thunder, a dimension, a biome.
+- **Logic** (purple) combines and shapes them: both, either, not, only while, stay on for, toggle, on/off, when it starts or stops, chance, cooldown, every Nth, combo, delay.
+- **Actions** (pink) change the layer: show, hide, tint, opacity, glow, rainbow, size, move, rotate, spin, shake, bob, and particle bursts on particle layers. Each fades in, holds (after an event) and fades out, with a curve for each way in and out (ease in/out, overshoot, elastic, bounce, step, or a custom curve with handles).
+
+Drag from an output to an input to wire nodes; drop a wire on empty space to add a node already wired. ▶ on an event fires it on you, and the square on a state pretends it's on, so you can try things in the live preview. There are ready-made examples to start from.
+
+Reactions are saved with the layer, so **Export as zip** (and **Export layer**) carry them. **File** in the editor copies them as text, pastes them, or saves and loads `.reactions.json` files in `config/rainium/exports`. Your reactions show on everyone your layer is drawn on, each reacting to what happens to them; a few things (effects, hunger, eating, level-ups) are only known about you.
+
 ## Pictures and recordings
 
 The preview in the editor has two buttons in its top corner:

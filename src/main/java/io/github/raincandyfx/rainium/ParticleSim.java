@@ -34,6 +34,8 @@ final class ParticleSim {
         long seenNanos;   // real time it was last drawn (for forgetting unused emitters)
         double lastX = Double.NaN, lastY, lastZ;
         float speed;                        // smoothed movement speed of the entity (blocks/s)
+        float rateMul = 1f;                 // from reactions: multiplies the rate...
+        int burst;                          // ...and adds this many at the next step
         final Random rnd = new Random();
 
         /** Advances by dt seconds. Positions are in whatever space the caller uses (world, or emitter-local when following). */
@@ -57,7 +59,8 @@ final class ParticleSim {
                 case STILL -> speed <= 0.4f ? s.rate : 0f;
                 case SPEED -> s.rate * Math.min(4f, speed / 4.3f);   // full rate at walking speed
             };
-            carry += rate * dt;
+            carry += rate * rateMul * dt + burst;
+            burst = 0;
             int n = (int) carry;
             carry -= n;
             n = Math.min(n, Math.min(budget, MAX_PER_EMITTER - count));

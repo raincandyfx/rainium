@@ -46,6 +46,7 @@ final class LayerConfig {
         String folder;                // null = not in a folder
         String preset;                // "presetId:part" when created from a preset (for Reset to preset)
         Particles particles;          // non-null for a particle emitter (then there is no mesh)
+        React.Graph reactions;        // what it does when things happen to the wearer (null = nothing)
 
         boolean isParticles() { return particles != null; }
 
@@ -77,6 +78,7 @@ final class LayerConfig {
             if (hideWhenFlying) m.put("hide_when_flying", true);
             if (!show.isDefault()) m.put("show", show.toJson());
             if (order >= 0) m.put("order", order);
+            if (reactions != null && !reactions.isEmpty()) m.put("reactions", reactions.toJson());
             return m;
         }
 
@@ -102,6 +104,7 @@ final class LayerConfig {
         boolean collapsed = false;
         float motion = 1f;            // multiplier on movement sway for this folder's parts (0 = still)
         Audience show = new Audience();   // who the folder's parts show on (unless a part sets its own)
+        React.Graph reactions;        // applies to every part of the folder, on top of each part's own
     }
 
     /**
@@ -386,6 +389,7 @@ final class LayerConfig {
                     f.collapsed = bool(fm, "collapsed", false);
                     f.motion = Math.max(0f, Math.min(5f, f(fm, "motion", 1f)));
                     if (fm.get("show") instanceof Map<?, ?> sm) f.show = Audience.fromJson((Map<String, Object>) sm);
+                    if (fm.get("reactions") instanceof Map<?, ?> rm) { f.reactions = React.Graph.fromJson(rm); if (f.reactions.isEmpty()) f.reactions = null; }
                 } else if (e.getValue() instanceof Boolean b) {
                     f.enabled = b;
                 }
@@ -452,6 +456,7 @@ final class LayerConfig {
         l.label = m.get("name") instanceof String s ? s : "layer #" + n;
         l.folder = m.get("folder") instanceof String s && !s.isBlank() ? s : null;
         l.preset = m.get("preset") instanceof String s && !s.isBlank() ? s : null;
+        if (m.get("reactions") instanceof Map<?, ?> rm) { l.reactions = React.Graph.fromJson(rm); if (l.reactions.isEmpty()) l.reactions = null; }
         return l;
     }
 
@@ -550,6 +555,7 @@ final class LayerConfig {
                 if (f.collapsed) fm.put("collapsed", true);
                 if (f.motion != 1f) fm.put("motion", (double) f.motion);
                 if (!f.show.isDefault()) fm.put("show", f.show.toJson());
+                if (f.reactions != null && !f.reactions.isEmpty()) fm.put("reactions", f.reactions.toJson());
                 fs.put(name, fm);
             }
             m.put("folders", fs);

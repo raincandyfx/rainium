@@ -266,6 +266,15 @@ final class Assets {
     synchronized Path exportFolder(String folder) throws IOException {
         List<LayerConfig.Layer> parts = editable().members(folder);
         if (parts.isEmpty()) throw new IOException("folder is empty");
+        return exportSet(folder, parts, editable().folders.get(folder));
+    }
+
+    /** Writes exports/&lt;name&gt;.zip with one layer (its reactions included) and the files it uses. */
+    synchronized Path exportLayer(LayerConfig.Layer layer) throws IOException {
+        return exportSet(layer.label == null || layer.label.isBlank() ? "layer" : layer.label, List.of(layer), null);
+    }
+
+    private Path exportSet(String folder, List<LayerConfig.Layer> parts, LayerConfig.Folder f) throws IOException {
         Path outDir = dir.resolve("exports");
         Files.createDirectories(outDir);
         Path zipPath = outDir.resolve(sanitizeFile(folder) + ".zip");
@@ -282,8 +291,8 @@ final class Assets {
         Map<String, Object> set = new LinkedHashMap<>();
         set.put("name", folder);
         set.put("format", "rainium-set-1");
-        LayerConfig.Folder f = editable().folders.get(folder);
         if (f != null && f.motion != 1f) set.put("motion", (double) f.motion);
+        if (f != null && f.reactions != null && !f.reactions.isEmpty()) set.put("reactions", f.reactions.toJson());
         set.put("layers", layerJson);
         try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(zipPath))) {
             zos.putNextEntry(new java.util.zip.ZipEntry("set.json"));
@@ -311,6 +320,39 @@ final class Assets {
         }
         files.put(path, name);
         return name;
+    }
+
+    /** Writes exports/&lt;name&gt;.reactions.json (a graph on its own, to share or reuse). Returns its path. */
+    synchronized Path exportReactions(String name, React.Graph g) throws IOException {
+        Path outDir = dir.resolve("exports");
+        Files.createDirectories(outDir);
+        Path p = outDir.resolve(sanitizeFile(name == null || name.isBlank() ? "reactions" : name) + ".reactions.json");
+        Files.writeString(p, React.exportText(g, name), StandardCharsets.UTF_8);
+        return p;
+    }
+
+    /** .reactions.json files in the folder and in exports/, as paths inside the folder. */
+    List<String> reactionFiles() {
+        List<String> out = new ArrayList<>();
+        for (String folder : new String[]{"", "exports/"}) {
+            Path d = folder.isEmpty() ? dir : dir.resolve(folder);
+            if (!Files.isDirectory(d)) continue;
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(d, "*.reactions.json")) {
+                for (Path p : ds) out.add(folder + p.getFileName());
+            } catch (IOException ignored) { }
+        }
+        out.sort(String.CASE_INSENSITIVE_ORDER);
+        return out;
+    }
+
+    React.Graph readReactions(String rel) throws IOException {
+        Path p = dir.resolve(rel).normalize();
+        if (!p.startsWith(dir.normalize())) throw new IOException("outside the rainium folder");
+        try {
+            return React.importText(Files.readString(p, StandardCharsets.UTF_8));
+        } catch (RuntimeException e) {
+            throw new IOException(e.getMessage());
+        }
     }
 
     /** Zips in the folder (and exports/) that contain a set.json. */
@@ -376,6 +418,10 @@ final class Assets {
             wrapper.put("layers", ls);
             LayerConfig parsed = LayerConfig.fromJson(wrapper);
             if (set.get("motion") instanceof Number mo) editable().folder(folderName).motion = mo.floatValue();
+            if (set.get("reactions") instanceof Map<?, ?> rm) {
+                React.Graph rg = React.Graph.fromJson(rm);
+                if (!rg.isEmpty()) editable().folder(folderName).reactions = rg;
+            }
             return parsed.layers;
         }
     }

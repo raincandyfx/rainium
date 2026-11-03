@@ -44,7 +44,7 @@ final class ParticleFx {
      * editor's preview they're drawn in the preview's own space and always follow the player.
      */
     static void submit(String key, LayerConfig.Layer l, PoseStack layerPose, boolean preview, double ex, double ey, double ez,
-                       SubmitNodeCollector collector, int order, RenderType type, int color, int light, int overlay) {
+                       SubmitNodeCollector collector, int order, RenderType type, int color, int light, int overlay, React.Mods mods) {
         PoseStack.Pose pose = layerPose.last();
         LayerConfig.Particles s = l.particles;
         long now = preview ? Recorder.previewNanos() : System.nanoTime();   // recordings step the preview on their own clock
@@ -60,6 +60,8 @@ final class ParticleFx {
         float dt = e.lastNanos == 0 ? 0f : Math.min(0.1f, (now - e.lastNanos) / 1e9f);
         e.lastNanos = now;
         e.seenNanos = System.nanoTime();
+        e.rateMul = mods.hidden() ? 0f : mods.rate;
+        if (mods.burst > 0) e.burst += mods.burst;
 
         // movement speed of the entity, smoothed
         if (dt > 0 && !Double.isNaN(e.lastX)) {

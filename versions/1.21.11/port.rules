@@ -24,3 +24,10 @@ RainiumScreen.java    ||  \bextractPanorama\(                     ||  renderPano
 *                     ||  \bgameRenderer\.mainCamera\(\)           ||  gameRenderer.getMainCamera()
 *                     ||  (\w+)\.rotateDegrees\((Axis\.[XYZ]P), (.*)\);  ||  $1.mulPose($2.rotationDegrees($3));
 MeshRenderLayer.java  ||  RenderTypes\.entityTranslucentCull\(     ||  RenderTypes.itemEntityTranslucentCull(
+
+# The reactions editor (its own screen) uses the same drawing calls as the editor.
+ReactScreen.java      ||  \bg\.text\(                              ||  g.drawString(
+ReactScreen.java      ||  \bg\.outline\(                           ||  g.renderOutline(
+ReactScreen.java      ||  \bg\.entity\(                            ||  g.submitEntityRenderState(
+ReactScreen.java      ||  \bextractRenderState\(                   ||  render(
+ReactScreen.java      ||  \bextractBackground\(                    ||  renderBackground(
