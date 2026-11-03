@@ -14,6 +14,10 @@ public final class ReactHooks {
         try { ReactSensors.onEntityEvent(e, id); } catch (Throwable ignored) { }
     }
 
+    public static void swing(Entity e) {
+        try { ReactSensors.onSwing(e); } catch (Throwable ignored) { }
+    }
+
     public static void crit(int victimId) {
         try { ReactSensors.onCrit(victimId); } catch (Throwable ignored) { }
     }

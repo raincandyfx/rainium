@@ -43,8 +43,9 @@ final class ReactSensors {
         int id;
         final ArrayDeque<React.Ev> evs = new ArrayDeque<>();
         float health = -1, absorb;
-        boolean dead, onGround = true, using, swinging;
-        int swingTime, xpLevel = -1;
+        boolean dead, onGround = true, using;
+        int xpLevel = -1;
+        long lastSwing;
         String useItem = "";
         int useTicks;
         double airTopY, x, y, z, speed;
@@ -147,10 +148,6 @@ final class ReactSensors {
             if (ground || p.isInWater() || p.isPassenger()) t.airTopY = y; else t.airTopY = Math.max(t.airTopY, y);
             t.x = x; t.y = y; t.z = z; t.hasPos = true; t.onGround = ground;
 
-            // swinging an arm
-            if (p.swinging && (!t.swinging || p.swingTime < t.swingTime)) emit(t, "swing", 0, 0);
-            t.swinging = p.swinging; t.swingTime = p.swingTime;
-
             // letting go of a drawn bow or trident
             boolean using = p.isUsingItem();
             if (using) { t.useItem = itemId(p.getUseItem()); t.useTicks++; }
@@ -202,6 +199,16 @@ final class ReactSensors {
             Track v = track(victim);
             if (v != null) { v.foughtNanos = now; v.opponentId = causeId; }
         }
+    }
+
+    /** An entity starts swinging an arm (from the game's own swing, so it works for you and for others). */
+    static void onSwing(Entity e) {
+        Track t = track(e);
+        if (t == null) return;
+        long now = System.nanoTime();
+        if (now - t.lastSwing < 50_000_000L) return;   // the same swing reported twice
+        t.lastSwing = now;
+        emit(t, "swing", 0, 0);
     }
 
     /** A critical hit on an entity: the hit came from whoever just damaged it. */
