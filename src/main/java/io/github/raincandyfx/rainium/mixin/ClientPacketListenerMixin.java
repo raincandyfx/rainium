@@ -3,7 +3,6 @@ package io.github.raincandyfx.rainium.mixin;
 import io.github.raincandyfx.rainium.ReactHooks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket;
@@ -44,7 +43,7 @@ public abstract class ClientPacketListenerMixin {
 
     @Inject(method = "handleParticleEvent", at = @At("HEAD"))
     private void rainium$particle(ClientboundLevelParticlesPacket p, CallbackInfo ci) {
-        if (rainium$wanted()) ReactHooks.particle(String.valueOf(BuiltInRegistries.PARTICLE_TYPE.getKey(p.getParticle().getType())), p.getX(), p.getY(), p.getZ());
+        if (rainium$wanted()) ReactHooks.particlePacket(p);
     }
 
     @Inject(method = "handleLevelEvent", at = @At("HEAD"))
