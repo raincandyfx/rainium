@@ -13,7 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class LivingEntitySwingMixin {
     @Inject(method = "swing(Lnet/minecraft/world/InteractionHand;Z)V", at = @At("HEAD"))
     private void rainium$swing(CallbackInfo ci) {
+        if (!ReactHooks.active()) return;
         Object self = this;
-        if (self instanceof Entity e) ReactHooks.swing(e);   // returns at once unless a graph uses Swing
+        if (self instanceof Entity e) ReactHooks.swing(e);
     }
 }

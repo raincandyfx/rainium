@@ -677,8 +677,8 @@ public final class ReactScreen extends Screen {
     }
 
     private void testEvent(React.Node n) {
-        boolean player = !"mobs".equals(n.str("target"));
-        ReactSensors.test(n.type, 999f, player ? 1 : 0);
+        Object[] v = React.testValues(n);
+        ReactSensors.test(n.type, (Float) v[0], (Integer) v[1], (String) v[2]);
         say(Lang.t("react.msg.tested", Lang.t("react.node." + n.type)), MUTED);
     }
 
@@ -937,7 +937,8 @@ public final class ReactScreen extends Screen {
     }
 
     // ------------------------------------------------------------------ the add-a-node menu
-    private static final int MENU_W = 196;
+    private static final int MENU_W = 240;
+    private String menuGroup;   // a group of the current tab, or null for all of them
 
     private void openMenu(int sx, int sy, float cx, float cy, int link, int port, boolean backward) {
         menuOpen = true;
@@ -945,33 +946,51 @@ public final class ReactScreen extends Screen {
         menuX = sx; menuY = sy; menuCX = cx; menuCY = cy;
         linkNode = link; linkPort = port; linkBackward = backward;
         menuScroll = 0;
+        menuGroup = null;
         filter.setLength(0);
         if (link >= 0) {   // start on a tab that has something that fits
-            for (React.Cat c : React.Cat.values()) if (!menuTypes(c).isEmpty()) { menuCat = c; break; }
+            for (React.Cat c : React.Cat.values()) if (!menuTypes(c, null).isEmpty()) { menuCat = c; break; }
         }
     }
 
-    /** Node types for a menu tab, keeping only those that can take the wire being dropped (if any) and match the typed filter. */
-    private List<React.Type> menuTypes(React.Cat c) {
-        List<React.Type> out = new ArrayList<>();
+    /** Whether a node type can take the wire being dropped (if any). */
+    private boolean fitsLink(React.Type t) {
         React.Graph gr = graph();
         React.Node link = gr == null || linkNode < 0 ? null : gr.node(linkNode);
-        String f = filter.toString().toLowerCase(Locale.ROOT);
+        if (link == null || link.t() == null) return true;
+        if (!linkBackward) return inputFor(t, link.t().out()) >= 0;   // the new node takes the wire in its first fitting input
+        React.Port want = link.t().in()[linkPort];                     // the new node feeds the input the wire came from
+        return t.out() != null && (want == React.Port.ANY || want == t.out());
+    }
+
+    /** Node types of a tab (and group, if not null) that fit the wire being dropped. */
+    private List<React.Type> menuTypes(React.Cat c, String group) {
+        List<React.Type> out = new ArrayList<>();
         for (React.Type t : React.TYPES.values()) {
-            if (f.isEmpty() ? t.cat() != c : !Lang.t("react.node." + t.id()).toLowerCase(Locale.ROOT).contains(f)) continue;
+            if (t.cat() != c || (group != null && !group.equals(t.group()))) continue;
             if (t.id().equals("particles") && !targetIsParticles()) continue;
-            if (link != null && link.t() != null) {
-                if (!linkBackward) {   // the new node takes the wire in its first fitting input
-                    if (inputFor(t, link.t().out()) < 0) continue;
-                } else {               // the new node feeds the input the wire came from
-                    React.Port want = link.t().in()[linkPort];
-                    if (t.out() == null || (want != React.Port.ANY && want != t.out())) continue;
-                }
-            }
-            out.add(t);
+            if (fitsLink(t)) out.add(t);
         }
         return out;
     }
+
+    /** Every node type whose name, description or group has all the typed words (any tab). */
+    private List<React.Type> searchTypes() {
+        String[] words = filter.toString().toLowerCase(Locale.ROOT).trim().split("\\s+");
+        List<React.Type> out = new ArrayList<>();
+        for (React.Type t : React.TYPES.values()) {
+            if (t.id().equals("particles") && !targetIsParticles()) continue;
+            if (!fitsLink(t)) continue;
+            String hay = (Lang.t("react.node." + t.id()) + " " + Lang.t("react.node." + t.id() + ".desc") + " " + groupName(t.group()) + " "
+                + Lang.t("react.cat." + t.cat().name().toLowerCase(Locale.ROOT)) + " " + t.id().replace('_', ' ')).toLowerCase(Locale.ROOT);
+            boolean all = true;
+            for (String w : words) if (!w.isEmpty() && !hay.contains(w)) { all = false; break; }
+            if (all) out.add(t);
+        }
+        return out;
+    }
+
+    private static String groupName(String g) { return Lang.t("react.group." + g); }
 
     private static int inputFor(React.Type t, React.Port from) {
         if (from == null) return -1;
@@ -980,45 +999,88 @@ public final class ReactScreen extends Screen {
     }
 
     private void addMenu(GuiGraphicsExtractor g, int mx, int my) {
-        int w = Math.min(MENU_W, width - 8), h = Math.min(220, height - 30);
+        int w = Math.min(MENU_W, width - 8), h = Math.min(260, height - 30);
         int x = Math.max(4, Math.min(menuX, width - w - 4)), y = Math.max(BAR + 2, Math.min(menuY, height - h - 4));
         menuRect = new int[]{x, y, w, h};
         int first = hits.size();
         g.fill(x + 3, y + 3, x + w + 3, y + h + 3, 0x80000000);
         g.fill(x, y, x + w, y + h, 0xF8050B33);
         g.outline(x, y, w, h, PAPER);
-        // tabs (or the filter)
-        int tx = x + 4, ty = y + 4;
-        if (filter.length() > 0) {
-            g.text(font, RainiumScreen.body(Lang.t("react.menu.search", filter.toString())), tx, ty + 2, CYAN, false);
-        } else {
+        boolean searching = filter.length() > 0;
+
+        // the search bar: typing anywhere in the menu goes into it
+        int sx = x + 4, sy = y + 4, sw = w - 8;
+        g.fill(sx, sy, sx + sw, sy + 14, INK);
+        g.outline(sx, sy, sw, 14, searching ? CYAN : FIELD_EDGE);
+        magnifier(g, sx + 6, sy + 7, searching ? CYAN : FAINT);
+        String q = searching ? tail(filter.toString(), sw - 34) + ((System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "") : Lang.t("react.menu.search_hint");
+        g.text(font, RainiumScreen.body(fit(q, sw - 28)), sx + 13, sy + 3, searching ? TEXT : FAINT, false);
+        if (searching) {
+            int cx = sx + sw - 11;
+            boolean ch = in(mx, my, cx, sy, 11, 14);
+            g.text(font, RainiumScreen.body("×"), cx + 3, sy + 3, ch ? PAPER : FAINT, false);
+            hits.add(new Hit(cx, sy, 11, 14, () -> { filter.setLength(0); menuScroll = 0; }, null));
+        }
+        int ty = sy + 18;
+
+        // tabs, then the tab's groups (both hidden while searching: results come from every tab)
+        if (!searching) {
+            int tx = x + 4;
             for (React.Cat c : React.Cat.values()) {
                 String s = Lang.t("react.cat." + c.name().toLowerCase(Locale.ROOT) + "s").toUpperCase(Locale.ROOT);
                 int cw = strong(s) + 10;
-                boolean on = c == menuCat, empty = menuTypes(c).isEmpty();
+                boolean on = c == menuCat, empty = menuTypes(c, null).isEmpty();
                 boolean hov = in(mx, my, tx, ty, cw, 12);
                 slant(g, tx, ty, cw, 12, 3, on ? catColor(c) : hov ? FIELD_HOVER : 0xFF0E1A5C);
                 g.text(font, RainiumScreen.styled(s, true, true), tx + 4, ty + 2, on ? INK : empty ? FAINT : PAPER, false);
-                hits.add(new Hit(tx, ty, cw, 12, () -> { menuCat = c; menuScroll = 0; }, null));
+                hits.add(new Hit(tx, ty, cw, 12, () -> { menuCat = c; menuGroup = null; menuScroll = 0; }, null));
                 tx += cw + 2;
             }
+            ty += 15;
+            List<String> groups = new ArrayList<>();
+            groups.add(null);
+            for (String gname : React.GROUPS.getOrDefault(menuCat, List.of())) if (!menuTypes(menuCat, gname).isEmpty()) groups.add(gname);
+            int gx = x + 4;
+            for (String gname : groups) {
+                String s = gname == null ? Lang.t("react.group.all") : groupName(gname);
+                int cw = font.width(RainiumScreen.body(s)) + 8;
+                if (gx + cw > x + w - 4) { gx = x + 4; ty += 12; }
+                boolean on = java.util.Objects.equals(gname, menuGroup), hov = in(mx, my, gx, ty, cw, 11);
+                capsule(g, gx, ty, cw, 11, on ? PAPER : hov ? FIELD_HOVER : 0xFF0E1A5C);
+                g.text(font, RainiumScreen.body(s), gx + 4, ty + 1, on ? INK : MUTED, false);
+                hits.add(new Hit(gx, ty, cw, 11, () -> { menuGroup = gname; menuScroll = 0; }, null));
+                gx += cw + 2;
+            }
+            ty += 14;
         }
-        int lt = y + 20, lb = y + h - 12;
-        g.text(font, RainiumScreen.body(fit(Lang.t("react.menu.hint"), w - 8)), x + 4, y + h - 10, FAINT, false);
-        List<React.Type> list = menuTypes(menuCat);
+
+        int lt = ty, lb = y + h - 12;
+        g.fill(x + 1, lt - 2, x + w - 1, lt - 1, 0x30FFFFFF);
+        g.text(font, RainiumScreen.body(fit(Lang.t(searching ? "react.menu.hint_search" : "react.menu.hint"), w - 8)), x + 4, y + h - 10, FAINT, false);
+        List<React.Type> list = searching ? searchTypes() : menuTypes(menuCat, menuGroup);
         int viewH = lb - lt;
         menuScroll = Math.max(0, Math.min(menuScroll, Math.max(0, menuContent - viewH)));
         g.enableScissor(x + 1, lt, x + w - 1, lb);
-        int cy = lt - menuScroll, start = cy;
+        int cy = lt - menuScroll + 1, start = cy;
         int before = hits.size();
         if (list.isEmpty()) {
-            g.text(font, RainiumScreen.body(Lang.t("react.menu.none")), x + 6, cy + 4, FAINT, false);
+            g.text(font, RainiumScreen.body(Lang.t(searching ? "react.menu.no_match" : "react.menu.none")), x + 6, cy + 4, FAINT, false);
             cy += 16;
         }
+        String lastHead = null;
         for (React.Type t : list) {
+            // a heading where the group (or, when searching, the tab) changes
+            String head = searching ? Lang.t("react.cat." + t.cat().name().toLowerCase(Locale.ROOT) + "s") + " · " + groupName(t.group())
+                : menuGroup == null ? groupName(t.group()) : null;
+            if (head != null && !head.equals(lastHead)) {
+                String hs = head.toUpperCase(Locale.ROOT);
+                g.text(font, RainiumScreen.styled(fitStrong(hs, w - 16), true, true), x + 6, cy + 2, catColor(t.cat()), false);
+                g.fill(x + 6 + Math.min(w - 16, strong(hs)) + 4, cy + 6, x + w - 6, cy + 7, 0x30FFFFFF);
+                cy += 13;
+                lastHead = head;
+            }
             String nm = Lang.t("react.node." + t.id());
-            String ds = Lang.t("react.node." + t.id() + ".desc");
-            List<String> d = wrap(ds, w - 16);
+            List<String> d = wrap(Lang.t("react.node." + t.id() + ".desc"), w - 16);
             if (d.size() > 2) d = List.of(d.get(0), fit(d.get(1) + "…", w - 16));
             int rh = 12 + d.size() * 9 + 2;
             boolean hov = in(mx, my, x + 2, cy, w - 4, rh) && my >= lt && my < lb;
@@ -1035,7 +1097,22 @@ public final class ReactScreen extends Screen {
         g.disableScissor();
         for (int i = hits.size() - 1; i >= before; i--) { Hit hh = hits.get(i); if (hh.y() + hh.h() <= lt || hh.y() >= lb) hits.remove(i); }
         menuContent = cy - start;
+        if (menuContent > viewH) {
+            int barH = Math.max(14, viewH * viewH / menuContent);
+            int barY = lt + (viewH - barH) * menuScroll / Math.max(1, menuContent - viewH);
+            g.fill(x + w - 3, barY, x + w - 2, barY + barH, 0xD048E6FF);
+        }
         hits.add(first, new Hit(x, y, w, h, () -> { }, d2 -> menuScroll = Math.max(0, Math.min(menuScroll - d2 * 14, Math.max(0, menuContent - viewH)))));
+    }
+
+    /** A small magnifying glass (the search bar's icon). */
+    private void magnifier(GuiGraphicsExtractor g, int cx, int cy, int col) {
+        for (int a = 0; a < 16; a++) {
+            double r = a * Math.PI / 8;
+            g.fill(cx - 1 + (int) Math.round(Math.cos(r) * 2.5), cy - 1 + (int) Math.round(Math.sin(r) * 2.5), cx + (int) Math.round(Math.cos(r) * 2.5), cy + (int) Math.round(Math.sin(r) * 2.5), col);
+        }
+        g.fill(cx + 2, cy + 2, cx + 3, cy + 3, col);
+        g.fill(cx + 3, cy + 3, cx + 4, cy + 4, col);
     }
 
     private int[] menuRect;
@@ -1444,12 +1521,12 @@ public final class ReactScreen extends Screen {
             if (k == RainiumScreen.SC_ESC) { if (filter.length() > 0) filter.setLength(0); else menuOpen = false; return true; }
             if (k == RainiumScreen.SC_BACKSPACE) { if (filter.length() > 0) filter.setLength(filter.length() - 1); return true; }
             if (k == RainiumScreen.SC_ENTER || k == RainiumScreen.SC_KP_ENTER) {
-                List<React.Type> l = menuTypes(menuCat);
+                List<React.Type> l = filter.length() > 0 ? searchTypes() : menuTypes(menuCat, menuGroup);
                 if (!l.isEmpty()) addFromMenu(l.get(0));
                 return true;
             }
             char c = typed(k, false, false);
-            if (c != 0 && (Character.isLetterOrDigit(c) || c == ' ')) { filter.append(c); menuScroll = 0; return true; }
+            if (c != 0 && (Character.isLetterOrDigit(c) || c == ' ' || c == '-') && filter.length() < 40) { filter.append(c); menuScroll = 0; return true; }
             return true;
         }
         if (ctrl && k == RainiumScreen.SC_Z) { if (shift) parent.redo(); else parent.undo(); return true; }

@@ -48,6 +48,8 @@ public final class RainiumClient implements ClientModInitializer {
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("rainium", "main"));
         openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.rainium.open", InputConstants.Type.KEYSYM, KEY_K, category));
 
+        try { ReactEvents.register(); } catch (Throwable t) { reactProblem(t); }
+
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             try { ReactSensors.tick(mc); } catch (Throwable t) { reactProblem(t); }   // reactions are optional; never stop the game
             while (openKey.consumeClick()) {

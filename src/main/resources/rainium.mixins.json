@@ -6,7 +6,8 @@
   "client": [
     "DeltaTrackerTimerMixin",
     "ClientPacketListenerMixin",
-    "LivingEntitySwingMixin"
+    "LivingEntitySwingMixin",
+    "BlockItemMixin"
   ],
   "injectors": {
     "defaultRequire": 0

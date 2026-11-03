@@ -39,15 +39,19 @@ final class React {
         boolean pick() { return kind == Kind.TEXT && choices != null; }
     }
 
-    /** A node type. `self` = only reported for you (the game doesn't tell clients this about other players). */
-    record Type(String id, Cat cat, Port[] in, Port out, List<Param> params, boolean self) {
+    /** A node type. `group` sorts it in the add menu; `self` = only reported for you (the game doesn't tell clients this about other players). */
+    record Type(String id, Cat cat, String group, Port[] in, Port out, List<Param> params, boolean self) {
         boolean isAction() { return cat == Cat.ACTION; }
     }
 
     static final Map<String, Type> TYPES = new LinkedHashMap<>();
+    /** The groups of each category, in menu order. */
+    static final Map<Cat, List<String>> GROUPS = new LinkedHashMap<>();
     static final List<String> CURVES = List.of("linear", "ease_in", "ease_out", "ease_in_out", "smooth", "sine",
         "back_out", "elastic_out", "bounce_out", "step", "custom");
     static final List<String> RETRIGGER = List.of("restart", "extend", "ignore");
+    /** Kinds of damage the Hit and Hurt nodes can be limited to. */
+    static final List<String> DAMAGE = List.of("any", "melee", "projectile", "explosion", "mace", "fall", "fire", "magic", "other");
 
     private static Param num(String k, double def, double min, double max, double step, String unit) { return new Param(k, Kind.NUM, def, min, max, step, null, unit, null); }
     private static Param num(String k, double def, double min, double max, double step, String unit, String when) { return new Param(k, Kind.NUM, def, min, max, step, null, unit, when); }
@@ -56,8 +60,11 @@ final class React {
     private static Param text(String k, String def, String pick) { return new Param(k, Kind.TEXT, def, 0, 0, 0, pick == null ? null : List.of(pick), "", null); }
     private static Param color(String k, int def) { return new Param(k, Kind.COLOR, String.format("#%06X", def & 0xFFFFFF), 0, 0, 0, null, "", null); }
     private static Param curve(String k, String def, String when) { return new Param(k, Kind.CURVE, def, 0, 0, 0, CURVES, "", when); }
+    private static Param damage() { return new Param("damage", Kind.CHOICE, "any", 0, 0, 0, DAMAGE, "", null); }
 
     private static final Port[] NONE = {}, EV = {Port.EVENT}, LV = {Port.LEVEL}, ANY = {Port.ANY};
+
+    private static String group;   // the group the next types go in
 
     private static void type(String id, Cat cat, Port[] in, Port out, boolean self, Param... ps) {
         List<Param> all = new ArrayList<>(Arrays.asList(ps));
@@ -69,68 +76,140 @@ final class React {
             all.add(curve("out_curve", "ease_in_out", null));
             all.add(new Param("retrigger", Kind.CHOICE, "restart", 0, 0, 0, RETRIGGER, "", "event"));
         }
-        TYPES.put(id, new Type(id, cat, in, out, List.copyOf(all), self));
+        TYPES.put(id, new Type(id, cat, group, in, out, List.copyOf(all), self));
+        List<String> gs = GROUPS.computeIfAbsent(cat, k -> new ArrayList<>());
+        if (!gs.contains(group)) gs.add(group);
     }
+
+    private static void ev(String id, Param... ps) { type(id, Cat.EVENT, NONE, Port.EVENT, false, ps); }
+    private static void evSelf(String id, Param... ps) { type(id, Cat.EVENT, NONE, Port.EVENT, true, ps); }
+    private static void st(String id, Param... ps) { type(id, Cat.STATE, NONE, Port.LEVEL, false, ps); }
+    private static void stSelf(String id, Param... ps) { type(id, Cat.STATE, NONE, Port.LEVEL, true, ps); }
 
     static {
         // ---- events (things that happen)
-        type("hit", Cat.EVENT, NONE, Port.EVENT, false, choice("target", "any", "any", "players", "mobs"));
-        type("crit", Cat.EVENT, NONE, Port.EVENT, false);
-        type("hurt", Cat.EVENT, NONE, Port.EVENT, false, num("min", 0, 0, 40, 0.5, "hp"));
-        type("heal", Cat.EVENT, NONE, Port.EVENT, false, num("min", 0.5, 0, 40, 0.5, "hp"));
-        type("totem", Cat.EVENT, NONE, Port.EVENT, false);
-        type("totem_opponent", Cat.EVENT, NONE, Port.EVENT, false);
-        type("kill", Cat.EVENT, NONE, Port.EVENT, false, choice("target", "any", "any", "players", "mobs"));
-        type("death", Cat.EVENT, NONE, Port.EVENT, false);
-        type("respawn", Cat.EVENT, NONE, Port.EVENT, false);
-        type("shield_block", Cat.EVENT, NONE, Port.EVENT, false);
-        type("shield_break", Cat.EVENT, NONE, Port.EVENT, false);
-        type("swing", Cat.EVENT, NONE, Port.EVENT, false);
-        type("jump", Cat.EVENT, NONE, Port.EVENT, false);
-        type("land", Cat.EVENT, NONE, Port.EVENT, false, num("min", 3, 0, 100, 0.5, "blocks"));
-        type("shoot", Cat.EVENT, NONE, Port.EVENT, false);
-        type("eat", Cat.EVENT, NONE, Port.EVENT, true);
-        type("level_up", Cat.EVENT, NONE, Port.EVENT, true);
-        type("interval", Cat.EVENT, NONE, Port.EVENT, false, num("every", 5, 0.1, 600, 0.5, "s"));
+        group = "pvp";
+        ev("totem");
+        ev("totem_opponent");
+        ev("double_pop", num("within", 10, 0.5, 120, 0.5, "s"));
+        ev("mace_smash", num("min", 0, 0, 200, 1, "blocks"));
+        ev("smashed");
+        ev("pearl_thrown");
+        ev("pearl_teleport");
+        ev("opponent_pearled");
+        ev("chorus");
+        ev("wind_charge");
+        ev("launched");
+        ev("crystal_hit");
+        ev("anchor_blast");
+        ev("hit_by_projectile", choice("kind", "any", "any", "arrow", "trident", "other"));
+        ev("shot_player", choice("kind", "any", "any", "arrow", "trident", "other"));
+        ev("disable_shield");
+        ev("opponent_armor_broke");
+        ev("gapple", choice("kind", "any", "any", "golden", "enchanted"));
+        ev("killed_by_player");
+        ev("close_call", num("below", 20, 1, 100, 5, "%"));
+        group = "combat";
+        ev("hit", choice("target", "any", "any", "players", "mobs"), damage());
+        ev("crit");
+        ev("sweep");
+        ev("kill", choice("target", "any", "any", "players", "mobs"));
+        ev("kill_streak", integer("count", 3, 2, 100));
+        ev("assist");
+        ev("swing");
+        group = "damage";
+        ev("hurt", num("min", 0, 0, 40, 0.5, "hp"), damage());
+        ev("heal", num("min", 0.5, 0, 40, 0.5, "hp"));
+        ev("knockback", num("min", 4, 0, 60, 0.5, "blocks/s"));
+        ev("death");
+        ev("respawn");
+        ev("shield_block");
+        ev("shield_break");
+        ev("armor_broke");
+        ev("splashed");
+        group = "movement";
+        ev("jump");
+        ev("land", num("min", 3, 0, 100, 0.5, "blocks"));
+        ev("riptide");
+        ev("firework");
+        ev("enter_water");
+        ev("leave_water");
+        evSelf("dimension_change");
+        group = "items";
+        ev("shoot");
+        evSelf("eat");
+        evSelf("effect_gained", text("effect", "", "effect"));
+        evSelf("effect_lost", text("effect", "", "effect"));
+        evSelf("block_broken", text("block", "", "held"));
+        evSelf("block_placed", text("block", "", "held"));
+        ev("picked_up", text("item", "", "held"));
+        ev("fishing_catch");
+        evSelf("level_up");
+        group = "world";
+        ev("lightning", num("within", 16, 1, 256, 4, "blocks"));
+        ev("chat", text("word", "gg", null));
+        ev("interval", num("every", 5, 0.1, 600, 0.5, "s"));
 
         // ---- states (things that are true for a while)
-        type("health", Cat.STATE, NONE, Port.LEVEL, false, choice("mode", "below", "below", "above", "missing"),
+        group = "health";
+        st("health", choice("mode", "below", "below", "above", "missing"),
             new Param("percent", Kind.NUM, 30.0, 1, 100, 5, null, "%", "mode!=missing"));
-        type("absorption", Cat.STATE, NONE, Port.LEVEL, false);
-        type("in_combat", Cat.STATE, NONE, Port.LEVEL, false, num("seconds", 10, 1, 120, 1, "s"));
-        type("on_fire", Cat.STATE, NONE, Port.LEVEL, false);
-        type("blocking", Cat.STATE, NONE, Port.LEVEL, false);
-        type("sneaking", Cat.STATE, NONE, Port.LEVEL, false);
-        type("sprinting", Cat.STATE, NONE, Port.LEVEL, false);
-        type("moving", Cat.STATE, NONE, Port.LEVEL, false, num("speed", 2, 0.1, 40, 0.5, "blocks/s"));
-        type("gliding", Cat.STATE, NONE, Port.LEVEL, false);
-        type("swimming", Cat.STATE, NONE, Port.LEVEL, false);
-        type("in_water", Cat.STATE, NONE, Port.LEVEL, false);
-        type("in_lava", Cat.STATE, NONE, Port.LEVEL, false);
-        type("on_ground", Cat.STATE, NONE, Port.LEVEL, false);
-        type("airborne", Cat.STATE, NONE, Port.LEVEL, false);
-        type("riding", Cat.STATE, NONE, Port.LEVEL, false);
-        type("holding", Cat.STATE, NONE, Port.LEVEL, false, text("item", "totem_of_undying", "held"), choice("hand", "either", "either", "main", "off"));
-        type("using", Cat.STATE, NONE, Port.LEVEL, false, text("item", "", "using"));
-        type("effect", Cat.STATE, NONE, Port.LEVEL, true, text("effect", "speed", "effect"));
-        type("hunger", Cat.STATE, NONE, Port.LEVEL, true, num("below", 6, 1, 20, 1, ""));
-        type("night", Cat.STATE, NONE, Port.LEVEL, false);
-        type("raining", Cat.STATE, NONE, Port.LEVEL, false);
-        type("thunder", Cat.STATE, NONE, Port.LEVEL, false);
-        type("dimension", Cat.STATE, NONE, Port.LEVEL, false, text("dimension", "the_nether", "dimension"));
-        type("biome", Cat.STATE, NONE, Port.LEVEL, false, text("biome", "plains", "biome"));
+        st("absorption");
+        st("on_fire");
+        group = "combat";
+        st("in_combat", num("seconds", 10, 1, 120, 1, "s"));
+        st("blocking");
+        st("falling", num("blocks", 3, 0.5, 200, 0.5, "blocks"));
+        group = "opponent";
+        st("opponent_health", choice("mode", "below", "below", "above"), num("percent", 30, 1, 100, 5, "%"));
+        st("opponent_near", num("within", 6, 1, 128, 1, "blocks"));
+        st("opponent_holding", text("item", "mace", null));
+        st("opponent_blocking");
+        st("opponent_looking");
+        group = "movement";
+        st("sneaking");
+        st("sprinting");
+        st("moving", num("speed", 2, 0.1, 40, 0.5, "blocks/s"));
+        st("gliding");
+        st("swimming");
+        st("in_water");
+        st("in_lava");
+        st("on_ground");
+        st("airborne");
+        st("riding");
+        st("sleeping");
+        st("in_cobweb");
+        group = "items";
+        st("holding", text("item", "totem_of_undying", "held"), choice("hand", "either", "either", "main", "off"));
+        st("using", text("item", "", "using"));
+        stSelf("effect", text("effect", "speed", "effect"));
+        stSelf("hunger", num("below", 6, 1, 20, 1, ""));
+        stSelf("low_durability", choice("slot", "any", "any", "held", "armor"), num("percent", 10, 1, 100, 5, "%"));
+        stSelf("totems_left", integer("below", 2, 1, 64));
+        stSelf("item_cooldown", text("item", "ender_pearl", "held"));
+        stSelf("shield_cooldown");
+        group = "world";
+        st("night");
+        st("raining");
+        st("thunder");
+        st("dimension", text("dimension", "the_nether", "dimension"));
+        st("biome", text("biome", "plains", "biome"));
+        st("game_mode", choice("mode", "creative", "survival", "creative", "spectator"));
 
         // ---- logic (combine and shape)
+        group = "combine";
         type("and", Cat.LOGIC, new Port[]{Port.LEVEL, Port.LEVEL}, Port.LEVEL, false);
         type("or", Cat.LOGIC, new Port[]{Port.LEVEL, Port.LEVEL}, Port.LEVEL, false);
         type("not", Cat.LOGIC, LV, Port.LEVEL, false);
-        type("gate", Cat.LOGIC, new Port[]{Port.EVENT, Port.LEVEL}, Port.EVENT, false);
         type("either", Cat.LOGIC, new Port[]{Port.EVENT, Port.EVENT}, Port.EVENT, false);
+        group = "convert";
+        type("gate", Cat.LOGIC, new Port[]{Port.EVENT, Port.LEVEL}, Port.EVENT, false);
         type("hold", Cat.LOGIC, EV, Port.LEVEL, false, num("seconds", 3, 0.05, 600, 0.25, "s"));
         type("toggle", Cat.LOGIC, EV, Port.LEVEL, false);
         type("switch", Cat.LOGIC, new Port[]{Port.EVENT, Port.EVENT}, Port.LEVEL, false);
         type("starts", Cat.LOGIC, LV, Port.EVENT, false);
         type("stops", Cat.LOGIC, LV, Port.EVENT, false);
+        group = "filter";
         type("chance", Cat.LOGIC, EV, Port.EVENT, false, num("percent", 50, 1, 100, 5, "%"));
         type("cooldown", Cat.LOGIC, EV, Port.EVENT, false, num("seconds", 2, 0.05, 600, 0.25, "s"));
         type("every", Cat.LOGIC, EV, Port.EVENT, false, integer("count", 3, 2, 100));
@@ -138,18 +217,22 @@ final class React {
         type("delay", Cat.LOGIC, EV, Port.EVENT, false, num("seconds", 0.5, 0.05, 60, 0.05, "s"));
 
         // ---- actions (change this layer)
+        group = "visibility";
         type("show", Cat.ACTION, ANY, null, false);
         type("hide", Cat.ACTION, ANY, null, false);
-        type("tint", Cat.ACTION, ANY, null, false, color("color", 0xFF3050), num("strength", 1, 0, 1, 0.05, "×"));
         type("opacity", Cat.ACTION, ANY, null, false, num("value", 0.3, 0, 1, 0.05, "×"));
+        group = "colour";
+        type("tint", Cat.ACTION, ANY, null, false, color("color", 0xFF3050), num("strength", 1, 0, 1, 0.05, "×"));
         type("glow", Cat.ACTION, ANY, null, false, num("strength", 1, 0, 1, 0.05, "×"));
         type("rainbow", Cat.ACTION, ANY, null, false, num("speed", 0.5, 0.05, 10, 0.05, "Hz"), num("strength", 0.8, 0, 1, 0.05, "×"));
+        group = "motion";
         type("scale", Cat.ACTION, ANY, null, false, num("factor", 1.5, 0, 10, 0.05, "×"));
         type("move", Cat.ACTION, ANY, null, false, num("x", 0, -10, 10, 0.05, "blocks"), num("y", -0.25, -10, 10, 0.05, "blocks"), num("z", 0, -10, 10, 0.05, "blocks"));
         type("rotate", Cat.ACTION, ANY, null, false, num("x", 0, -360, 360, 5, "°"), num("y", 90, -360, 360, 5, "°"), num("z", 0, -360, 360, 5, "°"));
         type("spin", Cat.ACTION, ANY, null, false, num("speed", 180, -1440, 1440, 15, "°/s"));
         type("shake", Cat.ACTION, ANY, null, false, num("strength", 0.04, 0, 1, 0.01, "blocks"), num("speed", 14, 0.5, 40, 0.5, "Hz"));
         type("bob", Cat.ACTION, ANY, null, false, num("amount", 0.1, 0, 2, 0.01, "blocks"), num("speed", 1, 0.05, 10, 0.05, "Hz"));
+        group = "effects";
         type("particles", Cat.ACTION, ANY, null, false, integer("burst", 20, 0, 500), num("rate", 3, 0, 20, 0.25, "×"));
     }
 
@@ -508,8 +591,14 @@ final class React {
     }
 
     // =================================================================== running a graph
-    /** Something that happened to a wearer. amount: damage, healing or fall height; flags: 1 = the other entity is a player. */
-    record Ev(long seq, String kind, long nanos, float amount, int flags) {}
+    /**
+     * Something that happened to a wearer. amount: damage, healing, a fall height, a speed, a count or a
+     * number of seconds (by kind); flags: 1 = the other entity is a player; tag: a kind of damage, an item,
+     * block or effect id, a projectile kind, or a chat message.
+     */
+    record Ev(long seq, String kind, long nanos, float amount, int flags, String tag) {
+        Ev(long seq, String kind, long nanos, float amount, int flags) { this(seq, kind, nanos, amount, flags, null); }
+    }
 
     /** The player (or armor stand) a layer is drawn on, as the graph sees it. */
     interface Wearer {
@@ -646,14 +735,7 @@ final class React {
                 return;
             }
             if (ty.self && !w.self()) return;
-            String target = n.str("target");
-            for (Ev e : evs) {
-                if (!e.kind.equals(n.type)) continue;
-                if ((n.type.equals("hurt") || n.type.equals("heal") || n.type.equals("land")) && e.amount + 1e-4 < n.num("min")) continue;
-                if (target.equals("players") && (e.flags & 1) == 0) continue;
-                if (target.equals("mobs") && (e.flags & 1) != 0) continue;
-                s.fire(e.nanos / 1e9);
-            }
+            for (Ev e : evs) if (e.kind.equals(n.type) && passes(n, e)) s.fire(e.nanos / 1e9);
         }
 
         private void logic(Node n, Sig[] in, double t, Sig s) {
@@ -808,6 +890,77 @@ final class React {
                 default -> { }
             }
         }
+    }
+
+    /** Whether an event matches its node's settings (at least / within / which kind ...). */
+    static boolean passes(Node n, Ev e) {
+        String tag = e.tag == null ? "" : e.tag;
+        switch (n.type) {
+            case "hurt", "heal", "land", "mace_smash", "knockback" -> { if (e.amount + 1e-4 < n.num("min")) return false; }
+            case "double_pop", "lightning" -> { if (e.amount > n.num("within") + 1e-4) return false; }
+            case "close_call" -> { if (e.amount > n.num("below") + 1e-4) return false; }
+            case "kill_streak" -> { int c = Math.max(1, (int) n.num("count")); if (e.amount < c || Math.round(e.amount) % c != 0) return false; }
+            case "hit_by_projectile", "shot_player", "gapple" -> { String k = n.str("kind"); if (!k.equals("any") && !k.equals(tag)) return false; }
+            case "effect_gained", "effect_lost", "block_broken", "block_placed", "picked_up" -> {
+                String want = n.str(n.type.startsWith("effect") ? "effect" : n.type.startsWith("block") ? "block" : "item");
+                if (!want.isBlank() && !idMatch(want, tag)) return false;
+            }
+            case "chat" -> { String word = n.str("word").trim().toLowerCase(Locale.ROOT); if (!word.isEmpty() && !tag.toLowerCase(Locale.ROOT).contains(word)) return false; }
+            default -> { }
+        }
+        if (n.param("target") != null) {
+            String target = n.str("target");
+            if (target.equals("players") && (e.flags & 1) == 0) return false;
+            if (target.equals("mobs") && (e.flags & 1) != 0) return false;
+        }
+        if (n.param("damage") != null) {
+            String d = n.str("damage");
+            if (!d.equals("any") && !d.equals(tag)) return false;
+        }
+        return true;
+    }
+
+    /** "totem_of_undying" matches "minecraft:totem_of_undying". */
+    static boolean idMatch(String want, String id) {
+        if (id == null) return false;
+        String w = want.trim().toLowerCase(Locale.ROOT), i = id.toLowerCase(Locale.ROOT);
+        if (w.indexOf(':') < 0) w = "minecraft:" + w;
+        if (i.indexOf(':') < 0) i = "minecraft:" + i;
+        return w.equals(i);
+    }
+
+    /** What the editor's try-it button fires for a node so that its own settings let it through: {amount, flags, tag}. */
+    static Object[] testValues(Node n) {
+        float amount = switch (n.type) {
+            case "double_pop", "lightning", "close_call" -> 0f;
+            case "kill_streak" -> (float) n.num("count");
+            default -> 999f;
+        };
+        int flags = "mobs".equals(n.str("target")) ? 0 : 1;
+        String tag = null;
+        if (n.param("damage") != null && !n.str("damage").equals("any")) tag = n.str("damage");
+        else if (n.param("kind") != null && !n.str("kind").equals("any")) tag = n.str("kind");
+        else if (n.type.startsWith("effect_")) tag = n.str("effect");
+        else if (n.type.startsWith("block_")) tag = n.str("block");
+        else if (n.type.equals("picked_up")) tag = n.str("item");
+        else if (n.type.equals("chat")) tag = n.str("word");
+        return new Object[]{amount, flags, tag == null || tag.isBlank() ? null : tag};
+    }
+
+    /** Which of DAMAGE a damage type (its id) counts as. */
+    static String damageKind(String id) {
+        if (id == null) return "other";
+        String t = id.substring(id.indexOf(':') + 1);
+        return switch (t) {
+            case "player_attack", "mob_attack", "mob_attack_no_aggro", "sting", "spear" -> "melee";
+            case "arrow", "trident", "thrown", "mob_projectile", "fireball", "unattributed_fireball", "wither_skull", "wind_charge", "spit" -> "projectile";
+            case "explosion", "player_explosion", "bad_respawn_point", "fireworks" -> "explosion";
+            case "mace_smash" -> "mace";
+            case "fall", "fly_into_wall", "stalagmite", "falling_block", "falling_anvil", "falling_stalactite", "ender_pearl" -> "fall";
+            case "in_fire", "on_fire", "lava", "hot_floor", "campfire", "lightning_bolt" -> "fire";
+            case "magic", "indirect_magic", "wither", "dragon_breath", "sonic_boom", "thorns" -> "magic";
+            default -> "other";
+        };
     }
 
     private static float clamp01(double v) { return (float) Math.max(0, Math.min(1, v)); }

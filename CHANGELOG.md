@@ -2,6 +2,16 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.3 (dev build)
+
+- **Many more reaction triggers**, with PvP ones first:
+  - **PvP events:** mace smash (with how far you fell), smashed by a mace, pearl thrown, pearl teleport, opponent pearled, chorus teleport, wind charge, launched, crystal hit, anchor blast, hit by a projectile, shot a player, disabled a shield, opponent's armour broke, golden apple, killed by a player, close call, double pop.
+  - **More events:** sweep attack, kill streak, assist, knocked back, armour broke, splashed, riptide, firework boost, into / out of water, changed dimension, effect gained / ended, block broken / placed, picked up, fishing catch, lightning, chat word.
+  - **New states:** falling, opponent's health, opponent near, opponent holding, opponent blocking, opponent looking at you, sleeping, in a cobweb, low durability, few totems left, item cooling down, shield disabled, game mode.
+  - **Hit** and **Hurt** can be limited to a kind of damage (melee, projectile, explosion, mace, fall, fire, magic, other).
+- **The add menu has a search bar and groups:** each tab (Events, States, Logic, Actions) is split into groups such as PvP, Combat, Damage, Movement, Items and World, with a chip for each; typing searches every node in every tab by name and description.
+- As before, a trigger is only watched while a switched-on graph uses it.
+
 ## 0.9.2 (dev build)
 
 - **Reactions only watch what's used.** Each check (health changes, jumps and landings, bow shots, level-ups, kills, damage, crits, swings, totem pops, shield events, eating) runs only while a switched-on layer or folder has a graph that uses it. With no reactions anywhere, nothing is watched at all.
