@@ -264,12 +264,6 @@ final class React {
 
     static Type type(String id) { return TYPES.get(id); }
 
-    static List<Type> ofCat(Cat c) {
-        List<Type> out = new ArrayList<>();
-        for (Type t : TYPES.values()) if (t.cat == c) out.add(t);
-        return out;
-    }
-
     // =================================================================== the graph
     static final class Node {
         int id;

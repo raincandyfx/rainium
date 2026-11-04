@@ -63,7 +63,6 @@ final class Recorder {
     private static long startNanos;
     private static int nextFrame;               // index of the next frame to take
     private static volatile int clockFrame;     // the frame the recording clock shows
-    private static int waits;                   // frames the game drew while saving caught up
     private static int pendingFrame = -1;       // frame the game clock was moved to, waiting to be drawn and taken
     private static volatile boolean driven;     // the game's timer follows the recording clock
     private static volatile long frameBytes = 1;   // memory one queued frame takes
@@ -75,8 +74,6 @@ final class Recorder {
     static boolean capturing() { return mode != Mode.IDLE; }
     static int sizeFactor() { return sizeFactor; }
     static int framesWritten() { return written.get(); }
-    /** Game frames spent waiting for saving to catch up (the recording is then slower than real time). */
-    static int framesWaited() { return waits; }
     static int pending() { return queued.get(); }
     static Path target() { return target; }
     /** Whether the game's timer follows the recording clock (false if that hook isn't available). */
@@ -129,7 +126,6 @@ final class Recorder {
         fps = Math.max(1, framesPerSecond);
         nextFrame = 0;
         clockFrame = 0;
-        waits = 0;
         pendingFrame = -1;
         driven = false;
         written.set(0);
@@ -171,7 +167,6 @@ final class Recorder {
         }
         int k = nextFrame;
         if (queued.get() >= maxQueued()) {                                   // saving has fallen behind: wait
-            waits++;
             return -1;
         }
         nextFrame = k + 1;
@@ -191,7 +186,7 @@ final class Recorder {
         driven = true;
         if (pendingFrame >= 0) return 0;                                     // last step not drawn yet: hold
         int k = nextFrame;
-        if (queued.get() >= maxQueued()) { waits++; return 0; }             // saving has fallen behind
+        if (queued.get() >= maxQueued()) return 0;             // saving has fallen behind
         nextFrame = k + 1;
         clockFrame = k;
         pendingFrame = k;
