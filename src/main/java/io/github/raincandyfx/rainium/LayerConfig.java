@@ -249,7 +249,7 @@ final class LayerConfig {
     /** Settings > Music and lyrics. Lyrics are off until switched on; looking lyrics up online is off until allowed. */
     static final class LyricsSettings {
         boolean enabled = false;
-        boolean video = true;            // Music video (JIZURA, needs MCEF Modern) or Simple
+        boolean video = true;            // Music video (a JIZURA-style lyric video, drawn in Java) or Simple
         boolean demo = false;            // play the built-in demo song instead of the computer's player
         String player = "any";           // "any", "spotify" or a player's name
         boolean online = false;          // look lyrics up on lrclib.net

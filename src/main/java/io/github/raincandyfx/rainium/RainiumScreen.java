@@ -1553,10 +1553,6 @@ public final class RainiumScreen extends Screen {
         List<String> modes = List.of(Lang.t("value.lyrics_mode.video"), Lang.t("value.lyrics_mode.simple"));
         y = cycle(g, mx, my, x, y, w, "lyrics_mode", modes.get(ly.video ? 0 : 1), modes, ly.video ? 0 : 1, d -> { ly.video = !ly.video; save(); });
         if (ly.video) {
-            String vd = LyricsVideo.detail();
-            String key = vd.startsWith("downloading") ? "downloading" : vd.startsWith("failed") ? "failed" : vd;
-            String note = Lang.t("lyrics.video." + key, vd.replaceFirst("^\\w+:?\\s*", ""));
-            y = wrapped(g, x, y, w, note, key.equals("ready") ? FAINT : WARN);
             List<String> styles = new java.util.ArrayList<>();
             for (String id : Lyrics.STYLES) styles.add(Lang.t("value.lyrics_style." + id));
             int si = Math.max(0, java.util.Arrays.asList(Lyrics.STYLES).indexOf(ly.style));

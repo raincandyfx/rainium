@@ -34,4 +34,3 @@ ReactScreen.java      ||  \bextractBackground\(                    ||  renderBac
 
 # Lyrics: 1.21.11 shows a client-only chat line with displayClientMessage
 Lyrics.java           ||  mc\.player\.sendSystemMessage\((\w+)\)   ||  mc.player.displayClientMessage($1, false)
-LyricsVideo.java      ||  com\.mojang\.renderpearl\.api\.textures\.   ||  com.mojang.blaze3d.textures.

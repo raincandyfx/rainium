@@ -2,6 +2,13 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.6 (dev build)
+
+- **Lyrics are a plane in the world now.** Each line is fixed in the world, to the left or right of where you were looking when it started, and it stays there as you walk and look around. If you turn away from it for a moment, or walk far from it, the next spot is in front of you again. It still slides aside rather than cover an enemy, still shrinks to fit the screen, and is still small by default.
+- **The music video look is drawn by Rainium itself.** No MCEF Modern or browser is needed any more. It's a re-creation in Java of JIZURA's look rather than JIZURA's own engine: its twelve styles' colours, chromatic ghosting, HUD frame, rings, slashes and kinetic type, in nine layouts (centred, stacked, zigzag, arc, orbit, scattered, one big word, typewriter, vertical for Japanese), ten ways in and eight ways out. It has fewer layouts and motions than JIZURA itself. **Japanese motifs** adds a red seal, a brush circle and a vertical katakana tag; **New effects** adds glitch tears.
+- The decorations sit a little behind the lyrics, so the picture has depth as you move.
+- *Not yet tried in a real game.*
+
 ## 0.9.5 (dev build)
 
 - **Lyrics in the world** (Settings > **Music and lyrics**, off until you switch it on): the lyrics of the song playing on your computer appear in front of you, in time with the music. Only you see them.
