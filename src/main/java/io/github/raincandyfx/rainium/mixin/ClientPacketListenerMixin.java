@@ -26,7 +26,7 @@ public abstract class ClientPacketListenerMixin {
 
     @Inject(method = "handleDamageEvent", at = @At("HEAD"))
     private void rainium$damage(ClientboundDamageEventPacket p, CallbackInfo ci) {
-        if (rainium$wanted()) ReactHooks.damage(p.entityId(), p.sourceCauseId(), p.sourceDirectId(), p.sourceType().getRegisteredName());
+        if (ReactHooks.wantsDamage() && Minecraft.getInstance().isSameThread()) ReactHooks.damage(p.entityId(), p.sourceCauseId(), p.sourceDirectId(), p.sourceType().getRegisteredName());
     }
 
     @Inject(method = "handleEntityEvent", at = @At("HEAD"))

@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
@@ -52,6 +53,7 @@ public final class RainiumClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             try { ReactSensors.tick(mc); } catch (Throwable t) { reactProblem(t); }   // reactions are optional; never stop the game
+            try { Lyrics.tick(mc); } catch (Throwable t) { lyricsProblem(t); }        // lyrics are optional too
             while (openKey.consumeClick()) {
                 if (mc.screen == null) openNextTick = true;
             }
@@ -60,6 +62,12 @@ public final class RainiumClient implements ClientModInitializer {
                 mc.setScreen(new RainiumScreen());
             }
         });
+
+        try {   // lyrics are drawn in the world after the entities
+            WorldRenderEvents.AFTER_ENTITIES.register(ctx -> {
+                try { Lyrics.submit(ctx.commandQueue()); } catch (Throwable t) { lyricsProblem(t); }
+            });
+        } catch (Throwable t) { lyricsProblem(t); }
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) -> {
             dispatcher.register(ClientCommandManager.literal("rainium")
@@ -76,6 +84,13 @@ public final class RainiumClient implements ClientModInitializer {
     }
 
     static void open() { openNextTick = true; }
+
+    private static boolean lyricsWarned;
+    private static void lyricsProblem(Throwable t) {
+        if (lyricsWarned) return;
+        lyricsWarned = true;
+        Assets.LOG.warn("[rainium] lyrics stopped: " + t);
+    }
 
     private static boolean reactWarned;
     private static void reactProblem(Throwable t) {

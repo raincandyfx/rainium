@@ -2,6 +2,27 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.5 (dev build)
+
+- **Lyrics in the world** (Settings > **Music and lyrics**, off until you switch it on): the lyrics of the song playing on your computer appear in front of you, in time with the music. Only you see them.
+  - **What's playing:**
+    - **Windows:** any player in the volume flyout (Spotify, browsers, Apple Music…).
+    - **macOS:** Spotify or Apple Music.
+    - **Linux:** any player, through `playerctl`.
+  - **Lyrics come from:**
+    - Your own `.lrc` files (`config/rainium/lyrics/Artist - Title.lrc`).
+    - Copies saved from earlier lookups.
+    - **lrclib.net**, only if you switch on **Find lyrics online**. Only the title, artist, album and length are sent.
+  - **Music video look:** the lyrics as a lyric video by [JIZURA](https://github.com/852wa/JIZURA) (MIT), drawn exactly as JIZURA draws them, with a **Style**, **New variation**, **Japanese motifs** and **New effects**. JIZURA's background graphics stay off, so only the lyrics and their decorations appear. It needs the [MCEF Modern](https://modrinth.com/mod/mcef-modern) mod.
+  - **Simple look:** the sung line fills in word by word. It's used while the music video isn't available.
+  - **Never in the way:**
+    - The lyrics never cover the one you're fighting, or the player or monster nearest your aim. They slide to its left or right with a buffer, and shrink if needed.
+    - They always fit on the screen and are small by default (Small, Medium or Large).
+    - They never move your view or change the world.
+    - **Through blocks** decides whether walls can hide them.
+  - **Sync**, **Demo song**, **Listen to** (any player or Spotify only), **Song in chat** (only you see it), **Open lyrics folder**, **Clear saved lyrics**.
+  - *Not yet tried in a real game.*
+
 ## 0.9.4 (dev build)
 
 - **Logic gates, sorted by what they join** (Logic tab):

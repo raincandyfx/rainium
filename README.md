@@ -113,6 +113,25 @@ The add menu has a search bar (type to search every node) and a chip for each gr
 
 Reactions are saved with the layer, so **Export as zip** (and **Export layer**) carry them. **File** in the editor copies them as text, pastes them, or saves and loads `.reactions.json` files in `config/rainium/exports`. Your reactions show on everyone your layer is drawn on, each reacting to what happens to them; a few things (effects, hunger, eating, level-ups, durability, cooldowns, totems left, block breaking and placing, dimension changes) are only known about you.
 
+## Lyrics
+
+Rainium can show the lyrics of the song playing on your computer in the world in front of you, in time with the music. Switch it on in **Settings > Music and lyrics**. Only you see the lyrics.
+
+- **What's playing:** on Windows, any player that shows in the volume flyout (Spotify, browsers, Apple Music...). On macOS, Spotify or Apple Music (macOS asks once to let Minecraft read them). On Linux, any player through `playerctl`.
+- **Where the lyrics come from:**
+  - Your own `.lrc` files, named `Artist - Title.lrc`, in `config/rainium/lyrics`.
+  - Lyrics saved from an earlier lookup.
+  - **lrclib.net**, a free lyrics site, but only if you switch on **Find lyrics online**. Only the song's title, artist, album and length are sent.
+- **Looks:**
+  - **Music video:** the lyrics as a lyric video made by [JIZURA](https://github.com/852wa/JIZURA), with its styles, layouts and motion. It needs the [MCEF Modern](https://modrinth.com/mod/mcef-modern) mod, which puts a browser inside Minecraft and downloads it the first time.
+  - **Simple:** the line being sung, filling in word by word, with the next line under it. It works without any other mod, and it's shown while the music video isn't available.
+- **Never in the way:**
+  - The lyrics never cover the one you're fighting, or the player or monster you're aiming at. They move to its left or right, with room to spare, and shrink if they must.
+  - They always fit on the screen, and they're small by default (Size: Small, Medium or Large).
+  - They never move your view or change the world.
+  - **Through blocks** decides whether walls can hide them.
+- **Sync** moves the lyrics earlier or later. **Demo song** plays a short built-in song (lyrics only) so you can try the looks without music. **Song in chat** adds a line to your chat (only you see it) when the song changes.
+
 ## Pictures and recordings
 
 The preview in the editor has two buttons in its top corner:
@@ -142,7 +161,7 @@ Only main releases (versions ending in **.0**, like 0.7.0) are installed automat
 
 ## Privacy
 
-Rainium doesn't collect or send anything about you. Its only network request is the optional update check above.
+Rainium doesn't collect or send anything about you. Its only network requests are the optional update check above and, if you switch on **Find lyrics online**, looking up the song you're playing on lrclib.net (title, artist, album and length only).
 
 When the editor shows a folder path, it replaces your computer's account name with your in-game name, so it's safe to share screenshots. You can choose a different name, or hide it entirely, in **Settings > Privacy**.
 
@@ -189,3 +208,5 @@ Not an official Minecraft product. Not approved by or associated with Mojang or 
 ## License
 
 Rainium is open source under the [MIT License](LICENSE).
+
+The lyric videos are made by [JIZURA](https://github.com/852wa/JIZURA) (MIT License, © 2026 hakoniwa), included unchanged in `assets/rainium/jizura` with its license.

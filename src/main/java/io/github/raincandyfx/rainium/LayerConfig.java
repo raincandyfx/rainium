@@ -240,10 +240,28 @@ final class LayerConfig {
     int captureFps = 120;                              // recording frame rate (30, 60 or 120)
     int captureSpin = 0;                               // turn the preview while recording: 0 off, 1 slow, 2 fast
     final Physics physics = new Physics();
+    final LyricsSettings lyrics = new LyricsSettings();
     final List<Layer> layers = new ArrayList<>();
     final Map<String, Folder> folders = new java.util.LinkedHashMap<>();
 
     Folder folder(String name) { return folders.computeIfAbsent(name, k -> new Folder()); }
+
+    /** Settings > Music and lyrics. Lyrics are off until switched on; looking lyrics up online is off until allowed. */
+    static final class LyricsSettings {
+        boolean enabled = false;
+        boolean video = true;            // Music video (JIZURA, needs MCEF Modern) or Simple
+        boolean demo = false;            // play the built-in demo song instead of the computer's player
+        String player = "any";           // "any", "spotify" or a player's name
+        boolean online = false;          // look lyrics up on lrclib.net
+        float offset = 0f;               // seconds; + shows lyrics later
+        int size = 1;                    // 0 small, 1 medium, 2 large
+        boolean throughBlocks = true;    // never hidden behind blocks
+        boolean chat = false;            // "Now playing" in your chat when the song changes
+        String style = "noir";           // JIZURA style
+        int seed = 1;                    // JIZURA variation (each song mixes in its own)
+        boolean motifs = true;           // JIZURA: Japanese motifs
+        boolean newEffects = false;      // JIZURA: the effects added after its first version
+    }
 
     /** A layer is drawn when it and its folder (if any) are switched on. */
     boolean isActive(Layer l) {
@@ -352,6 +370,22 @@ final class LayerConfig {
             if (cm.get("size") instanceof Number n) c.captureSize = n.intValue() >= 4 ? 4 : n.intValue() >= 2 ? 2 : 1;
             if (cm.get("fps") instanceof Number n) c.captureFps = n.intValue() >= 120 ? 120 : n.intValue() >= 60 ? 60 : 30;
             if (cm.get("spin") instanceof Number n) c.captureSpin = Math.max(0, Math.min(2, n.intValue()));
+        }
+        if (m.get("lyrics") instanceof Map<?, ?> lm) {
+            LyricsSettings ly = c.lyrics;
+            if (lm.get("enabled") instanceof Boolean b) ly.enabled = b;
+            if (lm.get("mode") instanceof String s) ly.video = !s.equalsIgnoreCase("simple");
+            if (lm.get("demo") instanceof Boolean b) ly.demo = b;
+            if (lm.get("player") instanceof String s && !s.isBlank()) ly.player = s.trim();
+            if (lm.get("online") instanceof Boolean b) ly.online = b;
+            if (lm.get("offset") instanceof Number n) ly.offset = Math.max(-5f, Math.min(5f, n.floatValue()));
+            if (lm.get("size") instanceof Number n) ly.size = Math.max(0, Math.min(2, n.intValue()));
+            if (lm.get("through_blocks") instanceof Boolean b) ly.throughBlocks = b;
+            if (lm.get("chat") instanceof Boolean b) ly.chat = b;
+            if (lm.get("style") instanceof String s && !s.isBlank()) ly.style = s.trim();
+            if (lm.get("variation") instanceof Number n) ly.seed = n.intValue();
+            if (lm.get("japanese_motifs") instanceof Boolean b) ly.motifs = b;
+            if (lm.get("new_effects") instanceof Boolean b) ly.newEffects = b;
         }
         if (m.get("updates") instanceof Map<?, ?> um) {
             if (um.get("automatic") instanceof Boolean b) c.autoUpdate = b;
@@ -533,6 +567,21 @@ final class LayerConfig {
         up.put("automatic", autoUpdate);
         up.put("dev_builds", devUpdates);
         m.put("updates", up);
+        Map<String, Object> ly = new java.util.LinkedHashMap<>();
+        ly.put("enabled", lyrics.enabled);
+        ly.put("mode", lyrics.video ? "video" : "simple");
+        ly.put("demo", lyrics.demo);
+        ly.put("player", lyrics.player);
+        ly.put("online", lyrics.online);
+        ly.put("offset", lyrics.offset);
+        ly.put("size", lyrics.size);
+        ly.put("through_blocks", lyrics.throughBlocks);
+        ly.put("chat", lyrics.chat);
+        ly.put("style", lyrics.style);
+        ly.put("variation", lyrics.seed);
+        ly.put("japanese_motifs", lyrics.motifs);
+        ly.put("new_effects", lyrics.newEffects);
+        m.put("lyrics", ly);
         Map<String, Object> cap = new java.util.LinkedHashMap<>();
         cap.put("size", captureSize);
         cap.put("fps", captureFps);

@@ -10,7 +10,13 @@ public final class ReactHooks {
     /** True when some switched-on graph needs anything at all (so a hook can skip its own work first). */
     public static boolean active() { return !ReactSensors.usage().isEmpty(); }
 
+    /** True when damage packets are wanted: by reactions, or by lyrics (to keep clear of the one you're fighting). */
+    public static boolean wantsDamage() {
+        try { return active() || RainiumClient.ASSETS.editable().lyrics.enabled; } catch (Throwable t) { return active(); }
+    }
+
     public static void damage(int victimId, int causeId, int directId, String type) {
+        try { Lyrics.noteDamage(victimId, causeId); } catch (Throwable ignored) { }
         try { ReactSensors.onDamage(victimId, causeId, directId, type); } catch (Throwable ignored) { }
     }
 
