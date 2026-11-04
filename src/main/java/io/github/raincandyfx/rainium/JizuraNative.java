@@ -1,5 +1,14 @@
 package io.github.raincandyfx.rainium;
 
+import io.github.raincandyfx.rainium.JizuraKit.BB;
+import io.github.raincandyfx.rainium.JizuraKit.E;
+import io.github.raincandyfx.rainium.JizuraKit.Env;
+import io.github.raincandyfx.rainium.JizuraKit.GL;
+import io.github.raincandyfx.rainium.JizuraKit.Item;
+import io.github.raincandyfx.rainium.JizuraKit.Params;
+import io.github.raincandyfx.rainium.JizuraKit.Rng;
+import io.github.raincandyfx.rainium.JizuraKit.State;
+
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -28,12 +37,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SplittableRandom;
 
+import static io.github.raincandyfx.rainium.JizuraKit.clamp;
+
 /**
- * A native (plain Java2D) lyric video in the manner of JIZURA (https://github.com/852wa/JIZURA, MIT):
- * kinetic typography with its colour schemes, chromatic ghosting, HUD frame, rings, slashes and
- * Japanese motifs. It is not JIZURA's engine; it is a re-creation of its look that runs inside the
- * game with nothing else installed. The style data (palettes, which motion each style prefers) is
- * taken from JIZURA's own style table.
+ * A native (plain Java2D) lyric video in the manner of JIZURA (https://github.com/852wa/JIZURA, MIT,
+ * (c) 2026 hakoniwa): kinetic typography with its colour schemes, chromatic ghosting, HUD frame and
+ * Japanese motifs. The layouts (JizuraLayouts) are ported from JIZURA's own source; the way each
+ * character comes in and goes out is this class's own. The style data (palettes, which layouts and
+ * motions each style prefers) is taken from JIZURA's style table.
  *
  * Two transparent layers are drawn: BACK (decorations) and FRONT (the lyrics). Nothing is ever drawn
  * over the whole picture, so the world stays visible around the lyrics.
@@ -42,17 +53,19 @@ import java.util.SplittableRandom;
  */
 final class JizuraNative {
     static final int W = 800, H = 450;
-    static final double STEP = 1.0 / 12;   // JIZURA moves in steps, about twelve a second
+    static final double SCALE = W / Env.W;      // layouts are drawn in a 1920x1080 space
+    static final double STEP = 1.0 / 12;        // JIZURA moves in steps, about twelve a second
 
     // ------------------------------------------------------------------ styles
-    record Scheme(Color bg, Color fg, Color sub, Color accent, Color accent2, Color dim, Color ghostA, Color ghostB) {}
+    record Scheme(Color bg, Color fg, Color sub, Color accent, Color accent2, Color ink, Color dim, Color ghostA, Color ghostB) {}
 
     static final class Style {
         String id, name;
         final List<Scheme> schemes = new ArrayList<>();
         double grain, scan, ghost = 1;
         final Map<String, Double> layoutBias = new HashMap<>(), enterBias = new HashMap<>(), exitBias = new HashMap<>(), decor = new HashMap<>();
-        boolean hud, serif;
+        final Map<String, List<String>> fonts = new HashMap<>();
+        boolean hud;
     }
 
     private static Map<String, Style> styles;
@@ -75,7 +88,13 @@ final class JizuraNative {
         try (InputStream in = JizuraNative.class.getResourceAsStream("/assets/rainium/jizura/styles.json")) {
             if (in != null) {
                 Map<String, Object> root = (Map<String, Object>) Json.parse(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+                if (root.get("_fonts") instanceof Map<?, ?> fm)
+                    for (var f : ((Map<String, Object>) fm).entrySet()) {
+                        Map<String, Object> d = (Map<String, Object>) f.getValue();
+                        JizuraKit.defineFace(f.getKey(), String.valueOf(d.get("kind")), num(d.get("weight")));
+                    }
                 for (var e : root.entrySet()) {
+                    if (e.getKey().startsWith("_")) continue;
                     Map<String, Object> m = (Map<String, Object>) e.getValue();
                     Style s = new Style();
                     s.id = e.getKey();
@@ -83,7 +102,7 @@ final class JizuraNative {
                     for (Object so : (List<Object>) m.get("schemes")) {
                         Map<String, Object> c = (Map<String, Object>) so;
                         s.schemes.add(new Scheme(col(c.get("bg")), col(c.get("fg")), col(c.get("sub")), col(c.get("accent")), col(c.get("accent2")),
-                            col(c.get("dim")), col(c.get("ghostA")), col(c.get("ghostB"))));
+                            c.get("ink") == null ? col(c.get("fg")) : col(c.get("ink")), col(c.get("dim")), col(c.get("ghostA")), col(c.get("ghostB"))));
                     }
                     Map<String, Object> tex = (Map<String, Object>) m.get("texture");
                     if (tex != null) { s.grain = num(tex.get("grain")); s.scan = num(tex.get("scan")); }
@@ -95,8 +114,13 @@ final class JizuraNative {
                         fill(s.exitBias, bias.get("exit"));
                     }
                     fill(s.decor, m.get("decor"));
+                    if (m.get("fonts") instanceof Map<?, ?> fm)
+                        for (var f : ((Map<String, Object>) fm).entrySet()) {
+                            List<String> l = new ArrayList<>();
+                            for (Object o : (List<Object>) f.getValue()) l.add(String.valueOf(o));
+                            s.fonts.put(f.getKey(), l);
+                        }
                     s.hud = Boolean.TRUE.equals(m.get("hud"));
-                    s.serif = e.getKey().equals("caution") || e.getKey().equals("paper") || e.getKey().equals("specimen");
                     out.put(s.id, s);
                 }
             }
@@ -104,7 +128,7 @@ final class JizuraNative {
         if (out.isEmpty()) {   // the data file is missing: one plain style so nothing breaks
             Style s = new Style();
             s.id = "noir"; s.name = "Noir";
-            s.schemes.add(new Scheme(new Color(0x060607), new Color(0xF5EEEA), new Color(0xBDB6B2), new Color(0xF5A50C), new Color(0x16F4D4), new Color(0x2A2A2E), new Color(0xF5A50C), new Color(0x16F4D4)));
+            s.schemes.add(new Scheme(new Color(0x060607), new Color(0xF5EEEA), new Color(0xBDB6B2), new Color(0xF5A50C), new Color(0x16F4D4), new Color(0xF5EEEA), new Color(0x2A2A2E), new Color(0xF5A50C), new Color(0x16F4D4)));
             s.grain = 0.9; s.hud = true; s.decor.put("rings", 0.8);
             out.put("noir", s);
         }
@@ -118,36 +142,22 @@ final class JizuraNative {
 
     private static double num(Object o) { return o instanceof Number n ? n.doubleValue() : 0; }
 
-    // ------------------------------------------------------------------ layouts, motions
-    enum Layout { CENTER, STACK, ZIGZAG, ARC, ORBIT, SCATTER, BIGSMALL, TYPE, VERTICAL }
+    // ------------------------------------------------------------------ cuts
     enum Enter { POP, RISE, SLICE, STRETCH, ASSEMBLE, SPIN, WIPE, SCRAMBLE, DROP, TYPE }
     enum Exit { FADE, DRIFT, FALL, EXPLODE, SLICE, SHRINK, GLITCH, SCATTER }
 
-    /** One character of the lyrics, positioned (centre, in picture pixels). */
-    static final class Glyph {
-        String ch;
-        double x, y, size, rot, adv;
-        int word, idx, order;
-        double reveal;       // when it appears (seconds), set after layout
-        double r1, r2, r3;   // fixed random numbers for its motion
-    }
-
+    /** One shot of the video: a line (or a part of a long line) with its look decided. */
     static final class Cut {
-        int index;
-        LyricsLrc.Line line;
-        double t0, t1;
+        int line;                       // index of the lyric line
+        String text, lineText, note, layout = "center";
+        final List<String> words = new ArrayList<>();
+        double start, end, inDur = 0.3, outDur = 0.25, stagger = 0.04;
         Scheme sc;
-        Layout layout;
         Enter enter;
         Exit exit;
         long seed;
-        boolean mono, accentWord;
-        int accentIdx = -1;
-        final List<Glyph> glyphs = new ArrayList<>();
-        final List<String> words = new ArrayList<>();
-        final List<Double> wordT = new ArrayList<>();
-        double[] box = {0, 0, 0, 0};   // x0, y0, x1, y1 of the text
-        String ringText = "";
+        Params params = new Params();
+        double[] box = {W * 0.3, H * 0.35, W * 0.7, H * 0.65};   // where the text was last drawn, in picture pixels
     }
 
     final Style style;
@@ -213,53 +223,73 @@ final class JizuraNative {
     }
 
     // ------------------------------------------------------------------ building the cuts from the lyrics
+    private record Unit(String text, double t) {}
+
     void song(LyricsLrc lrc) {
         cuts.clear();
         duration = 0;
         if (lrc == null) return;
-        int prev = -1;
+        List<String> recent = new ArrayList<>();
         for (int i = 0; i < lrc.lines.size(); i++) {
             LyricsLrc.Line line = lrc.lines.get(i);
-            Cut c = new Cut();
-            c.index = i;
-            c.line = line;
-            c.t0 = line.t();
-            c.t1 = line.end();
-            c.seed = seed * 7919L + i * 104729L + 17;
-            SplittableRandom r = new SplittableRandom(c.seed);
-            c.sc = i == 0 || r.nextDouble() < 0.7 ? style.schemes.get(0) : style.schemes.get(r.nextInt(style.schemes.size()));
-            words(c);
-            if (c.words.isEmpty()) continue;
-            c.layout = pickLayout(c, r, prev);
-            prev = c.layout.ordinal();
-            c.enter = c.layout == Layout.TYPE ? Enter.TYPE : pick(Enter.values(), enterWeights(), r);
-            c.exit = pick(Exit.values(), exitWeights(), r);
-            c.mono = c.layout == Layout.TYPE;
-            int longest = 0;
-            for (int k = 0; k < c.words.size(); k++) if (c.words.get(k).length() > c.words.get(longest).length()) longest = k;
-            c.accentIdx = r.nextDouble() < 0.55 && c.words.size() > 1 ? longest : -1;
-            layout(c, r);
-            cuts.add(c);
-            duration = Math.max(duration, c.t1);
+            List<Unit> units = units(line);
+            if (units.isEmpty()) continue;
+            boolean jp = cjk(line.text());
+            int limit = jp ? 12 : 16;
+            List<List<Unit>> groups = new ArrayList<>();
+            List<Unit> cur = new ArrayList<>();
+            int n = 0;
+            for (Unit u : units) {
+                int g = JizuraKit.glyphCount(u.text);
+                if (!cur.isEmpty() && n + g > limit) { groups.add(cur); cur = new ArrayList<>(); n = 0; }
+                cur.add(u); n += g;
+            }
+            if (!cur.isEmpty()) groups.add(cur);
+            for (int gi = 0; gi < groups.size(); gi++) {
+                List<Unit> grp = groups.get(gi);
+                Cut c = new Cut();
+                c.line = i;
+                c.lineText = line.text();
+                c.start = grp.get(0).t - 0.05;
+                c.end = gi + 1 < groups.size() ? groups.get(gi + 1).get(0).t - 0.05 : Math.max(line.end(), c.start + 0.5);
+                if (c.end < c.start + 0.3) c.end = c.start + 0.3;
+                double dur = c.end - c.start;
+                c.inDur = Math.min(0.3, dur * 0.4);
+                c.outDur = Math.min(0.25, dur * 0.3);
+                StringBuilder sb = new StringBuilder();
+                for (Unit u : grp) { if (sb.length() > 0 && !jp) sb.append(' '); sb.append(u.text); c.words.add(u.text); }
+                c.text = sb.toString();
+                c.seed = seed * 7919L + cuts.size() * 104729L + 17;
+                Rng r = new Rng(c.seed);
+                c.sc = cuts.isEmpty() || r.next() < 0.7 ? style.schemes.get(0) : style.schemes.get((int) (r.next() * style.schemes.size()) % style.schemes.size());
+                c.layout = pickLayout(c, r, recent);
+                recent.add(c.layout);
+                JizuraLayouts.Def def = JizuraLayouts.ALL.get(c.layout);
+                c.params = def.plan().plan(new Rng(c.seed ^ 0x5BD1E995L), c, style);
+                c.enter = pick(Enter.values(), enterWeights(), r);
+                c.exit = pick(Exit.values(), exitWeights(), r);
+                cuts.add(c);
+                duration = Math.max(duration, c.end);
+            }
         }
     }
 
     /** The line's words, with long unspaced runs (Japanese) cut into short pieces so they can come in one by one. */
-    private void words(Cut c) {
-        for (int k = 0; k < c.line.words().size(); k++) {
-            LyricsLrc.Word w = c.line.words().get(k);
+    private List<Unit> units(LyricsLrc.Line line) {
+        List<Unit> out = new ArrayList<>();
+        for (LyricsLrc.Word w : line.words()) {
             String t = w.text().strip();
             if (t.isEmpty()) continue;
             int[] cps = t.codePoints().toArray();
             int chunk = cjk(t) ? 3 : 99;
-            if (cps.length <= chunk + 1) { c.words.add(t); c.wordT.add(w.t()); continue; }
+            if (cps.length <= chunk + 1) { out.add(new Unit(t, w.t())); continue; }
             int n = (cps.length + chunk - 1) / chunk;
             for (int p = 0; p < n; p++) {
                 int a = p * cps.length / n, b = (p + 1) * cps.length / n;
-                c.words.add(new String(cps, a, b - a));
-                c.wordT.add(w.t() + (w.end() - w.t()) * p / n);
+                out.add(new Unit(new String(cps, a, b - a), w.t() + (w.end() - w.t()) * p / n));
             }
         }
+        return out;
     }
 
     static boolean cjk(String s) {
@@ -278,409 +308,104 @@ final class JizuraNative {
     private double[] enterWeights() {
         Enter[] e = Enter.values();
         double[] w = new double[e.length];
-        for (int i = 0; i < e.length; i++) {
-            w[i] = 1;
-            switch (e[i]) {
-                case POP -> w[i] += bias(style.enterBias, "pop");
-                case SLICE -> w[i] += bias(style.enterBias, "slice");
-                case STRETCH -> w[i] += bias(style.enterBias, "stretch");
-                case ASSEMBLE -> w[i] += bias(style.enterBias, "assemble");
-                case SPIN -> w[i] += bias(style.enterBias, "spin");
-                case WIPE -> w[i] += bias(style.enterBias, "wipe");
-                case SCRAMBLE -> w[i] += bias(style.enterBias, "scramble");
-                case TYPE -> w[i] = 0;
-                default -> { }
-            }
-        }
+        for (int i = 0; i < e.length; i++) w[i] = e[i] == Enter.TYPE ? 0 : 1 + bias(style.enterBias, e[i].name().toLowerCase(Locale.ROOT));
         return w;
     }
 
     private double[] exitWeights() {
         Exit[] e = Exit.values();
         double[] w = new double[e.length];
-        for (int i = 0; i < e.length; i++) {
-            w[i] = 1;
-            switch (e[i]) {
-                case DRIFT -> w[i] += bias(style.exitBias, "drift");
-                case FALL -> w[i] += bias(style.exitBias, "fall");
-                case EXPLODE -> w[i] += bias(style.exitBias, "explode");
-                case SLICE -> w[i] += bias(style.exitBias, "slice");
-                case SHRINK -> w[i] += bias(style.exitBias, "shrink");
-                case GLITCH -> w[i] += bias(style.exitBias, "glitch");
-                case SCATTER -> w[i] += bias(style.exitBias, "scatter");
-                default -> { }
-            }
-        }
+        for (int i = 0; i < e.length; i++) w[i] = 1 + bias(style.exitBias, e[i].name().toLowerCase(Locale.ROOT));
         return w;
     }
 
     private static double bias(Map<String, Double> m, String k) { return m.getOrDefault(k, 0.0); }
 
-    private static <T> T pick(T[] items, double[] weights, SplittableRandom r) {
+    private static <T> T pick(T[] items, double[] weights, Rng r) {
         double sum = 0;
         for (double w : weights) sum += w;
-        double x = r.nextDouble() * sum;
+        double x = r.next() * sum;
         for (int i = 0; i < items.length; i++) { x -= weights[i]; if (x <= 0) return items[i]; }
         return items[items.length - 1];
     }
 
-    private Layout pickLayout(Cut c, SplittableRandom r, int prev) {
-        Layout[] all = Layout.values();
-        double[] w = new double[all.length];
-        boolean jp = cjk(c.line.text());
-        int n = c.words.size();
-        for (int i = 0; i < all.length; i++) {
-            w[i] = switch (all[i]) {
-                case CENTER -> 1.2 + bias(style.layoutBias, "center") + bias(style.layoutBias, "tile") * 0.5 + bias(style.layoutBias, "marquee") * 0.5;
-                case STACK -> (n >= 2 ? 1 : 0.1) + bias(style.layoutBias, "stack") + bias(style.layoutBias, "condensed");
-                case ZIGZAG -> (n >= 3 ? 0.8 : 0.2) + bias(style.layoutBias, "mixed");
-                case ARC -> 0.7 + bias(style.layoutBias, "ring") * 0.6;
-                case ORBIT -> 0.7 + bias(style.layoutBias, "circle") + bias(style.layoutBias, "gloss") * 0.5;
-                case SCATTER -> (n >= 3 ? 0.8 : 0.2) + bias(style.layoutBias, "scatter");
-                case BIGSMALL -> (n >= 3 ? 0.9 : 0.2) + bias(style.layoutBias, "huge");
-                case TYPE -> 0.45 + bias(style.layoutBias, "type");
-                case VERTICAL -> jp ? 1.5 + bias(style.layoutBias, "vcols") * 1.5 : 0;
-            };
-            if (all[i].ordinal() == prev) w[i] *= 0.15;
+    /** A layout that suits the text, leaning on the style's taste and away from what was just shown. */
+    private String pickLayout(Cut c, Rng r, List<String> recent) {
+        int n = JizuraKit.glyphCount(c.text);
+        boolean jp = cjk(c.text);
+        List<String> names = new ArrayList<>();
+        List<Double> w = new ArrayList<>();
+        for (var e : JizuraLayouts.ALL.entrySet()) {
+            if (!e.getValue().fits().test(n)) continue;
+            double k = 1 + bias(style.layoutBias, e.getKey());
+            int back = recent.lastIndexOf(e.getKey());
+            if (back >= 0) {
+                int ago = recent.size() - back;
+                if (ago <= 2) k *= 0.2; else if (ago <= 6) k *= 0.6;
+            }
+            if (e.getKey().equals("vcols") && !jp) k *= 0.3;
+            names.add(e.getKey()); w.add(k);
         }
-        return pick(all, w, r);
-    }
-
-    // ------------------------------------------------------------------ layout: where every character goes
-    static final double MX = 64, MY = 56;   // the safe area is the picture minus these margins
-
-    private Glyph glyph(Cut c, String ch, int word, int idx, double size, SplittableRandom r) {
-        Glyph g = new Glyph();
-        g.ch = ch; g.word = word; g.idx = idx; g.size = size;
-        g.adv = adv(ch, size, style.serif, c.mono);
-        g.r1 = r.nextDouble(); g.r2 = r.nextDouble(); g.r3 = r.nextDouble();
-        return g;
-    }
-
-    /** Lays word `w` out left to right starting at x; returns the x after it. y is the row's centre. */
-    private double addWord(Cut c, int w, double x, double y, double size, SplittableRandom r, int[] counter) {
-        String t = c.words.get(w);
-        int i = 0;
-        for (int off = 0; off < t.length(); ) {
-            int cp = t.codePointAt(off);
-            String ch = new String(Character.toChars(cp));
-            Glyph g = glyph(c, ch, w, i++, size, r);
-            g.x = x + g.adv / 2;
-            g.y = y;
-            g.order = counter[0]++;
-            c.glyphs.add(g);
-            x += g.adv + size * 0.02;
-            off += Character.charCount(cp);
-        }
-        return x;
-    }
-
-    private void layout(Cut c, SplittableRandom r) {
-        int[] counter = {0};
-        int n = c.words.size();
-        boolean serif = style.serif;
-        switch (c.layout) {
-            case CENTER, ORBIT -> {
-                double scale = c.layout == Layout.ORBIT ? 0.8 : 1;
-                int size = 96;
-                List<List<Integer>> rows = null;
-                for (; size >= 18; size -= 4) {
-                    rows = wrap(c, size, W * 0.84 * scale);
-                    if (rows.size() <= 3 && rows.size() * size * 1.15 <= H * 0.6 * scale) break;
-                }
-                size = (int) Math.max(18, Math.min(size, 96 * scale));
-                rows = wrap(c, size, W * 0.84 * scale);
-                double rowH = size * 1.2, y0 = H / 2.0 - (rows.size() - 1) * rowH / 2;
-                for (int ri = 0; ri < rows.size(); ri++) {
-                    double rw = 0;
-                    for (int w : rows.get(ri)) rw += width(c.words.get(w), size, serif, false) + size * 0.3;
-                    rw -= size * 0.3;
-                    double x = W / 2.0 - rw / 2;
-                    for (int w : rows.get(ri)) x = addWord(c, w, x, y0 + ri * rowH, size, r, counter) + size * 0.28;
-                }
-                if (c.layout == Layout.ORBIT) c.ringText = c.line.text().toUpperCase(Locale.ROOT) + "  ·  ";
-            }
-            case STACK -> {
-                double[] rel = {1.0, 0.62, 0.86, 0.7};
-                double base = 110;
-                for (; base > 16; base -= 4) {
-                    double h = 0, mw = 0;
-                    for (int w = 0; w < n; w++) {
-                        double s = base * rel[w % 4];
-                        h += s * 1.02;
-                        mw = Math.max(mw, width(c.words.get(w), s, serif, false));
-                    }
-                    if (h <= H * 0.74 && mw <= W * 0.78) break;
-                }
-                double total = 0;
-                for (int w = 0; w < n; w++) total += base * rel[w % 4] * 1.02;
-                double y = H / 2.0 - total / 2;
-                int mode = (int) (c.seed & 3);
-                for (int w = 0; w < n; w++) {
-                    double s = base * rel[w % 4];
-                    double ww = width(c.words.get(w), s, serif, false);
-                    double x = mode == 0 ? W * 0.16 + (w % 2) * 46 : mode == 1 ? W * 0.84 - ww - (w % 2) * 46 : (W - ww) / 2 + ((w % 2) * 2 - 1) * 38;
-                    addWord(c, w, x, y + s * 0.51, s, r, counter);
-                    y += s * 1.02;
-                }
-            }
-            case ZIGZAG -> {
-                double size = 46;
-                String all = String.join(" ", c.words);
-                double nat = width(all, size, serif, false);
-                double target = Math.min(W * 0.84, Math.max(nat, nat * 1.35));
-                if (nat > W * 0.84) { size = size * W * 0.84 / nat; nat = W * 0.84; target = nat; }
-                double extra = (target - nat) / Math.max(1, all.length());
-                double x = W / 2.0 - target / 2;
-                int gi = 0;
-                for (int w = 0; w < n; w++) {
-                    String t = c.words.get(w);
-                    for (int off = 0, i = 0; off < t.length(); i++) {
-                        int cp = t.codePointAt(off);
-                        Glyph g = glyph(c, new String(Character.toChars(cp)), w, i, size, r);
-                        g.x = x + g.adv / 2;
-                        g.y = H / 2.0 + ((gi & 1) == 0 ? -1 : 1) * size * 0.6;
-                        g.rot = ((gi & 1) == 0 ? -1 : 1) * 0.1;
-                        g.order = counter[0]++;
-                        c.glyphs.add(g);
-                        x += g.adv + size * 0.02 + extra;
-                        gi++;
-                        off += Character.charCount(cp);
-                    }
-                    x += adv(" ", size, serif, false) + extra;
-                    gi++;
-                }
-            }
-            case ARC -> {
-                double size = 44, R = 300;
-                String all = String.join(" ", c.words);
-                double len = width(all, size, serif, false);
-                if (len / R > 2.4) { size = size * 2.4 * R / len; len = 2.4 * R; }
-                double s = -len / 2;
-                double cx = W / 2.0, cy = H * 0.3 + R;
-                for (int w = 0; w < n; w++) {
-                    String t = c.words.get(w);
-                    for (int off = 0, i = 0; off < t.length(); i++) {
-                        int cp = t.codePointAt(off);
-                        Glyph g = glyph(c, new String(Character.toChars(cp)), w, i, size, r);
-                        double phi = (s + g.adv / 2) / R;
-                        g.x = cx + R * Math.sin(phi);
-                        g.y = cy - R * Math.cos(phi);
-                        g.rot = phi;
-                        g.order = counter[0]++;
-                        c.glyphs.add(g);
-                        s += g.adv + size * 0.02;
-                        off += Character.charCount(cp);
-                    }
-                    s += adv(" ", size, serif, false);
-                }
-            }
-            case SCATTER -> {
-                int cells = 6;
-                int[] order = new int[cells];
-                for (int i = 0; i < cells; i++) order[i] = i;
-                for (int i = cells - 1; i > 0; i--) { int j = r.nextInt(i + 1); int t = order[i]; order[i] = order[j]; order[j] = t; }
-                for (int w = 0; w < n; w++) {
-                    int cell = order[w % cells];
-                    double cw = W / 2.0, ch = H / 3.0;
-                    double size = 34 + r.nextDouble() * 40;
-                    double ww = width(c.words.get(w), size, serif, false);
-                    if (ww > cw * 0.92) size *= cw * 0.92 / ww;
-                    ww = width(c.words.get(w), size, serif, false);
-                    double ccx = (cell % 2) * cw + cw / 2 + (r.nextDouble() - 0.5) * 30;
-                    double ccy = (cell / 2) * ch + ch / 2 + (r.nextDouble() - 0.5) * 20;
-                    int first = c.glyphs.size();
-                    addWord(c, w, ccx - ww / 2, ccy, size, r, counter);
-                    double rot = (r.nextDouble() - 0.5) * 0.36;
-                    for (int k = first; k < c.glyphs.size(); k++) {
-                        Glyph g = c.glyphs.get(k);
-                        double dx = g.x - ccx, dy = g.y - ccy;
-                        g.x = ccx + dx * Math.cos(rot) - dy * Math.sin(rot);
-                        g.y = ccy + dx * Math.sin(rot) + dy * Math.cos(rot);
-                        g.rot = rot;
-                    }
-                }
-            }
-            case BIGSMALL -> {
-                int big = 0;
-                for (int w = 0; w < n; w++) if (c.words.get(w).length() > c.words.get(big).length()) big = w;
-                double size = 170;
-                double bw = width(c.words.get(big), size, serif, false);
-                if (bw > W * 0.82) size *= W * 0.82 / bw;
-                bw = width(c.words.get(big), size, serif, false);
-                double by = H / 2.0;
-                double small = 26;
-                List<Integer> bi = new ArrayList<>(), ai = new ArrayList<>();
-                for (int w = 0; w < n; w++) if (w < big) bi.add(w); else if (w > big) ai.add(w);
-                addWord(c, big, W / 2.0 - bw / 2, by, size, r, counter);
-                for (int pass = 0; pass < 2; pass++) {
-                    List<Integer> ws = pass == 0 ? bi : ai;
-                    if (ws.isEmpty()) continue;
-                    double rw = 0;
-                    for (int w : ws) rw += width(c.words.get(w), small, serif, false) + small * 0.4;
-                    double x = W / 2.0 - rw / 2, y = pass == 0 ? by - size * 0.62 - 12 : by + size * 0.62 + 12;
-                    for (int w : ws) x = addWord(c, w, x, y, small, r, counter) + small * 0.4;
-                }
-            }
-            case TYPE -> {
-                int size = 38;
-                List<List<Integer>> rows = null;
-                for (; size >= 16; size -= 2) {
-                    rows = wrap(c, size, W * 0.8);
-                    if (rows.size() * size * 1.5 <= H * 0.6) break;
-                }
-                double rowH = size * 1.5, y0 = H / 2.0 - (rows.size() - 1) * rowH / 2;
-                for (int ri = 0; ri < rows.size(); ri++) {
-                    double x = W * 0.1;
-                    for (int w : rows.get(ri)) x = addWord(c, w, x, y0 + ri * rowH, size, r, counter) + size * 0.6;
-                }
-            }
-            case VERTICAL -> {
-                int total = 0;
-                for (String t : c.words) total += t.codePointCount(0, t.length());
-                int size = 64, perCol = 1, cols = 1;
-                for (; size >= 20; size -= 4) {
-                    perCol = (int) Math.floor((H * 0.78) / (size * 1.06));
-                    cols = (total + perCol - 1) / Math.max(1, perCol);
-                    if (cols * size * 1.35 <= W * 0.8) break;
-                }
-                perCol = Math.max(1, perCol);
-                int k = 0;
-                double x0 = W / 2.0 + (Math.max(1, cols) - 1) * size * 1.35 / 2;
-                for (int w = 0; w < n; w++) {
-                    String t = c.words.get(w);
-                    int i = 0;
-                    for (int off = 0; off < t.length(); ) {
-                        int cp = t.codePointAt(off);
-                        Glyph g = glyph(c, new String(Character.toChars(cp)), w, i++, size, r);
-                        int col = k / perCol, row = k % perCol;
-                        int inCol = Math.min(perCol, total - col * perCol);
-                        g.x = x0 - col * size * 1.35;
-                        g.y = H / 2.0 - (inCol - 1) * size * 1.06 / 2 + row * size * 1.06;
-                        g.order = counter[0]++;
-                        c.glyphs.add(g);
-                        k++;
-                        off += Character.charCount(cp);
-                    }
-                }
-            }
-        }
-        fit(c);
-        // when each character appears: with its word, a little ahead of the singing
-        for (Glyph g : c.glyphs) {
-            double wt = c.wordT.get(g.word);
-            g.reveal = c.layout == Layout.TYPE ? wt - 0.04 + g.idx * 0.045 : Math.max(c.t0 - 0.08, wt - 0.1) + g.idx * 0.016;
-        }
-    }
-
-    private List<List<Integer>> wrap(Cut c, double size, double maxW) {
-        List<List<Integer>> rows = new ArrayList<>();
-        List<Integer> row = new ArrayList<>();
-        double rw = 0;
-        for (int w = 0; w < c.words.size(); w++) {
-            double ww = width(c.words.get(w), size, style.serif, c.mono) + size * 0.28;
-            if (!row.isEmpty() && rw + ww > maxW) { rows.add(row); row = new ArrayList<>(); rw = 0; }
-            row.add(w);
-            rw += ww;
-        }
-        if (!row.isEmpty()) rows.add(row);
-        return rows;
-    }
-
-    /** Whatever the layout did, the lyrics are made to fit inside the picture's safe area. */
-    private void fit(Cut c) {
-        double x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-        for (Glyph g : c.glyphs) {
-            double h = (Math.abs(g.rot) > 0.01 ? Math.max(g.adv, g.size * 0.9) : g.adv) * 0.5, v = g.size * 0.5;
-            x0 = Math.min(x0, g.x - h); x1 = Math.max(x1, g.x + h);
-            y0 = Math.min(y0, g.y - v); y1 = Math.max(y1, g.y + v);
-        }
-        double k = Math.min(1, Math.min((W - 2 * MX) / Math.max(1, x1 - x0), (H - 2 * MY) / Math.max(1, y1 - y0)));
-        double cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-        if (k < 1) {
-            for (Glyph g : c.glyphs) { g.x = cx + (g.x - cx) * k; g.y = cy + (g.y - cy) * k; g.size *= k; g.adv *= k; }
-            x0 = cx + (x0 - cx) * k; x1 = cx + (x1 - cx) * k; y0 = cy + (y0 - cy) * k; y1 = cy + (y1 - cy) * k;
-        }
-        double dx = Math.max(MX - x0, 0) + Math.min((W - MX) - x1, 0), dy = Math.max(MY - y0, 0) + Math.min((H - MY) - y1, 0);
-        if (dx != 0 || dy != 0) for (Glyph g : c.glyphs) { g.x += dx; g.y += dy; }
-        c.box = new double[]{x0 + dx, y0 + dy, x1 + dx, y1 + dy};
+        if (names.isEmpty()) return "center";
+        double sum = 0;
+        for (double k : w) sum += k;
+        double x = r.next() * sum;
+        for (int i = 0; i < names.size(); i++) { x -= w.get(i); if (x <= 0) return names.get(i); }
+        return names.get(names.size() - 1);
     }
 
     // ------------------------------------------------------------------ motion
-    private static double clamp(double v) { return v < 0 ? 0 : Math.min(1, v); }
-    private static double easeOut(double p) { return 1 - Math.pow(1 - p, 3); }
-    private static double easeBack(double p) { double c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); }
-    private static double bounce(double p) {
-        if (p < 1 / 2.75) return 7.5625 * p * p;
-        if (p < 2 / 2.75) { p -= 1.5 / 2.75; return 7.5625 * p * p + 0.75; }
-        if (p < 2.5 / 2.75) { p -= 2.25 / 2.75; return 7.5625 * p * p + 0.9375; }
-        p -= 2.625 / 2.75; return 7.5625 * p * p + 0.984375;
-    }
+    private static final double K = Env.W / W;   // the old motion offsets were in picture pixels
 
-    static final class State {
-        double dx, dy, rot, sx = 1, sy = 1, alpha = 1, wipe = 1, bandDx;
-        int bands;
-        String ch;
-        double ghost;   // extra ghost spread
-        boolean cursor;
-    }
+    private static double bounce(double p) { return E.bounce(clamp(p)); }
 
-    static final double ENTER_DUR = 0.34, EXIT_DUR = 0.3;
-
-    private State state(Cut c, Glyph g, double ts, long step) {
+    /** How one character moves at this moment: its way in, its way out, and a slow breath in between. */
+    State state(Env env, Cut c, Enter enter, Item it, GL gl, double ltI, double lt, double outStart, long seed, long step) {
         State s = new State();
-        s.ch = g.ch;
-        double p = clamp((ts - g.reveal) / ENTER_DUR);
-        if (ts < g.reveal) { s.alpha = 0; return s; }
-        double e = easeOut(p);
-        double inv = 1 - e;
-        switch (c.enter) {
-            case POP -> { double k = easeBack(p); s.sx = s.sy = Math.max(0.01, k); s.alpha = clamp(p * 4); }
-            case RISE -> { s.dy = inv * 38; s.alpha = clamp(p * 2.2); }
-            case SLICE -> { s.bands = 3; s.bandDx = inv * 70 * ((g.word & 1) == 0 ? -1 : 1); s.alpha = clamp(p * 3); s.ghost = inv * 6; }
+        s.ch = gl.ch;
+        double reveal = gl.i * (enter == Enter.TYPE ? 0.05 : 0.016);
+        if (ltI < reveal) { s.alpha = 0; return s; }
+        double p = clamp((ltI - reveal) / Math.max(0.05, c.inDur));
+        double e = E.outCubic(p), inv = 1 - e;
+        int word = (int) it.mi;
+        double r1 = JizuraKit.r(seed, gl.i, 1), r2 = JizuraKit.r(seed, gl.i, 2), r3 = JizuraKit.r(seed, gl.i, 3);
+        switch (enter) {
+            case POP -> { double k = E.outBack(p); s.sx = s.sy = Math.max(0.01, k); s.alpha = clamp(p * 4); }
+            case RISE -> { s.dy = inv * 38 * K; s.alpha = clamp(p * 2.2); }
+            case SLICE -> { s.bands = 3; s.bandDx = inv * 70 * K * ((word & 1) == 0 ? -1 : 1); s.alpha = clamp(p * 3); s.ghost = inv * 6; }
             case STRETCH -> { s.sx = 1 + inv * 2.4; s.sy = 1 - inv * 0.6; s.alpha = clamp(p * 3); }
-            case ASSEMBLE -> { s.dx = (g.r1 - 0.5) * 320 * inv; s.dy = (g.r2 - 0.5) * 200 * inv; s.rot = (g.r3 - 0.5) * 2.4 * inv; s.alpha = clamp(p * 2.5); }
+            case ASSEMBLE -> { s.dx = (r1 - 0.5) * 320 * K * inv; s.dy = (r2 - 0.5) * 200 * K * inv; s.rot = (r3 - 0.5) * 2.4 * inv; s.alpha = clamp(p * 2.5); }
             case SPIN -> { s.rot = inv * Math.PI * 1.5; s.sx = s.sy = Math.max(0.01, e); s.alpha = clamp(p * 3); }
-            case WIPE -> { s.wipe = p; s.dx = -inv * 14; }
-            case SCRAMBLE -> {
-                if (p < 1) s.ch = scramble(g, step);
-                s.alpha = clamp(p * 6);
-                s.ghost = inv * 4;
-            }
-            case DROP -> { s.dy = -(1 - bounce(p)) * 120; s.alpha = clamp(p * 5); }
-            case TYPE -> { s.alpha = 1; s.cursor = p < 1; }
+            case WIPE -> { s.wipe = p; s.dx = -inv * 14 * K; }
+            case SCRAMBLE -> { if (p < 1) s.ch = scramble(gl, step); s.alpha = clamp(p * 6); s.ghost = inv * 4; }
+            case DROP -> { s.dy = -(1 - bounce(p)) * 120 * K; s.alpha = clamp(p * 5); }
+            case TYPE -> s.alpha = 1;
         }
-        // exit
-        double q = clamp((ts - (c.t1 - EXIT_DUR) - g.order * 0.01) / EXIT_DUR);
+        double q = c.outDur > 0 ? clamp((lt - outStart - gl.i * 0.01) / c.outDur) : 0;
         if (q > 0) {
             double a = 1;
             switch (c.exit) {
                 case FADE -> a = 1 - q;
-                case DRIFT -> { s.dy -= q * 30; a = 1 - q; }
-                case FALL -> { s.dy += q * q * 170; s.rot += (g.r1 - 0.5) * q * 1.3; a = 1 - q * q * q; }
-                case EXPLODE -> { s.dx += (g.r1 - 0.5) * q * 520; s.dy += (g.r2 - 0.5) * q * 380; s.rot += (g.r3 - 0.5) * q * 4; a = 1 - q * q; }
-                case SLICE -> { s.bands = 3; s.bandDx = q * 230 * ((g.word & 1) == 0 ? 1 : -1); a = 1 - q * q; }
+                case DRIFT -> { s.dy -= q * 30 * K; a = 1 - q; }
+                case FALL -> { s.dy += q * q * 170 * K; s.rot += (r1 - 0.5) * q * 1.3; a = 1 - q * q * q; }
+                case EXPLODE -> { s.dx += (r1 - 0.5) * q * 520 * K; s.dy += (r2 - 0.5) * q * 380 * K; s.rot += (r3 - 0.5) * q * 4; a = 1 - q * q; }
+                case SLICE -> { s.bands = 3; s.bandDx = q * 230 * K * ((word & 1) == 0 ? 1 : -1); a = 1 - q * q; }
                 case SHRINK -> { double k = 1 - q; s.sx *= k; s.sy *= k; a = 1 - q * q; }
-                case GLITCH -> {
-                    s.dx += (hash(step, g.order) - 0.5) * 34 * q;
-                    s.ghost += 10 * q;
-                    a = hash(step + 3, g.order) < 0.35 + 0.65 * (1 - q) ? 1 - q * 0.6 : 0;
-                }
-                case SCATTER -> { s.dx += (g.r1 - 0.5) * q * 640; s.dy += (g.r2 - 0.5) * q * 60; a = 1 - q; }
+                case GLITCH -> { s.dx += (hash(step, gl.i) - 0.5) * 34 * K * q; s.ghost += 10 * q; a = hash(step + 3, gl.i) < 0.35 + 0.65 * (1 - q) ? 1 - q * 0.6 : 0; }
+                case SCATTER -> { s.dx += (r1 - 0.5) * q * 640 * K; s.dy += (r2 - 0.5) * q * 60 * K; a = 1 - q; }
             }
             s.alpha *= a;
         }
-        // hold: a slow breath
-        if (p >= 1 && q <= 0) {
-            s.dy += Math.sin(ts * 1.7 + g.order * 0.6) * 1.4;
-            s.ghost += 0.5 + hash(step / 3, g.order) * 1.5;
+        if (p >= 1 && q <= 0 && !it.noHold) {
+            s.dy += Math.sin(lt * 1.7 + gl.i * 0.6) * 1.4 * K;
+            s.ghost += 0.5 + hash(step / 3, gl.i) * 1.5;
         }
         return s;
     }
 
-    private String scramble(Glyph g, long step) {
+    private String scramble(GL g, long step) {
         String pool = cjk(g.ch) ? "あいうえおかきくけこさしすせそ" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&";
-        int i = (int) (hash(step, g.order) * pool.length());
+        int i = (int) (hash(step, g.i) * pool.length());
         return pool.substring(i, i + 1);
     }
 
@@ -690,17 +415,27 @@ final class JizuraNative {
         return (h & 0xFFFFFF) / (double) 0x1000000;
     }
 
+    private static Color a(Color c, double alpha) { return new Color(c.getRed(), c.getGreen(), c.getBlue(), (int) Math.round(255 * clamp(alpha))); }
+
     // ------------------------------------------------------------------ drawing
-    /** Draws the picture at song time t into two transparent images of W×H: back (decorations) and front (lyrics). */
+    /** Draws the picture at song time t into two transparent images of W x H: back (decorations) and front (lyrics). */
     void draw(double t, BufferedImage back, BufferedImage front) {
         long step = (long) Math.floor(t / STEP + 1e-6);
         double ts = step * STEP;
         java.awt.Graphics2D gb = init(back), gf = init(front);
         try {
+            gf.scale(SCALE, SCALE);
             for (Cut c : cuts) {
-                if (ts < c.t0 - 0.12 || ts > c.t1 + 0.06) continue;
+                if (ts < c.start || ts >= c.end) continue;
+                try {
+                    Env env = new Env(gf, this, c, ts, step);
+                    BB bb = JizuraLayouts.ALL.get(c.layout).render().render(env);
+                    gf.setComposite(AlphaComposite.SrcOver);
+                    if (bb != null) c.box = new double[]{bb.x0() * SCALE, bb.y0() * SCALE, bb.x1() * SCALE, bb.y1() * SCALE};
+                } catch (RuntimeException ex) {
+                    gf.setComposite(AlphaComposite.SrcOver);   // a layout that fails costs only its own cut
+                }
                 decor(gb, c, ts, step);
-                text(gf, c, ts, step);
             }
             hud(gb, ts, step);
             if (extra) tears(front, step);
@@ -722,71 +457,7 @@ final class JizuraNative {
         return g;
     }
 
-    private static Color a(Color c, double alpha) { return new Color(c.getRed(), c.getGreen(), c.getBlue(), (int) Math.round(255 * clamp(alpha))); }
-
-    private void text(java.awt.Graphics2D g, Cut c, double ts, long step) {
-        Scheme sc = c.sc;
-        double glow = style.ghost;
-        double lastX = 0, lastY = 0;
-        boolean cursor = false;
-        for (Glyph gl : c.glyphs) {
-            State s = state(c, gl, ts, step);
-            if (c.layout == Layout.TYPE && s.alpha > 0.01) { lastX = gl.x + gl.adv / 2 + gl.size * 0.08; lastY = gl.y; cursor = true; }
-            if (s.alpha <= 0.01 || gl.ch.isBlank()) continue;
-            Shaped sh = shaped(s.ch, gl.size, style.serif, c.mono);
-            Color fg = c.accentIdx == gl.word ? sc.accent() : sc.fg();
-            if (c.accentIdx == gl.word && lowContrast(sc.accent(), sc.bg())) fg = sc.fg();
-            paint(g, sh, gl, s, fg, sc, glow);
-        }
-        if (c.layout == Layout.TYPE && cursor && step % 6 < 4) {
-            double size = c.glyphs.get(0).size;
-            g.setColor(a(sc.accent(), 0.95));
-            g.fill(new Rectangle((int) lastX, (int) (lastY - size * 0.5), (int) Math.max(3, size * 0.45), (int) (size * 0.95)));
-        }
-    }
-
-    private static boolean lowContrast(Color x, Color y) {
-        double l1 = lum(x), l2 = lum(y);
-        return Math.abs(l1 - l2) < 0.12;
-    }
-
-    private static double lum(Color c) { return (0.2126 * c.getRed() + 0.7152 * c.getGreen() + 0.0722 * c.getBlue()) / 255.0; }
-
-    private void paint(java.awt.Graphics2D g, Shaped sh, Glyph gl, State s, Color fg, Scheme sc, double ghostK) {
-        AffineTransform at = new AffineTransform();
-        at.translate(gl.x + s.dx, gl.y + s.dy);
-        at.rotate(gl.rot + s.rot);
-        at.scale(s.sx, s.sy);
-        at.translate(-sh.adv / 2.0, gl.size * 0.36);
-        Shape shape = at.createTransformedShape(sh.shape);
-        double al = clamp(s.alpha);
-        int bands = Math.max(1, s.bands);
-        double bandH = gl.size * 1.3 / bands;
-        for (int b = 0; b < bands; b++) {
-            java.awt.Graphics2D gg = (java.awt.Graphics2D) g.create();
-            Shape use = shape;
-            if (bands > 1) {
-                gg.clip(new Rectangle((int) (gl.x + s.dx - gl.size * 3), (int) (gl.y + s.dy - gl.size * 0.65 + b * bandH), (int) (gl.size * 6), (int) Math.ceil(bandH)));
-                double off = ((b & 1) == 0 ? 1 : -1) * s.bandDx;
-                use = AffineTransform.getTranslateInstance(off, 0).createTransformedShape(shape);
-            } else if (s.wipe < 1) {
-                gg.clip(new Rectangle((int) (gl.x + s.dx - gl.adv / 2 - 2), (int) (gl.y - gl.size), (int) Math.ceil((gl.adv + 4) * s.wipe), (int) (gl.size * 2)));
-            }
-            double gx = ghostK * (1.2 + s.ghost);
-            if (gx > 0.3) {
-                gg.setColor(a(sc.ghostA(), 0.6 * al));
-                gg.fill(AffineTransform.getTranslateInstance(-gx, 0).createTransformedShape(use));
-                gg.setColor(a(sc.ghostB(), 0.6 * al));
-                gg.fill(AffineTransform.getTranslateInstance(gx, gx * 0.15).createTransformedShape(use));
-            }
-            gg.setStroke(new BasicStroke((float) Math.max(3, gl.size * 0.13), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            gg.setColor(a(sc.bg(), 0.85 * al));
-            gg.draw(use);
-            gg.setColor(a(fg, al));
-            gg.fill(use);
-            gg.dispose();
-        }
-    }
+    private static double easeOut(double p) { return E.outCubic(p); }
 
     // ------------------------------------------------------------------ decorations (back layer)
     private double weight(String k) { return style.decor.getOrDefault(k, 0.0); }
@@ -798,48 +469,15 @@ final class JizuraNative {
 
     private void decor(java.awt.Graphics2D g, Cut c, double ts, long step) {
         Scheme sc = c.sc;
-        double life = clamp((ts - c.t0 + 0.1) / 0.5);
-        double fade = 1 - clamp((ts - (c.t1 - 0.25)) / 0.3);
+        double life = clamp((ts - c.start + 0.1) / 0.5);
+        double fade = 1 - clamp((ts - (c.end - 0.25)) / 0.3);
         double al = easeOut(life) * fade;
         if (al <= 0.01) return;
         double cx = (c.box[0] + c.box[2]) / 2, cy = (c.box[1] + c.box[3]) / 2;
         double bw = c.box[2] - c.box[0], bh = c.box[3] - c.box[1];
         g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-        if (c.layout == Layout.ZIGZAG) {
-            Path2D.Double path = new Path2D.Double();
-            boolean first = true;
-            for (Glyph gl : c.glyphs) {
-                double px = gl.x, py = gl.y + ((gl.order & 1) == 0 ? gl.size * 0.62 : -gl.size * 0.62);
-                if (first) { path.moveTo(px, py); first = false; } else path.lineTo(px, py);
-            }
-            g.setColor(a(sc.accent(), 0.8 * al));
-            g.draw(path);
-        }
-        if (c.layout == Layout.ARC) {
-            double R = 300 + c.glyphs.get(0).size * 0.7;
-            g.setColor(a(sc.sub(), 0.7 * al));
-            g.draw(new Arc2D.Double(W / 2.0 - R, H * 0.3 + 300 - R, 2 * R, 2 * R, 90 - 70, 140, Arc2D.OPEN));
-        }
-        if (c.layout == Layout.ORBIT && !c.ringText.isEmpty()) {
-            double rx = Math.max(bw / 2 + 60, 230), ry = Math.max(bh / 2 + 50, 140);
-            double ang0 = ts * 0.35 + c.seed % 6;
-            double per = 12.5;
-            int count = (int) Math.min(120, Math.PI * (rx + ry) / per);
-            for (int i = 0; i < count; i++) {
-                double th = ang0 + i * Math.PI * 2 / count;
-                String ch = c.ringText.substring(i % c.ringText.length(), i % c.ringText.length() + 1);
-                if (ch.isBlank()) continue;
-                Shaped sh = shaped(ch, 11, false, true);
-                AffineTransform at = new AffineTransform();
-                at.translate(cx + rx * Math.cos(th), cy + ry * Math.sin(th));
-                at.rotate(Math.atan2(ry * Math.cos(th), -rx * Math.sin(th)));
-                at.translate(-sh.adv / 2.0, 4);
-                g.setColor(a(sc.sub(), 0.75 * al));
-                g.fill(at.createTransformedShape(sh.shape));
-            }
-        }
-        if (has(c, "rings", 0.12) && c.layout != Layout.ORBIT) {
+        if (has(c, "rings", 0.12)) {
             double r0 = Math.max(70, Math.min(150, Math.hypot(bw, bh) * 0.3 + 14)) + 8 * Math.sin(ts * 1.3);
             g.setColor(a(sc.accent(), 0.55 * al));
             g.draw(new Ellipse2D.Double(cx - r0, cy - r0, 2 * r0, 2 * r0));
@@ -850,7 +488,7 @@ final class JizuraNative {
             g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         }
         if (has(c, "slash", 0.1)) {
-            double k = easeOut(clamp((ts - c.t0) / 0.4));
+            double k = easeOut(clamp((ts - c.start) / 0.4));
             g.setColor(a(sc.accent(), 0.8 * al));
             double len = Math.min(bw + 80, 360) * k;
             g.draw(new Line2D.Double(cx - bw / 2 - 40, cy + bh / 2 + 14, cx - bw / 2 - 40 + len, cy + bh / 2 + 14 - len * 0.12));
@@ -878,7 +516,7 @@ final class JizuraNative {
         }
         if (has(c, "counter", 0.0)) {
             double size = 52;
-            String n = String.format(Locale.ROOT, "%02d", c.index + 1);
+            String n = String.format(Locale.ROOT, "%02d", c.line + 1);
             double x = 22;
             for (int i = 0; i < n.length(); i++) {
                 Shaped sh = shaped(n.substring(i, i + 1), size, false, false);
@@ -926,7 +564,7 @@ final class JizuraNative {
         }
         if (!full && weight("hud") <= 0) return;
         int cur = 0;
-        for (Cut c : cuts) if (c.t0 <= ts) cur = c.index;
+        for (int i = 0; i < cuts.size(); i++) if (cuts.get(i).start <= ts) cur = i;
         label(g, title.isBlank() ? "UNTITLED" : title.toUpperCase(Locale.ROOT), m + 10, m + 12, sc.fg(), al, false);
         boolean rec = step % 12 < 8;
         label(g, (rec ? "● " : "  ") + "REC", W - m - 44, m + 12, sc.accent(), al, false);

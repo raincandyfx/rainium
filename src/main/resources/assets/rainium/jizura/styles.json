@@ -56,7 +56,24 @@
 "hud": 0.4,
 "slash": 0.6
 },
-"hud": false
+"hud": false,
+"fonts": {
+"display": [
+"gothic_black",
+"dela",
+"zenkaku"
+],
+"serif": [
+"mincho_light",
+"mincho"
+],
+"body": [
+"gothic_med"
+],
+"mono": [
+"mono"
+]
+}
 },
 "crimson": {
 "name": "Crimson Signal",
@@ -124,7 +141,23 @@
 "arrows": 0.8,
 "rings": 0.8
 },
-"hud": true
+"hud": true,
+"fonts": {
+"display": [
+"gothic_black",
+"zenkaku"
+],
+"serif": [
+"mincho"
+],
+"body": [
+"gothic_med",
+"sansui"
+],
+"mono": [
+"mono"
+]
+}
 },
 "caution": {
 "name": "Caution",
@@ -193,7 +226,23 @@
 "counter": 0.8,
 "barcode": 0.8
 },
-"hud": true
+"hud": true,
+"fonts": {
+"display": [
+"mincho_black",
+"gothic_black"
+],
+"serif": [
+"mincho_black",
+"mincho_bold"
+],
+"body": [
+"gothic_bold"
+],
+"mono": [
+"mono"
+]
+}
 },
 "magenta": {
 "name": "Pop Magenta",
@@ -264,7 +313,24 @@
 "sparks": 0.8,
 "shapes": 0.6
 },
-"hud": false
+"hud": false,
+"fonts": {
+"display": [
+"round",
+"pop",
+"gothic_black"
+],
+"serif": [
+"mincho_bold"
+],
+"body": [
+"round",
+"gothic_bold"
+],
+"mono": [
+"mono"
+]
+}
 },
 "paper": {
 "name": "Paper and Ink",
@@ -349,7 +415,23 @@
 "shapes": 0.6,
 "waveform": 0.4
 },
-"hud": false
+"hud": false,
+"fonts": {
+"display": [
+"mincho_black",
+"tokumin"
+],
+"serif": [
+"mincho_black",
+"mincho_bold"
+],
+"body": [
+"mincho"
+],
+"mono": [
+"mono"
+]
+}
 },
 "hud": {
 "name": "Dark HUD",
@@ -409,7 +491,23 @@
 "grid": 0.8,
 "slash": 0.6
 },
-"hud": true
+"hud": true,
+"fonts": {
+"display": [
+"gothic_black",
+"zenkaku"
+],
+"serif": [
+"mincho_bold",
+"mincho_light"
+],
+"body": [
+"gothic_med"
+],
+"mono": [
+"mono"
+]
+}
 },
 "mint": {
 "name": "Mint Terminal",
@@ -478,7 +576,24 @@
 "barcode": 0.8,
 "sparks": 0.5
 },
-"hud": true
+"hud": true,
+"fonts": {
+"display": [
+"gothic_black",
+"dela"
+],
+"serif": [
+"mincho"
+],
+"body": [
+"gothic_med",
+"sansui"
+],
+"mono": [
+"mono",
+"dot"
+]
+}
 },
 "specimen": {
 "name": "Type Specimen",
@@ -536,7 +651,23 @@
 "slash": 0.8,
 "rings": 0.4
 },
-"hud": false
+"hud": false,
+"fonts": {
+"display": [
+"mincho_bold",
+"mincho_black"
+],
+"serif": [
+"mincho",
+"mincho_light"
+],
+"body": [
+"mincho"
+],
+"mono": [
+"mono"
+]
+}
 },
 "transit": {
 "name": "Transit",
@@ -605,7 +736,22 @@
 "counter": 0.8,
 "rings": 0.6
 },
-"hud": false
+"hud": false,
+"fonts": {
+"display": [
+"zenkaku",
+"gothic_black"
+],
+"serif": [
+"mincho_bold"
+],
+"body": [
+"gothic_bold"
+],
+"mono": [
+"mono"
+]
+}
 },
 "blueprint": {
 "name": "Blueprint",
@@ -674,7 +820,23 @@
 "slash": 1,
 "grid": 0.6
 },
-"hud": false
+"hud": false,
+"fonts": {
+"display": [
+"dela",
+"gothic_black"
+],
+"serif": [
+"mincho_bold"
+],
+"body": [
+"gothic_bold"
+],
+"mono": [
+"mono",
+"dot"
+]
+}
 },
 "rouge": {
 "name": "Rouge Gradient",
@@ -739,7 +901,22 @@
 "leaders": 0.8,
 "stripes": 0.6
 },
-"hud": true
+"hud": true,
+"fonts": {
+"display": [
+"gothic_black",
+"dela"
+],
+"serif": [
+"mincho_black"
+],
+"body": [
+"gothic_med"
+],
+"mono": [
+"mono"
+]
+}
 },
 "mono": {
 "name": "Mono RGB",
@@ -797,6 +974,115 @@
 "hud": 0.6,
 "dots": 1
 },
-"hud": false
+"hud": false,
+"fonts": {
+"display": [
+"mincho_black",
+"mincho_bold"
+],
+"serif": [
+"mincho_bold"
+],
+"body": [
+"mincho"
+],
+"mono": [
+"mono"
+]
+}
+},
+"_fonts": {
+"gothic_black": {
+"kind": "gothic",
+"weight": 900
+},
+"gothic_bold": {
+"kind": "gothic",
+"weight": 700
+},
+"gothic_med": {
+"kind": "gothic",
+"weight": 500
+},
+"gothic_light": {
+"kind": "gothic",
+"weight": 300
+},
+"dela": {
+"kind": "display",
+"weight": 400
+},
+"zenkaku": {
+"kind": "gothic",
+"weight": 900
+},
+"mincho_black": {
+"kind": "mincho",
+"weight": 900
+},
+"mincho_bold": {
+"kind": "mincho",
+"weight": 700
+},
+"mincho": {
+"kind": "mincho",
+"weight": 500
+},
+"mincho_light": {
+"kind": "mincho",
+"weight": 300
+},
+"tokumin": {
+"kind": "mincho",
+"weight": 800
+},
+"round": {
+"kind": "round",
+"weight": 800
+},
+"pop": {
+"kind": "display",
+"weight": 400
+},
+"dot": {
+"kind": "pixel",
+"weight": 400
+},
+"brush": {
+"kind": "brush",
+"weight": 400
+},
+"mono": {
+"kind": "mono",
+"weight": 500
+},
+"reggae": {
+"kind": "display",
+"weight": 400
+},
+"rampart": {
+"kind": "display",
+"weight": 400
+},
+"potta": {
+"kind": "brush",
+"weight": 400
+},
+"kiwi": {
+"kind": "round",
+"weight": 500
+},
+"klee": {
+"kind": "hand",
+"weight": 600
+},
+"shippori": {
+"kind": "mincho",
+"weight": 800
+},
+"sansui": {
+"kind": "gothic",
+"weight": 500
+}
 }
 }

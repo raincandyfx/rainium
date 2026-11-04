@@ -2,6 +2,13 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.7 (dev build)
+
+- **JIZURA's layouts, ported.** The music video now uses 31 of JIZURA's own layouts, translated from its source into Java with the same plans and timing: its 17 core layouts (centred, mixed sizes, vertical columns, marquee bands, tiled rows, scattered, ring, wave, huge, labels, condensed, gloss, typewriter, diagonal band, circle, afterimage stack, pill) and its 14 kinetic layouts (slam stack, quarter turn, word swap, dive into a letter, flow and snap, seesaw, type then slam, word jump cuts, loop track, gears, head-on crash, tumbling boxes, vertical to line, drum pads). Each line picks one that suits its length, leaning on the style's taste and away from what was just shown. Long lines are cut into parts of a dozen or so characters, each timed to its words.
+- English lyrics keep their spaces in the layouts that run Japanese text together.
+- **Still short of JIZURA:** it has 184 layouts, 125 ways in and 109 ways out; Rainium has these 31 layouts, ten ways in and eight ways out. Fonts are the system's sans, serif and monospace (Noto, Yu or Meiryo where present), not JIZURA's web fonts. Portrait versions of layouts are left out because the picture is landscape.
+- *Not yet tried in a real game.*
+
 ## 0.9.6 (dev build)
 
 - **Lyrics are a plane in the world now.** Each line is fixed in the world, to the left or right of where you were looking when it started, and it stays there as you walk and look around. If you turn away from it for a moment, or walk far from it, the next spot is in front of you again. It still slides aside rather than cover an enemy, still shrinks to fit the screen, and is still small by default.
