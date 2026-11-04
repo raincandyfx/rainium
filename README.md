@@ -123,12 +123,12 @@ Rainium can show the lyrics of the song playing on your computer as a plane in t
   - Lyrics saved from an earlier lookup.
   - **lrclib.net**, a free lyrics site, but only if you switch on **Find lyrics online**. Only the song's title, artist, album and length are sent.
 - **Looks:**
-  - **Music video:** the lyrics as a lyric video in the manner of [JIZURA](https://github.com/852wa/JIZURA): twelve styles with its colours, chromatic ghosting, HUD frame, rings, slashes, kinetic type (31 of JIZURA's layouts ported to Java; each line gets its own layout and its own way in and out), plus optional Japanese motifs and glitch effects. It's drawn by Rainium itself, so there's nothing else to install.
+  - **Music video:** the lyrics as a lyric video in the manner of [JIZURA](https://github.com/852wa/JIZURA): twelve styles with its colours, chromatic ghosting, HUD frame, rings, slashes, kinetic type (39 of JIZURA's layouts ported to Java; each line gets its own layout and its own way in and out), plus optional Japanese motifs and glitch effects. It's drawn by Rainium itself, so there's nothing else to install.
   - **Simple:** the line being sung, filling in word by word, with the next line under it.
 - **In the world:** each line is a plane fixed in the world, left and right of where you were looking when it started, a little in front of you. It stays there as you move and look around. If you turn away from it for a moment, or walk far from it, the next spot is in front of you again.
 - **Never in the way:**
   - The lyrics never cover the one you're fighting, or the player or monster you're aiming at. They move to its left or right, with room to spare, and shrink if they must.
-  - They're made to fit the screen, and they're small by default (Size: Small, Medium or Large).
+  - They're made to fit the screen, and they're small by default (Size is a percentage you type; Fixed or Follow-opponent placement, on the Lyrics page).
   - They never move your view or change the world.
   - **Through blocks** decides whether walls can hide them.
 - **Sync** moves the lyrics earlier or later. **Demo song** plays a short built-in song (lyrics only) so you can try the looks without music. **Song in chat** adds a line to your chat (only you see it) when the song changes.
