@@ -1538,52 +1538,11 @@ public final class RainiumScreen extends Screen {
 
     private static boolean privacyOpen;   // Settings > Privacy starts folded each time the game starts
 
-    /** Settings > Music and lyrics. */
+    /** Settings > Music and lyrics: the switch and the way to the lyrics page. */
     private int lyricsSettings(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {
         y = section(g, x, y + 4, w, "music_lyrics");
         y = toggle(g, mx, my, x, y, w, "lyrics_on", ly.enabled, () -> { ly.enabled = !ly.enabled; save(); });
-        if (!ly.enabled) return wrapped(g, x, y, w, Lang.t("lyrics.off_note"), FAINT);
-        Lyrics.Status st = Lyrics.status();
-        NowPlaying.Track tr = Lyrics.track();
-        String song = tr == null ? "" : tr.title() + (tr.artist().isBlank() ? "" : " — " + tr.artist());
-        String problem = NowPlaying.problem;
-        String line = st == Lyrics.Status.FAILED && problem != null ? Lang.t("lyrics.problem." + problem) : Lang.t("lyrics.status." + st.name().toLowerCase(Locale.ROOT), song);
-        y = wrapped(g, x, y, w, line, st == Lyrics.Status.SHOWING ? ACCENT : st == Lyrics.Status.FAILED ? WARN : MUTED);
-
-        List<String> modes = List.of(Lang.t("value.lyrics_mode.video"), Lang.t("value.lyrics_mode.simple"));
-        y = cycle(g, mx, my, x, y, w, "lyrics_mode", modes.get(ly.video ? 0 : 1), modes, ly.video ? 0 : 1, d -> { ly.video = !ly.video; save(); });
-        if (ly.video) {
-            List<String> styles = new java.util.ArrayList<>();
-            for (String id : Lyrics.STYLES) styles.add(Lang.t("value.lyrics_style." + id));
-            int si = Math.max(0, java.util.Arrays.asList(Lyrics.STYLES).indexOf(ly.style));
-            y = cycle(g, mx, my, x, y, w, "lyrics_style", styles.get(si), styles, si, d -> { ly.style = Lyrics.STYLES[Math.floorMod(si + d, Lyrics.STYLES.length)]; save(); });
-            y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.lyrics_variation", ly.seed), () -> { ly.seed++; save(); });
-            y = toggle(g, mx, my, x, y, w, "lyrics_motifs", ly.motifs, () -> { ly.motifs = !ly.motifs; save(); });
-            y = toggle(g, mx, my, x, y, w, "lyrics_new_effects", ly.newEffects, () -> { ly.newEffects = !ly.newEffects; save(); });
-        }
-        List<String> sizes = List.of(Lang.t("value.lyrics_size.0"), Lang.t("value.lyrics_size.1"), Lang.t("value.lyrics_size.2"));
-        y = cycle(g, mx, my, x, y, w, "lyrics_size", sizes.get(ly.size), sizes, ly.size, d -> { ly.size = Math.floorMod(ly.size + d, 3); save(); });
-        y = toggle(g, mx, my, x, y, w, "lyrics_through_blocks", ly.throughBlocks, () -> { ly.throughBlocks = !ly.throughBlocks; save(); });
-        y = toggle(g, mx, my, x, y, w, "lyrics_demo", ly.demo, () -> { ly.demo = !ly.demo; save(); });
-        List<String> players = List.of(Lang.t("value.lyrics_player.any"), Lang.t("value.lyrics_player.spotify"));
-        int pi = ly.player.equals("spotify") ? 1 : 0;
-        y = cycle(g, mx, my, x, y, w, "lyrics_player", ly.player.equals("any") || ly.player.equals("spotify") ? players.get(pi) : ly.player, players, pi, d -> { ly.player = ly.player.equals("spotify") ? "any" : "spotify"; save(); });
-        y = toggle(g, mx, my, x, y, w, "lyrics_online", ly.online, () -> { ly.online = !ly.online; save(); });
-        y = wrapped(g, x, y, w, Lang.t(ly.online ? "lyrics.online_on" : "lyrics.online_off"), FAINT);
-        exact(v -> { ly.offset = clampF((float) v, -5, 5); save(); });
-        y = stepper(g, mx, my, x, y, w, "lyrics_offset", fmt(ly.offset) + " s", d -> { ly.offset = clampF(Math.round((ly.offset + d * 0.05f) * 100f) / 100f, -5, 5); save(); });
-        y = toggle(g, mx, my, x, y, w, "lyrics_chat", ly.chat, () -> { ly.chat = !ly.chat; save(); });
-        y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.lyrics_folder"), () -> {
-            java.nio.file.Path d = assets.dir().resolve("lyrics");
-            try { java.nio.file.Files.createDirectories(d); } catch (Exception ignored) {}
-            assets.openFolder(d);
-        });
-        int saved = LyricsLookup.savedCount(assets.dir());
-        y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.lyrics_clear", saved), () -> {
-            int n = LyricsLookup.clearSaved(assets.dir());
-            say(Lang.t("msg.lyrics_cleared", n), MUTED);
-        });
-        return y;
+        return secondaryButton(g, mx, my, x, y, w, Lang.t("button.lyrics_open"), () -> Minecraft.getInstance().gui.setScreen(new LyricsScreen(this)));
     }
 
     // =================================================================== preview

@@ -55,6 +55,14 @@ final class JizuraNative {
     static final int W = 800, H = 450;
     static final double SCALE = W / Env.W;      // layouts are drawn in a 1920x1080 space
     static final double STEP = 1.0 / 12;        // JIZURA moves in steps, about twelve a second
+    /** Room around the picture where effects may overshoot instead of being cut at its edge: the texture is this much bigger on every side. */
+    static final int PX = 200, PY = 112, CW = W + 2 * PX, CH = H + 2 * PY;
+
+    /** The look's own switches, from the lyrics screen. */
+    record Look(java.util.Set<String> off, boolean decor, boolean hud, double ghost, double grain, double fps) {
+        static final Look DEFAULT = new Look(java.util.Set.of(), true, true, 100, 100, 12);
+        String key() { return new java.util.TreeSet<>(off) + "|" + decor + "|" + hud + "|" + ghost + "|" + grain + "|" + fps; }
+    }
 
     // ------------------------------------------------------------------ styles
     record Scheme(Color bg, Color fg, Color sub, Color accent, Color accent2, Color ink, Color dim, Color ghostA, Color ghostB) {}
@@ -168,7 +176,14 @@ final class JizuraNative {
     private double duration;
     private BufferedImage noise;
 
-    JizuraNative(String styleId, long seed, boolean motifs, boolean extra, String title) {
+    final Look look;
+    final double stepSec;
+
+    JizuraNative(String styleId, long seed, boolean motifs, boolean extra, String title) { this(styleId, seed, motifs, extra, title, Look.DEFAULT); }
+
+    JizuraNative(String styleId, long seed, boolean motifs, boolean extra, String title, Look look) {
+        this.look = look;
+        this.stepSec = 1.0 / Math.max(0.5, look.fps());
         this.style = style(styleId);
         this.seed = seed;
         this.motifs = motifs;
@@ -336,7 +351,7 @@ final class JizuraNative {
         List<String> names = new ArrayList<>();
         List<Double> w = new ArrayList<>();
         for (var e : JizuraLayouts.ALL.entrySet()) {
-            if (!e.getValue().fits().test(n)) continue;
+            if (!e.getValue().fits().test(n) || look.off().contains(e.getKey())) continue;
             double k = 1 + bias(style.layoutBias, e.getKey());
             int back = recent.lastIndexOf(e.getKey());
             if (back >= 0) {
@@ -420,10 +435,13 @@ final class JizuraNative {
     // ------------------------------------------------------------------ drawing
     /** Draws the picture at song time t into two transparent images of W x H: back (decorations) and front (lyrics). */
     void draw(double t, BufferedImage back, BufferedImage front) {
-        long step = (long) Math.floor(t / STEP + 1e-6);
-        double ts = step * STEP;
+        long step = (long) Math.floor(t / stepSec + 1e-6);
+        double ts = step * stepSec;
+        int px = (front.getWidth() - W) / 2, py = (front.getHeight() - H) / 2;   // room for effects to spill past the picture
         java.awt.Graphics2D gb = init(back), gf = init(front);
         try {
+            gb.translate(px, py);
+            gf.translate(px, py);
             gf.scale(SCALE, SCALE);
             for (Cut c : cuts) {
                 if (ts < c.start || ts >= c.end) continue;
@@ -435,9 +453,9 @@ final class JizuraNative {
                 } catch (RuntimeException ex) {
                     gf.setComposite(AlphaComposite.SrcOver);   // a layout that fails costs only its own cut
                 }
-                decor(gb, c, ts, step);
+                if (look.decor()) decor(gb, c, ts, step);
             }
-            hud(gb, ts, step);
+            if (look.hud()) hud(gb, ts, step);
             if (extra) tears(front, step);
             texture(front, step);
         } finally {
@@ -613,7 +631,7 @@ final class JizuraNative {
 
     /** Film grain and scan lines, drawn only where there are lyrics, so the world around them stays clean. */
     private void texture(BufferedImage img, long step) {
-        if (style.grain <= 0 && style.scan <= 0) return;
+        if ((style.grain <= 0 && style.scan <= 0) || look.grain() <= 0) return;
         if (noise == null) {
             noise = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);
             SplittableRandom r = new SplittableRandom(12345);
@@ -624,13 +642,13 @@ final class JizuraNative {
                 }
         }
         java.awt.Graphics2D g = img.createGraphics();
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, (float) Math.min(1, style.grain * 0.5)));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, (float) Math.min(1, style.grain * look.grain() / 100 * 0.5)));
         int ox = (int) (hash(step, 1) * 256), oy = (int) (hash(step, 2) * 256);
-        for (int y = -oy; y < H; y += 256) for (int x = -ox; x < W; x += 256) g.drawImage(noise, x, y, null);
+        for (int y = -oy; y < img.getHeight(); y += 256) for (int x = -ox; x < img.getWidth(); x += 256) g.drawImage(noise, x, y, null);
         if (style.scan > 0) {
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, (float) Math.min(0.6, style.scan * 0.5)));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, (float) Math.min(0.6, style.scan * look.grain() / 100 * 0.5)));
             g.setColor(Color.BLACK);
-            for (int y = (int) (step % 3); y < H; y += 3) g.fillRect(0, y, W, 1);
+            for (int y = (int) (step % 3); y < img.getHeight(); y += 3) g.fillRect(0, y, img.getWidth(), 1);
         }
         g.dispose();
     }

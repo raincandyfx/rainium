@@ -46,7 +46,9 @@ final class Lyrics {
     private static String pendingKey;
     private static boolean wasOn;
     // where the lyrics are: a plane fixed in the world per line, and how it's nudged aside for an enemy (smoothed)
-    private static int anchorLine = -2, anchorSize = -1;
+    private static int anchorLine = -2;
+    private static double anchorSize = -1, spotAlpha = 1;
+    private static boolean placedFollow;
     private static boolean anchorVideo;
     private static Vec3 anchorPos;
     private static final Vector3f planeRight = new Vector3f(1, 0, 0), planeNormal = new Vector3f(0, 0, 1);
@@ -120,9 +122,9 @@ final class Lyrics {
         if (lrc == null) return;
         double now = t.positionNow() - s.offset;
         if (s.video) {
-            String look = s.style + "|" + s.seed + "|" + s.motifs + "|" + s.newEffects;
+            String look = s.style + "|" + s.seed + "|" + s.motifs + "|" + s.newEffects + "|" + new JizuraNative.Look(java.util.Set.copyOf(s.offLayouts), s.decor, s.hud, s.ghostPct, s.grainPct, s.fps).key();
             long seed = (s.seed * 1_000_003L + key.hashCode()) & 0x3FFFFFFFL;
-            LyricsVideo.song(key + "|" + look, lrc, s.style, seed, s.motifs, s.newEffects, t.title());
+            LyricsVideo.song(key + "|" + look, lrc, s.style, seed, s.motifs, s.newEffects, t.title(), new JizuraNative.Look(java.util.Set.copyOf(s.offLayouts), s.decor, s.hud, s.ghostPct, s.grainPct, s.fps));
             LyricsVideo.time(now, t.playing());
         } else {
             LyricsText.update(lrc, now);
@@ -153,6 +155,9 @@ final class Lyrics {
     }
 
     // ------------------------------------------------------------------ drawing, from the level render hook
+    private static double followSide = 1, followX = 0.5, followY = 0.42, followDepth = DISTANCE;
+    private static double enemyDepth;
+
     static void submit(SubmitNodeCollector collector) {
         LayerConfig.LyricsSettings s = RainiumClient.ASSETS.editable().lyrics;
         if (!s.enabled || lrc == null || status != Status.SHOWING) return;
@@ -178,91 +183,133 @@ final class Lyrics {
         long nowN = System.nanoTime();
         double dt = lastFrameNanos == 0 ? 0.016 : Math.min(0.1, (nowN - lastFrameNanos) / 1e9);
         lastFrameNanos = nowN;
-        int size = Math.max(0, Math.min(2, s.size));
-
-        // 1. a spot in the world for each line: left and right of where you're looking, in turn. It stays there as you
-        //    move and look around; it's only put somewhere new when you've turned away from it for a while or walked off.
-        boolean place = anchorPos == null || line != anchorLine || size != anchorSize || video != anchorVideo;
-        if (!place) {
-            double dx = anchorPos.x - eye.x, dy = anchorPos.y - eye.y, dz = anchorPos.z - eye.z;
-            double z = dx * fwd.x + dy * fwd.y + dz * fwd.z;
-            double sx = (dx * right.x + dy * right.y + dz * right.z) / Math.max(z, 0.05) / tanH;
-            double sy = (dx * up.x + dy * up.y + dz * up.z) / Math.max(z, 0.05) / tanV;
-            boolean inView = z > 0.3 && Math.abs(sx) < 1.25 && Math.abs(sy) < 1.25;
-            if (inView) offViewNanos = 0;
-            else if (offViewNanos == 0) offViewNanos = nowN;
-            else if (nowN - offViewNanos > 800_000_000L) place = true;
-            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist < 1.2 || dist > 18) place = true;
-        }
-        if (place) {
-            anchorLine = line; anchorSize = size; anchorVideo = video; offViewNanos = 0;
-            double px = (line & 1) == 0 ? -0.5 : 0.5, py = 0.42;
-            double zc = DISTANCE;
-            anchorPos = new Vec3(
-                eye.x + fwd.x * zc + right.x * px * tanH * zc + up.x * py * tanV * zc,
-                eye.y + fwd.y * zc + right.y * px * tanH * zc + up.y * py * tanV * zc,
-                eye.z + fwd.z * zc + right.z * px * tanH * zc + up.z * py * tanV * zc);
-            double hx = anchorPos.x - eye.x, hz = anchorPos.z - eye.z, hl = Math.sqrt(hx * hx + hz * hz);
-            if (hl < 1e-3) { hx = fwd.x; hz = fwd.z; hl = Math.max(1e-3, Math.sqrt(hx * hx + hz * hz)); }
-            hx /= hl; hz /= hl;
-            planeRight.set((float) -hz, 0f, (float) hx);      // faces you, upright, and fixed from now on
-            planeNormal.set((float) -hx, 0f, (float) -hz);
-            double texAspect = video ? (double) LyricsVideo.H / LyricsVideo.W : (double) LyricsText.H / LyricsText.W;
-            planeW = LyricsPlacement.WIDTHS[size] * zc * tanH;
-            planeH = planeW * texAspect;
-            shiftShown = 0; scaleShown = 1; alphaShown = 0;
-        }
-
-        // 2. where that plane is on your screen right now, and whether an enemy is in the way
-        double bob = Math.sin(nowN / 1.0e9 * 1.1) * 0.04;   // it floats a little
-        double cxw = anchorPos.x - eye.x, cyw = anchorPos.y + bob - eye.y, czw = anchorPos.z - eye.z;
-        double hw = planeW / 2, hh = planeH / 2;
-        double x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, depth = 0;
-        boolean behind = false;
-        for (int i = 0; i < 4; i++) {
-            double sxn = (i & 1) == 0 ? -hw : hw, syn = (i & 2) == 0 ? -hh : hh;
-            double wx = cxw + planeRight.x * sxn, wy = cyw + syn, wz = czw + planeRight.z * sxn;
-            double z = wx * fwd.x + wy * fwd.y + wz * fwd.z;
-            if (z < 0.1) { behind = true; break; }
-            depth += z / 4;
-            double sx = (wx * right.x + wy * right.y + wz * right.z) / z / tanH, sy = (wx * up.x + wy * up.y + wz * up.z) / z / tanV;
-            x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
-        }
-        if (behind) return;
-        LyricsPlacement.Rect base = new LyricsPlacement.Rect(x0, y0, x1, y1);
-        List<LyricsPlacement.Rect> enemies = enemies(mc, eye, right, up, fwd, tanH, tanV);
-        LyricsPlacement.Placed p = LyricsPlacement.anchored(base, enemies);
-        double tScale = p.rect().w() / Math.max(1e-6, base.w());
-        double tShift = (p.rect().cx() - base.cx()) * depth * tanH;   // blocks, along your right
-        double tAlpha = p.alpha();
-
-        // ease towards that, so dodging an enemy is a slide rather than a jump
+        double sizeK = Math.max(1e-4, s.sizePct / 100.0);
+        double widthN = LyricsPlacement.WIDTHS[1] * sizeK;   // on-screen width, 2 = the whole screen
+        double texAspect = video ? (double) JizuraNative.H / JizuraNative.W : (double) LyricsText.H / LyricsText.W;
+        double limit = s.keepOnScreen ? 1 : 1e6;
         double k = 1 - Math.exp(-dt * 14);
-        shiftShown += (tShift - shiftShown) * k;
-        scaleShown += (tScale - scaleShown) * k;
-        alphaShown += (tAlpha - alphaShown) * k;
-        // never let the eased plane cover an enemy: snap if it would
-        double ecx = base.cx() + shiftShown / (depth * tanH);
-        LyricsPlacement.Rect eased = LyricsPlacement.Rect.centred(ecx, base.cy(), base.w() * scaleShown, base.h() * scaleShown);
-        for (LyricsPlacement.Rect e : enemies) if (LyricsPlacement.guard(e).overlaps(eased)) { shiftShown = tShift; scaleShown = tScale; alphaShown = tAlpha; break; }
-        if (alphaShown < 0.02) return;
+        boolean follow = s.placement == 1;
+        List<LyricsPlacement.Rect> enemies = s.avoidEnemies || follow ? enemies(mc, eye, right, up, fwd, tanH, tanV) : List.of();
 
-        // 3. the plane itself, in the world (the picture is two layers: decorations a little behind the lyrics)
-        float cx = (float) (cxw + right.x * shiftShown), cy = (float) (cyw + right.y * shiftShown), cz = (float) (czw + right.z * shiftShown);
-        float qw = (float) (hw * scaleShown), qh = (float) (hh * scaleShown);
-        Vector3f c = new Vector3f(cx, cy, cz);
-        Vector3f back = new Vector3f(c).sub(new Vector3f(planeNormal).mul(0.12f * (float) scaleShown));
+        double cxw, cyw, czw, hw, hh;
+        Vector3f faceRight = new Vector3f(), faceNormal = new Vector3f();
+        if (follow) {
+            // beside the opponent, the same angular size whatever the distance; the side changes only when a new line begins
+            double hn = widthN * texAspect * tanH / tanV;
+            boolean fresh = line != anchorLine || video != anchorVideo;
+            if (fresh) {
+                anchorLine = line; anchorVideo = video;
+                LyricsPlacement.Rect e = enemies.isEmpty() ? null : enemies.get(0);
+                if (e != null) followSide = e.cx() > 0 ? -1 : 1;   // the roomier side
+                else followSide = (line & 1) == 0 ? -1 : 1;
+            }
+            double tx = followX, ty = followY, td = followDepth;
+            if (!enemies.isEmpty()) {
+                LyricsPlacement.Rect g = LyricsPlacement.guard(enemies.get(0));
+                tx = followSide < 0 ? g.x0() - widthN / 2 : g.x1() + widthN / 2;
+                ty = enemies.get(0).cy();
+                td = Math.max(0.5, enemyDepth);
+            } else if (fresh) {
+                tx = followSide * s.sidePct / 100.0; ty = s.heightPct / 100.0; td = s.distance;
+            }
+            if (s.keepOnScreen) {
+                tx = LyricsPlacement.clamp(tx, -1 + LyricsPlacement.MARGIN + widthN / 2, 1 - LyricsPlacement.MARGIN - widthN / 2);
+                ty = LyricsPlacement.clamp(ty, -1 + LyricsPlacement.MARGIN + hn / 2, 1 - LyricsPlacement.MARGIN - hn / 2);
+            }
+            if (fresh && anchorPos == null) { followX = tx; followY = ty; followDepth = td; }
+            followX += (tx - followX) * k; followY += (ty - followY) * k; followDepth += (td - followDepth) * k;
+            if (anchorPos == null) anchorPos = new Vec3(eye.x, eye.y, eye.z);   // only marks that a spot exists
+            double zc = followDepth;
+            cxw = fwd.x * zc + right.x * followX * tanH * zc + up.x * followY * tanV * zc;
+            cyw = fwd.y * zc + right.y * followX * tanH * zc + up.y * followY * tanV * zc;
+            czw = fwd.z * zc + right.z * followX * tanH * zc + up.z * followY * tanV * zc;
+            double hl = Math.sqrt(cxw * cxw + czw * czw);
+            double hx = hl < 1e-3 ? fwd.x : cxw / hl, hz = hl < 1e-3 ? fwd.z : czw / hl;
+            double hn2 = Math.max(1e-3, Math.sqrt(hx * hx + hz * hz));
+            hx /= hn2; hz /= hn2;
+            faceRight.set((float) -hz, 0f, (float) hx);
+            faceNormal.set((float) -hx, 0f, (float) -hz);
+            hw = widthN * tanH * zc / 2;
+            hh = hw * texAspect;
+        } else {
+            // a spot in the world for each line, by the rules, and then it stays exactly there
+            boolean place = anchorPos == null || line != anchorLine || video != anchorVideo || sizeK != anchorSize || placedFollow;
+            if (!place) {
+                double dx = anchorPos.x - eye.x, dy = anchorPos.y - eye.y, dz = anchorPos.z - eye.z;
+                double z = dx * fwd.x + dy * fwd.y + dz * fwd.z;
+                double sx = (dx * right.x + dy * right.y + dz * right.z) / Math.max(z, 0.05) / tanH;
+                double sy = (dx * up.x + dy * up.y + dz * up.z) / Math.max(z, 0.05) / tanV;
+                boolean inView = z > 0.3 && Math.abs(sx) < 1.25 && Math.abs(sy) < 1.25;
+                if (inView) offViewNanos = 0;
+                else if (offViewNanos == 0) offViewNanos = nowN;
+                else if (nowN - offViewNanos > 800_000_000L) place = true;
+                double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                if (dist < 1.2 || dist > 18) place = true;
+            }
+            if (place) {
+                anchorLine = line; anchorSize = sizeK; anchorVideo = video; offViewNanos = 0; placedFollow = false;
+                double px = ((line & 1) == 0 ? -1 : 1) * s.sidePct / 100.0, py = s.heightPct / 100.0;
+                double zc = Math.max(0.3, s.distance);
+                Vec3 at = new Vec3(
+                    eye.x + fwd.x * zc + right.x * px * tanH * zc + up.x * py * tanV * zc,
+                    eye.y + fwd.y * zc + right.y * px * tanH * zc + up.y * py * tanV * zc,
+                    eye.z + fwd.z * zc + right.z * px * tanH * zc + up.z * py * tanV * zc);
+                double hx = at.x - eye.x, hz = at.z - eye.z, hl = Math.sqrt(hx * hx + hz * hz);
+                if (hl < 1e-3) { hx = fwd.x; hz = fwd.z; hl = Math.max(1e-3, Math.sqrt(hx * hx + hz * hz)); }
+                hx /= hl; hz /= hl;
+                planeRight.set((float) -hz, 0f, (float) hx);      // faces you, upright, and fixed from now on
+                planeNormal.set((float) -hx, 0f, (float) -hz);
+                planeW = widthN * zc * tanH;
+                planeH = planeW * texAspect;
+                // the rules, applied once: fit the screen, slide clear of an enemy; the result is the spot and shape it keeps
+                double ccx = at.x - eye.x, ccy = at.y - eye.y, ccz = at.z - eye.z;
+                double x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, depth = 0;
+                for (int i = 0; i < 4; i++) {
+                    double sxn = (i & 1) == 0 ? -planeW / 2 : planeW / 2, syn = (i & 2) == 0 ? -planeH / 2 : planeH / 2;
+                    double wx = ccx + planeRight.x * sxn, wy = ccy + syn, wz = ccz + planeRight.z * sxn;
+                    double z = Math.max(0.1, wx * fwd.x + wy * fwd.y + wz * fwd.z);
+                    depth += z / 4;
+                    double sx = (wx * right.x + wy * right.y + wz * right.z) / z / tanH, sy = (wx * up.x + wy * up.y + wz * up.z) / z / tanV;
+                    x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+                }
+                LyricsPlacement.Rect base = new LyricsPlacement.Rect(x0, y0, x1, y1);
+                LyricsPlacement.Placed p = LyricsPlacement.anchored(base, enemies, limit);
+                double sc = p.rect().w() / Math.max(1e-6, base.w());
+                double shift = (p.rect().cx() - base.cx()) * depth * tanH;   // blocks, along your right
+                anchorPos = new Vec3(at.x + right.x * shift, at.y + right.y * shift, at.z + right.z * shift);
+                planeW *= sc; planeH *= sc;
+                spotAlpha = p.alpha() > 0 ? 1 : 0;
+                alphaShown = 0;
+            }
+            double bob = Math.sin(nowN / 1.0e9 * 1.1) * 0.04 * s.floatPct / 100.0;   // it floats a little
+            cxw = anchorPos.x - eye.x; cyw = anchorPos.y + bob - eye.y; czw = anchorPos.z - eye.z;
+            faceRight.set(planeRight.x, planeRight.y, planeRight.z); faceNormal.set(planeNormal.x, planeNormal.y, planeNormal.z);
+            hw = planeW / 2; hh = planeH / 2;
+        }
+        if (follow) placedFollow = true;
+        alphaShown += ((follow ? 1 : spotAlpha) - alphaShown) * k;
+        alphaShown = Math.min(alphaShown, 1);
+        double opacity = Math.max(0, Math.min(1, s.opacityPct / 100.0));
+        if (alphaShown * opacity < 0.02) return;
+        if (follow) cyw += Math.sin(nowN / 1.0e9 * 1.1) * 0.04 * s.floatPct / 100.0;
+        if (cxw * fwd.x + cyw * fwd.y + czw * fwd.z < 0.1) return;   // behind you
+
+        // the plane itself, in the world (the picture is two layers: decorations a little behind the lyrics)
+        float qw = (float) hw, qh = (float) hh;
+        Vector3f c = new Vector3f((float) cxw, (float) cyw, (float) czw);
+        Vector3f back = new Vector3f(c).sub(new Vector3f(faceNormal).mul(0.12f * (float) (hw / Math.max(1e-6, widthN * tanH * DISTANCE / 2))));
         Vector3f upW = new Vector3f(0, 1, 0);
-        int alpha = (int) Math.round(Math.max(0, Math.min(1, alphaShown)) * 255);
+        int alpha = (int) Math.round(alphaShown * opacity * 255);
         int color = (alpha << 24) | 0xFFFFFF;
         RenderType type = s.throughBlocks ? RenderTypes.textSeeThrough(tex) : RenderTypes.text(tex);
         final boolean twoLayers = video;
-        final Vector3f r = new Vector3f(planeRight);
+        final Vector3f r = new Vector3f(faceRight);
+        // the video's picture has room around it for effects to spill into: the quad is that much bigger
+        final float vw = video ? (float) (qw * LyricsVideo.SCALE_X) : qw, vh = video ? (float) (qh * LyricsVideo.SCALE_Y) : qh;
         collector.submitCustomGeometry(new PoseStack(), type, (pose, vc) -> {
             if (twoLayers) {
-                quad(pose, vc, back, r, upW, qw, qh, 0f, 0.5f, color);
-                quad(pose, vc, c, r, upW, qw, qh, 0.5f, 1f, color);
+                quad(pose, vc, back, r, upW, vw, vh, 0f, 0.5f, color);
+                quad(pose, vc, c, r, upW, vw, vh, 0.5f, 1f, color);
             } else quad(pose, vc, c, r, upW, qw, qh, 0f, 1f, color);
         });
     }
@@ -314,6 +361,7 @@ final class Lyrics {
             x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
         }
         if (front == 0) return;   // behind you
+        if (out.isEmpty()) { double mx = (bb.minX + bb.maxX) / 2 - eye.x, my = (bb.minY + bb.maxY) / 2 - eye.y, mz = (bb.minZ + bb.maxZ) / 2 - eye.z; enemyDepth = mx * f.x + my * f.y + mz * f.z; }
         out.add(new LyricsPlacement.Rect(Math.max(-3, x0), Math.max(-3, y0), Math.min(3, x1), Math.min(3, y1)));
     }
 }

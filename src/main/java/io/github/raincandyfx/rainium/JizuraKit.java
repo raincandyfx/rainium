@@ -382,7 +382,7 @@ final class JizuraKit {
             double dur = cut.end - cut.start;
             pIn = clamp(lt / Math.max(0.01, cut.inDur));
             pOut = cut.outDur > 0 ? clamp((lt - (dur - cut.outDur)) / cut.outDur) : 0;
-            ghostK = st.ghost;
+            ghostK = st.ghost * engine.look.ghost() / 100;
         }
 
         double dur() { return cut.end - cut.start; }

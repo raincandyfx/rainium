@@ -32,5 +32,11 @@ ReactScreen.java      ||  \bg\.entity\(                            ||  g.submitE
 ReactScreen.java      ||  \bextractRenderState\(                   ||  render(
 ReactScreen.java      ||  \bextractBackground\(                    ||  renderBackground(
 
+# The lyrics page (its own screen), same calls as the reactions editor.
+LyricsScreen.java     ||  \bg\.text\(                              ||  g.drawString(
+LyricsScreen.java     ||  \bg\.outline\(                           ||  g.renderOutline(
+LyricsScreen.java     ||  \bextractRenderState\(                   ||  render(
+LyricsScreen.java     ||  \bextractBackground\(                    ||  renderBackground(
+
 # Lyrics: 1.21.11 shows a client-only chat line with displayClientMessage
 Lyrics.java           ||  mc\.player\.sendSystemMessage\((\w+)\)   ||  mc.player.displayClientMessage($1, false)

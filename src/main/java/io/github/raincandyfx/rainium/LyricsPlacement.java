@@ -56,15 +56,20 @@ final class LyricsPlacement {
      * Lyrics fixed in the world: they stay where they are, only shrinking so they fit the screen, unless
      * that would cover an enemy; then they slide to its left or right, as in {@link #place}.
      */
-    static Placed anchored(Rect r, List<Rect> enemies) {
-        double lo = -1 + MARGIN, hi = 1 - MARGIN;
+    static Placed anchored(Rect r, List<Rect> enemies) { return anchored(r, enemies, 1); }
+
+    /** As above; limit is how far out the screen counts (1 = its edges; a big number lets lyrics be as large as asked for). */
+    static Placed anchored(Rect r, List<Rect> enemies, double limit) {
+        double lo = -limit + MARGIN, hi = limit - MARGIN;
         double s = Math.min(1, Math.min((hi - lo) / r.w(), (hi - lo) / r.h()));
         if (s < 1) r = Rect.centred(r.cx(), r.cy(), r.w() * s, r.h() * s);
-        return avoid(r, enemies);
+        return avoid(r, enemies, limit);
     }
 
-    private static Placed avoid(Rect r, List<Rect> enemies) {
-        double lo = -1 + MARGIN, hi = 1 - MARGIN;
+    private static Placed avoid(Rect r, List<Rect> enemies) { return avoid(r, enemies, 1); }
+
+    private static Placed avoid(Rect r, List<Rect> enemies, double limit) {
+        double lo = -limit + MARGIN, hi = limit - MARGIN;
         double fullW = r.w(), fullH = r.h();
         // 1. clear of enemies: sideways only
         for (int pass = 0; pass < 4; pass++) {

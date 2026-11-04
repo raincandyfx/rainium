@@ -254,7 +254,21 @@ final class LayerConfig {
         String player = "any";           // "any", "spotify" or a player's name
         boolean online = false;          // look lyrics up on lrclib.net
         float offset = 0f;               // seconds; + shows lyrics later
-        int size = 1;                    // 0 small, 1 medium, 2 large
+        double sizePct = 100;            // size as a percentage; 100 is what "Medium" used to be. No upper or lower limit.
+        int placement = 0;               // 0 Fixed: placed by the rules, then stays put. 1 Follow: beside the opponent, same angular size.
+        double distance = 3.5;           // blocks in front of you where a line is placed (Fixed)
+        double heightPct = 42;           // how high on the screen a line starts, % of half the screen height
+        double sidePct = 50;             // how far to the left or right, % of half the screen width
+        double opacityPct = 100;
+        double floatPct = 100;           // how much it bobs; 0 holds still
+        boolean keepOnScreen = true;     // shrink to fit the screen
+        boolean avoidEnemies = true;     // slide aside rather than cover the one you're fighting
+        final java.util.Set<String> offLayouts = new java.util.TreeSet<>();   // layouts switched off
+        boolean decor = true;            // rings, slashes, seal, brush circle...
+        boolean hud = true;              // corner brackets, title, timecode
+        double ghostPct = 100;           // colour fringes
+        double grainPct = 100;           // film grain and scanlines
+        double fps = 12;                 // pictures per second
         boolean throughBlocks = true;    // never hidden behind blocks
         boolean chat = false;            // "Now playing" in your chat when the song changes
         String style = "noir";           // JIZURA style
@@ -379,7 +393,22 @@ final class LayerConfig {
             if (lm.get("player") instanceof String s && !s.isBlank()) ly.player = s.trim();
             if (lm.get("online") instanceof Boolean b) ly.online = b;
             if (lm.get("offset") instanceof Number n) ly.offset = Math.max(-5f, Math.min(5f, n.floatValue()));
-            if (lm.get("size") instanceof Number n) ly.size = Math.max(0, Math.min(2, n.intValue()));
+            if (lm.get("size") instanceof Number n && !(lm.get("size_percent") instanceof Number)) ly.sizePct = n.intValue() <= 0 ? 75 : n.intValue() == 1 ? 100 : 139;   // the old Small, Medium, Large
+            if (lm.get("size_percent") instanceof Number n && n.doubleValue() > 0) ly.sizePct = n.doubleValue();
+            if (lm.get("placement") instanceof String s) ly.placement = s.equalsIgnoreCase("follow") ? 1 : 0;
+            if (lm.get("distance") instanceof Number n && n.doubleValue() > 0) ly.distance = n.doubleValue();
+            if (lm.get("height_percent") instanceof Number n) ly.heightPct = n.doubleValue();
+            if (lm.get("side_percent") instanceof Number n) ly.sidePct = n.doubleValue();
+            if (lm.get("opacity_percent") instanceof Number n) ly.opacityPct = n.doubleValue();
+            if (lm.get("float_percent") instanceof Number n) ly.floatPct = n.doubleValue();
+            if (lm.get("keep_on_screen") instanceof Boolean b) ly.keepOnScreen = b;
+            if (lm.get("avoid_enemies") instanceof Boolean b) ly.avoidEnemies = b;
+            if (lm.get("layouts_off") instanceof List<?> l) { ly.offLayouts.clear(); for (Object o : l) if (o instanceof String t) ly.offLayouts.add(t); }
+            if (lm.get("decorations") instanceof Boolean b) ly.decor = b;
+            if (lm.get("hud") instanceof Boolean b) ly.hud = b;
+            if (lm.get("ghost_percent") instanceof Number n) ly.ghostPct = n.doubleValue();
+            if (lm.get("grain_percent") instanceof Number n) ly.grainPct = n.doubleValue();
+            if (lm.get("fps") instanceof Number n && n.doubleValue() > 0) ly.fps = n.doubleValue();
             if (lm.get("through_blocks") instanceof Boolean b) ly.throughBlocks = b;
             if (lm.get("chat") instanceof Boolean b) ly.chat = b;
             if (lm.get("style") instanceof String s && !s.isBlank()) ly.style = s.trim();
@@ -574,7 +603,21 @@ final class LayerConfig {
         ly.put("player", lyrics.player);
         ly.put("online", lyrics.online);
         ly.put("offset", lyrics.offset);
-        ly.put("size", lyrics.size);
+        ly.put("size_percent", lyrics.sizePct);
+        ly.put("placement", lyrics.placement == 1 ? "follow" : "fixed");
+        ly.put("distance", lyrics.distance);
+        ly.put("height_percent", lyrics.heightPct);
+        ly.put("side_percent", lyrics.sidePct);
+        ly.put("opacity_percent", lyrics.opacityPct);
+        ly.put("float_percent", lyrics.floatPct);
+        ly.put("keep_on_screen", lyrics.keepOnScreen);
+        ly.put("avoid_enemies", lyrics.avoidEnemies);
+        ly.put("layouts_off", new java.util.ArrayList<>(lyrics.offLayouts));
+        ly.put("decorations", lyrics.decor);
+        ly.put("hud", lyrics.hud);
+        ly.put("ghost_percent", lyrics.ghostPct);
+        ly.put("grain_percent", lyrics.grainPct);
+        ly.put("fps", lyrics.fps);
         ly.put("through_blocks", lyrics.throughBlocks);
         ly.put("chat", lyrics.chat);
         ly.put("style", lyrics.style);

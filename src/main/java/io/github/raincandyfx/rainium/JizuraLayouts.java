@@ -581,5 +581,6 @@ final class JizuraLayouts {
             });
 
         JizuraKinetic.init();
+        JizuraCompose.init();
     }
 }

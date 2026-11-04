@@ -2,6 +2,15 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.8 (dev build)
+
+- **Lyrics have their own page.** Settings > Music and lyrics now has the on/off switch and an "Open the lyrics page" button, like the Nodes page. The page holds the song and sources (demo, player, online lookup, sync, chat line, folder), the look (style, variation, motifs, new effects, decorations, HUD, colour fringe %, grain %, frame rate), which effects may appear (each layout on or off, All / None) and the placement.
+- **Two placement modes.** *Fixed*: placed by the usual rules, then stays at that spot and shape. *Follow opponent*: same rules, but beside the opponent you are fighting, at the same size on screen, and it only changes side when the line is over.
+- **Size is a percentage you type** (100 is the old Medium, no upper or lower limit). Opacity, float, distance, height and sideways position are typed numbers too. An old Small/Medium/Large setting is carried over.
+- **Fewer boundaries.** Effects can spill past the edge of the picture. "Keep on screen" (shrinking to fit) and "Avoid enemies" are switches now, so large sizes really are large.
+- **Eight more JIZURA layouts** (39 in all): lower-third telop, diagonal corners, staircase, zigzag, rainbow arc, character grid, subtitle bar and news ticker.
+- *Not yet tried in a real game.* The picture is drawn on a larger canvas to allow spill, which costs a little more to update.
+
 ## 0.9.7 (dev build)
 
 - **JIZURA's layouts, ported.** The music video now uses 31 of JIZURA's own layouts, translated from its source into Java with the same plans and timing: its 17 core layouts (centred, mixed sizes, vertical columns, marquee bands, tiled rows, scattered, ring, wave, huge, labels, condensed, gloss, typewriter, diagonal band, circle, afterimage stack, pill) and its 14 kinetic layouts (slam stack, quarter turn, word swap, dive into a letter, flow and snap, seesaw, type then slam, word jump cuts, loop track, gears, head-on crash, tumbling boxes, vertical to line, drum pads). Each line picks one that suits its length, leaning on the style's taste and away from what was just shown. Long lines are cut into parts of a dozen or so characters, each timed to its words.

@@ -17,7 +17,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 final class LyricsVideo {
     static final Identifier TEXTURE = Identifier.fromNamespaceAndPath("rainium", "lyrics/video");
-    static final int W = JizuraNative.W, H = JizuraNative.H;   // one layer; the texture is twice as wide
+    static final int W = JizuraNative.CW, H = JizuraNative.CH;   // one layer (the picture and room around it); the texture is twice as wide
+    static final double SCALE_X = (double) JizuraNative.CW / JizuraNative.W, SCALE_Y = (double) JizuraNative.CH / JizuraNative.H;
 
     private static final ExecutorService POOL = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "rainium-lyrics-video");
@@ -43,7 +44,7 @@ final class LyricsVideo {
     static boolean ready() { return true; }
 
     /** A new song (or a new look): the layout of every line is worked out on the drawing thread. */
-    static void song(String key, LyricsLrc lrc, String style, long seed, boolean motifs, boolean extra, String title) {
+    static void song(String key, LyricsLrc lrc, String style, long seed, boolean motifs, boolean extra, String title, JizuraNative.Look look) {
         if (key.equals(songKey)) return;
         songKey = key;
         has = false;
@@ -52,7 +53,7 @@ final class LyricsVideo {
         engine = null;
         final String k = key;
         POOL.execute(() -> {
-            JizuraNative e = new JizuraNative(style, seed, motifs, extra, title);
+            JizuraNative e = new JizuraNative(style, seed, motifs, extra, title, look);
             e.song(lrc);
             if (k.equals(songKey)) engine = e;
         });
@@ -79,7 +80,7 @@ final class LyricsVideo {
         JizuraNative e = engine;
         if (e == null || songKey == null) return false;
         double t = now();
-        long step = (long) Math.floor(t / JizuraNative.STEP + 1e-6);
+        long step = (long) Math.floor(t / e.stepSec + 1e-6);
         if (step != requested && busy.compareAndSet(false, true)) {
             requested = step;
             POOL.execute(() -> {
