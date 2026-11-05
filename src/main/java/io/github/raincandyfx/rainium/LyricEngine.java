@@ -86,10 +86,16 @@ final class LyricEngine {
         double grain, scan, ghost = 1;
         final Map<String, Double> layoutBias = new HashMap<>(), enterBias = new HashMap<>(), exitBias = new HashMap<>(), decor = new HashMap<>();
         final Map<String, List<String>> fonts = new HashMap<>();
-        boolean hud;
+        boolean hud, horror;
     }
 
     private static Map<String, Style> styles;
+
+    /** Every style in the table, in order. */
+    static synchronized String[] styleIds() {
+        if (styles == null) styles = loadStyles();
+        return styles.keySet().toArray(new String[0]);
+    }
 
     static synchronized Style style(String id) {
         if (styles == null) styles = loadStyles();
@@ -142,6 +148,7 @@ final class LyricEngine {
                             s.fonts.put(f.getKey(), l);
                         }
                     s.hud = Boolean.TRUE.equals(m.get("hud"));
+                    s.horror = "horror".equals(m.get("set"));
                     out.put(s.id, s);
                 }
             }
@@ -383,7 +390,8 @@ final class LyricEngine {
         List<Double> w = new ArrayList<>();
         for (var e : LyricLayouts.ALL.entrySet()) {
             if (!e.getValue().fits().test(n) || look.off().contains(e.getKey())) continue;
-            double k = 1 + bias(style.layoutBias, e.getKey());
+            if (LyricWeights.horror(e.getKey()) && !style.horror) continue;   // the horror set belongs to the horror styles
+            double k = style.layoutBias.getOrDefault(e.getKey(), LyricWeights.layout(e.getKey()));   // the style's own say, else the layout's usual weight
             int back = recent.lastIndexOf(e.getKey());
             if (back >= 0) {
                 int ago = recent.size() - back;

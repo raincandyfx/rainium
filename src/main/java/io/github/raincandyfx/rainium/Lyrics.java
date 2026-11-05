@@ -34,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  */
 final class Lyrics {
     static final double DISTANCE = 3.5;   // blocks in front of the eye, when a line is placed
-    static final String[] STYLES = {"noir", "crimson", "caution", "magenta", "paper", "hud", "mint", "specimen", "transit", "blueprint", "rouge", "mono"};
+    static final String[] STYLES = LyricEngine.styleIds();
 
     enum Status { OFF, WAITING, NOTHING_PLAYING, LOOKING, SHOWING, NO_LYRICS, PLAIN_ONLY, INSTRUMENTAL, OFFLINE, FAILED }
 
