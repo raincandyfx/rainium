@@ -122,9 +122,9 @@ final class Lyrics {
         if (lrc == null) return;
         double now = t.positionNow() - s.offset;
         if (s.video) {
-            String look = s.style + "|" + s.seed + "|" + s.motifs + "|" + s.newEffects + "|" + new JizuraNative.Look(java.util.Set.copyOf(s.offLayouts), s.decor, s.hud, s.ghostPct, s.grainPct, s.fps).key();
+            String look = s.style + "|" + s.seed + "|" + s.motifs + "|" + s.newEffects + "|" + s.look().key();
             long seed = (s.seed * 1_000_003L + key.hashCode()) & 0x3FFFFFFFL;
-            LyricsVideo.song(key + "|" + look, lrc, s.style, seed, s.motifs, s.newEffects, t.title(), new JizuraNative.Look(java.util.Set.copyOf(s.offLayouts), s.decor, s.hud, s.ghostPct, s.grainPct, s.fps));
+            LyricsVideo.song(key + "|" + look, lrc, s.style, seed, s.motifs, s.newEffects, t.title(), s.look());
             LyricsVideo.time(now, t.playing());
         } else {
             LyricsText.update(lrc, now);
@@ -157,6 +157,9 @@ final class Lyrics {
     // ------------------------------------------------------------------ drawing, from the level render hook
     private static double followSide = 1, followX = 0.5, followY = 0.42, followDepth = DISTANCE;
     private static double enemyDepth;
+
+    /** Which side a Fixed line goes to: alternating, or always one. */
+    private static int sideOf(LayerConfig.LyricsSettings s, int line) { return s.sideMode == 1 ? -1 : s.sideMode == 2 ? 1 : (line & 1) == 0 ? -1 : 1; }
 
     static void submit(SubmitNodeCollector collector) {
         LayerConfig.LyricsSettings s = RainiumClient.ASSETS.editable().lyrics;
@@ -200,13 +203,14 @@ final class Lyrics {
             if (fresh) {
                 anchorLine = line; anchorVideo = video;
                 LyricsPlacement.Rect e = enemies.isEmpty() ? null : enemies.get(0);
-                if (e != null) followSide = e.cx() > 0 ? -1 : 1;   // the roomier side
+                if (s.sideMode != 0) followSide = s.sideMode == 1 ? -1 : 1;
+                else if (e != null) followSide = e.cx() > 0 ? -1 : 1;   // the roomier side
                 else followSide = (line & 1) == 0 ? -1 : 1;
             }
             double tx = followX, ty = followY, td = followDepth;
             if (!enemies.isEmpty()) {
                 LyricsPlacement.Rect g = LyricsPlacement.guard(enemies.get(0));
-                tx = followSide < 0 ? g.x0() - widthN / 2 : g.x1() + widthN / 2;
+                tx = followSide < 0 ? g.x0() - widthN / 2 - s.gapPct / 100.0 : g.x1() + widthN / 2 + s.gapPct / 100.0;
                 ty = enemies.get(0).cy();
                 td = Math.max(0.5, enemyDepth);
             } else if (fresh) {
@@ -248,7 +252,7 @@ final class Lyrics {
             }
             if (place) {
                 anchorLine = line; anchorSize = sizeK; anchorVideo = video; offViewNanos = 0; placedFollow = false;
-                double px = ((line & 1) == 0 ? -1 : 1) * s.sidePct / 100.0, py = s.heightPct / 100.0;
+                double px = sideOf(s, line) * s.sidePct / 100.0, py = s.heightPct / 100.0;
                 double zc = Math.max(0.3, s.distance);
                 Vec3 at = new Vec3(
                     eye.x + fwd.x * zc + right.x * px * tanH * zc + up.x * py * tanV * zc,
@@ -303,14 +307,16 @@ final class Lyrics {
         int color = (alpha << 24) | 0xFFFFFF;
         RenderType type = s.throughBlocks ? RenderTypes.textSeeThrough(tex) : RenderTypes.text(tex);
         final boolean twoLayers = video;
-        final Vector3f r = new Vector3f(faceRight);
+        double roll = Math.toRadians(s.rollDeg), cr = Math.cos(roll), sr = Math.sin(roll);
+        final Vector3f r = new Vector3f(faceRight).mul((float) cr).add(new Vector3f(upW).mul((float) sr));   // tilted about the way it faces
+        final Vector3f uw = new Vector3f(upW).mul((float) cr).sub(new Vector3f(faceRight).mul((float) sr));
         // the video's picture has room around it for effects to spill into: the quad is that much bigger
         final float vw = video ? (float) (qw * LyricsVideo.SCALE_X) : qw, vh = video ? (float) (qh * LyricsVideo.SCALE_Y) : qh;
         collector.submitCustomGeometry(new PoseStack(), type, (pose, vc) -> {
             if (twoLayers) {
-                quad(pose, vc, back, r, upW, vw, vh, 0f, 0.5f, color);
-                quad(pose, vc, c, r, upW, vw, vh, 0.5f, 1f, color);
-            } else quad(pose, vc, c, r, upW, qw, qh, 0f, 1f, color);
+                quad(pose, vc, back, r, uw, vw, vh, 0f, 0.5f, color);
+                quad(pose, vc, c, r, uw, vw, vh, 0.5f, 1f, color);
+            } else quad(pose, vc, c, r, uw, qw, qh, 0f, 1f, color);
         });
     }
 

@@ -121,7 +121,15 @@ final class JizuraKit {
         FACES.put(key, new Face(k, weight >= 600));
     }
 
+    /** -1 leaves each style's own faces; 0 sans, 1 serif, 2 mono forces one family (set by the look before drawing). */
+    static volatile int forceKind = -1;
+
     static Face face(String key) {
+        Face f = faceOf(key);
+        return forceKind < 0 ? f : new Face(forceKind, f.bold);
+    }
+
+    private static Face faceOf(String key) {
         Face f = FACES.get(key);
         if (f != null) return f;
         boolean serif = key.contains("mincho") || key.contains("serif");
@@ -556,8 +564,8 @@ final class JizuraKit {
                     gg.fill(AffineTransform.getTranslateInstance(gxo, gxo * 0.15).createTransformedShape(use));
                 }
                 gg.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) clamp(al)));
-                if (it.halo && it.fill) {
-                    gg.setStroke(new BasicStroke((float) Math.max(6, it.size * 0.12), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                if (it.halo && it.fill && engine.look.halo() > 0) {
+                    gg.setStroke(new BasicStroke((float) (Math.max(6, it.size * 0.12) * engine.look.halo() / 100.0), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     gg.setColor(a(sc.bg(), 0.85));
                     gg.draw(use);
                 }

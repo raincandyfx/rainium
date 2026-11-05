@@ -261,11 +261,23 @@ final class LayerConfig {
         double sidePct = 50;             // how far to the left or right, % of half the screen width
         double opacityPct = 100;
         double floatPct = 100;           // how much it bobs; 0 holds still
-        boolean keepOnScreen = true;     // shrink to fit the screen
+        boolean keepOnScreen = false;    // shrink to fit the screen (off: big effects may spill over the edges)
+        int sideMode = 0;                // Fixed: 0 alternate left and right, 1 always left, 2 always right
+        double gapPct = 0;               // Follow: extra space between the opponent and the panel, % of half the screen width
+        double rollDeg = 0;              // tilt of the panel
         boolean avoidEnemies = true;     // slide aside rather than cover the one you're fighting
         final java.util.Set<String> offLayouts = new java.util.TreeSet<>();   // layouts switched off
         boolean decor = true;            // rings, slashes, seal, brush circle...
-        boolean hud = true;              // corner brackets, title, timecode
+        boolean frame = false;           // corner brackets round the picture
+        boolean hud = false;             // title, timecode, progress line
+        double speedPct = 100;           // speed of the ways in and out
+        double backdropPct = 0;          // dim plate behind the lyrics
+        double haloPct = 100;            // dark outline that keeps letters readable
+        String font = "auto";            // auto (the style's own), sans, serif, mono
+        String textColor = "";           // #rrggbb, blank for the style's
+        String accentColor = "";
+        final java.util.Set<String> offEnters = new java.util.TreeSet<>();
+        final java.util.Set<String> offExits = new java.util.TreeSet<>();
         double ghostPct = 100;           // colour fringes
         double grainPct = 100;           // film grain and scanlines
         double fps = 12;                 // pictures per second
@@ -275,6 +287,13 @@ final class LayerConfig {
         int seed = 1;                    // JIZURA variation (each song mixes in its own)
         boolean motifs = true;           // JIZURA: Japanese motifs
         boolean newEffects = false;      // JIZURA: the effects added after its first version
+
+        /** The video's look from these settings. */
+        JizuraNative.Look look() {
+            int fk = switch (font) { case "sans" -> 0; case "serif" -> 1; case "mono" -> 2; default -> -1; };
+            return new JizuraNative.Look(java.util.Set.copyOf(offLayouts), java.util.Set.copyOf(offEnters), java.util.Set.copyOf(offExits), decor, frame, hud,
+                ghostPct, grainPct, fps, speedPct, backdropPct, haloPct, fk, textColor, accentColor);
+        }
     }
 
     /** A layer is drawn when it and its folder (if any) are switched on. */
@@ -401,7 +420,19 @@ final class LayerConfig {
             if (lm.get("side_percent") instanceof Number n) ly.sidePct = n.doubleValue();
             if (lm.get("opacity_percent") instanceof Number n) ly.opacityPct = n.doubleValue();
             if (lm.get("float_percent") instanceof Number n) ly.floatPct = n.doubleValue();
-            if (lm.get("keep_on_screen") instanceof Boolean b) ly.keepOnScreen = b;
+            if (lm.get("fit_to_screen") instanceof Boolean b) ly.keepOnScreen = b;
+            if (lm.get("side_mode") instanceof String sm) ly.sideMode = sm.equalsIgnoreCase("left") ? 1 : sm.equalsIgnoreCase("right") ? 2 : 0;
+            if (lm.get("gap_percent") instanceof Number n) ly.gapPct = n.doubleValue();
+            if (lm.get("roll_degrees") instanceof Number n) ly.rollDeg = n.doubleValue();
+            if (lm.get("frame") instanceof Boolean b) ly.frame = b;
+            if (lm.get("speed_percent") instanceof Number n && n.doubleValue() > 0) ly.speedPct = n.doubleValue();
+            if (lm.get("backdrop_percent") instanceof Number n) ly.backdropPct = n.doubleValue();
+            if (lm.get("halo_percent") instanceof Number n) ly.haloPct = n.doubleValue();
+            if (lm.get("font") instanceof String fs && !fs.isBlank()) ly.font = fs.trim().toLowerCase(java.util.Locale.ROOT);
+            if (lm.get("text_color") instanceof String cs) ly.textColor = cs.trim();
+            if (lm.get("accent_color") instanceof String cs) ly.accentColor = cs.trim();
+            if (lm.get("ways_in_off") instanceof List<?> l) { ly.offEnters.clear(); for (Object o : l) if (o instanceof String t) ly.offEnters.add(t); }
+            if (lm.get("ways_out_off") instanceof List<?> l) { ly.offExits.clear(); for (Object o : l) if (o instanceof String t) ly.offExits.add(t); }
             if (lm.get("avoid_enemies") instanceof Boolean b) ly.avoidEnemies = b;
             if (lm.get("layouts_off") instanceof List<?> l) { ly.offLayouts.clear(); for (Object o : l) if (o instanceof String t) ly.offLayouts.add(t); }
             if (lm.get("decorations") instanceof Boolean b) ly.decor = b;
@@ -610,7 +641,19 @@ final class LayerConfig {
         ly.put("side_percent", lyrics.sidePct);
         ly.put("opacity_percent", lyrics.opacityPct);
         ly.put("float_percent", lyrics.floatPct);
-        ly.put("keep_on_screen", lyrics.keepOnScreen);
+        ly.put("fit_to_screen", lyrics.keepOnScreen);
+        ly.put("side_mode", lyrics.sideMode == 1 ? "left" : lyrics.sideMode == 2 ? "right" : "alternate");
+        ly.put("gap_percent", lyrics.gapPct);
+        ly.put("roll_degrees", lyrics.rollDeg);
+        ly.put("frame", lyrics.frame);
+        ly.put("speed_percent", lyrics.speedPct);
+        ly.put("backdrop_percent", lyrics.backdropPct);
+        ly.put("halo_percent", lyrics.haloPct);
+        ly.put("font", lyrics.font);
+        ly.put("text_color", lyrics.textColor);
+        ly.put("accent_color", lyrics.accentColor);
+        ly.put("ways_in_off", new java.util.ArrayList<>(lyrics.offEnters));
+        ly.put("ways_out_off", new java.util.ArrayList<>(lyrics.offExits));
         ly.put("avoid_enemies", lyrics.avoidEnemies);
         ly.put("layouts_off", new java.util.ArrayList<>(lyrics.offLayouts));
         ly.put("decorations", lyrics.decor);

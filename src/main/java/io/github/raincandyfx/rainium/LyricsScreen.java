@@ -7,6 +7,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -124,12 +125,21 @@ public final class LyricsScreen extends Screen {
         int si = Math.max(0, java.util.Arrays.asList(ids).indexOf(ly.style));
         y = cycle(g, mx, my, x, y, w, "lyrics_style", Lang.t("value.lyrics_style." + ids[si]), d -> { ly.style = ids[Math.floorMod(si + d, ids.length)]; save(); });
         y = button(g, mx, my, x, y, w, Lang.t("button.lyrics_variation", ly.seed), () -> { ly.seed++; save(); });
+        String[] fonts = {"auto", "sans", "serif", "mono"};
+        int fi = Math.max(0, java.util.Arrays.asList(fonts).indexOf(ly.font));
+        y = cycle(g, mx, my, x, y, w, "lyrics_font", Lang.t("value.lyrics_font." + fonts[fi]), d -> { ly.font = fonts[Math.floorMod(fi + d, fonts.length)]; save(); });
+        y = hex(g, mx, my, x, y, w, "lyrics_text_color", ly.textColor, v -> { ly.textColor = v; save(); });
+        y = hex(g, mx, my, x, y, w, "lyrics_accent_color", ly.accentColor, v -> { ly.accentColor = v; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_motifs", ly.motifs, () -> { ly.motifs = !ly.motifs; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_new_effects", ly.newEffects, () -> { ly.newEffects = !ly.newEffects; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_decor", ly.decor, () -> { ly.decor = !ly.decor; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_frame", ly.frame, () -> { ly.frame = !ly.frame; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_hud", ly.hud, () -> { ly.hud = !ly.hud; save(); });
         y = number(g, mx, my, x, y, w, "lyrics_ghost", ly.ghostPct, " %", v -> { ly.ghostPct = v; save(); });
         y = number(g, mx, my, x, y, w, "lyrics_grain", ly.grainPct, " %", v -> { ly.grainPct = v; save(); });
+        y = number(g, mx, my, x, y, w, "lyrics_halo", ly.haloPct, " %", v -> { ly.haloPct = v; save(); });
+        y = number(g, mx, my, x, y, w, "lyrics_backdrop", ly.backdropPct, " %", v -> { ly.backdropPct = v; save(); });
+        y = number(g, mx, my, x, y, w, "lyrics_speed", ly.speedPct, " %", v -> { ly.speedPct = Math.max(1, v); save(); });
         y = number(g, mx, my, x, y, w, "lyrics_fps", ly.fps, " /s", v -> { ly.fps = Math.max(0.5, v); save(); });
         return y + 6;
     }
@@ -142,11 +152,15 @@ public final class LyricsScreen extends Screen {
         y = number(g, mx, my, x, y, w, "lyrics_size", ly.sizePct, " %", v -> { ly.sizePct = Math.max(0.1, v); save(); });
         y = number(g, mx, my, x, y, w, "lyrics_opacity", ly.opacityPct, " %", v -> { ly.opacityPct = v; save(); });
         y = number(g, mx, my, x, y, w, "lyrics_float", ly.floatPct, " %", v -> { ly.floatPct = v; save(); });
+        y = number(g, mx, my, x, y, w, "lyrics_roll", ly.rollDeg, " °", v -> { ly.rollDeg = v; save(); });
+        y = cycle(g, mx, my, x, y, w, "lyrics_side_mode", Lang.t("value.lyrics_side_mode." + ly.sideMode), d -> { ly.sideMode = Math.floorMod(ly.sideMode + d, 3); save(); });
         if (ly.placement == 0) {
             y = number(g, mx, my, x, y, w, "lyrics_distance", ly.distance, " m", v -> { ly.distance = Math.max(0.1, v); save(); });
             y = number(g, mx, my, x, y, w, "lyrics_height", ly.heightPct, " %", v -> { ly.heightPct = v; save(); });
             y = number(g, mx, my, x, y, w, "lyrics_side", ly.sidePct, " %", v -> { ly.sidePct = v; save(); });
             y = toggle(g, mx, my, x, y, w, "lyrics_avoid", ly.avoidEnemies, () -> { ly.avoidEnemies = !ly.avoidEnemies; save(); });
+        } else {
+            y = number(g, mx, my, x, y, w, "lyrics_gap", ly.gapPct, " %", v -> { ly.gapPct = v; save(); });
         }
         y = toggle(g, mx, my, x, y, w, "lyrics_keep", ly.keepOnScreen, () -> { ly.keepOnScreen = !ly.keepOnScreen; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_through_blocks", ly.throughBlocks, () -> { ly.throughBlocks = !ly.throughBlocks; save(); });
@@ -156,24 +170,40 @@ public final class LyricsScreen extends Screen {
     private int effects(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {
         y = section(g, x, y, w, "section.lyrics_effects");
         if (!ly.video) return wrapped(g, x, y, w, Lang.t("lyrics.effects_simple"), FAINT);
-        int total = JizuraLayouts.ALL.size(), on = total - (int) JizuraLayouts.ALL.keySet().stream().filter(ly.offLayouts::contains).count();
-        g.text(font, RainiumScreen.body(Lang.t("lyrics.effects_count", on, total)), x, y + 3, MUTED, false);
+        List<String[]> layouts = new ArrayList<>();
+        for (var e : JizuraLayouts.ALL.entrySet()) layouts.add(new String[]{e.getKey(), e.getValue().name()});
+        y = checks(g, mx, my, x, y, w, "lyrics.layouts_count", layouts, ly.offLayouts, false);
+        y = section(g, x, y + 4, w, "section.lyrics_in");
+        List<String[]> ins = new ArrayList<>();
+        for (JizuraNative.Enter e : JizuraNative.Enter.values()) if (e != JizuraNative.Enter.TYPE) ins.add(new String[]{e.name().toLowerCase(Locale.ROOT), Lang.t("value.lyrics_way." + e.name().toLowerCase(Locale.ROOT))});
+        y = checks(g, mx, my, x, y, w, "lyrics.ways_count", ins, ly.offEnters, true);
+        y = section(g, x, y + 4, w, "section.lyrics_out");
+        List<String[]> outs = new ArrayList<>();
+        for (JizuraNative.Exit e : JizuraNative.Exit.values()) outs.add(new String[]{e.name().toLowerCase(Locale.ROOT), Lang.t("value.lyrics_way." + e.name().toLowerCase(Locale.ROOT))});
+        return checks(g, mx, my, x, y, w, "lyrics.ways_count", outs, ly.offExits, true);
+    }
+
+    /** A two-column list of things that can each be switched off, with All and None. */
+    private int checks(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String countKey, List<String[]> all, java.util.Set<String> off, boolean allowNone) {
+        int total = all.size(), on = 0;
+        for (String[] e : all) if (!off.contains(e[0])) on++;
+        g.text(font, RainiumScreen.body(Lang.t(countKey, on, total)), x, y + 3, MUTED, false);
         int bw = 34, bx = x + w - 2 * bw - 4;
-        y = chips(g, mx, my, bx, y, bw, () -> { ly.offLayouts.clear(); save(); }, Lang.t("lyrics.all"), () -> {
-            ly.offLayouts.addAll(JizuraLayouts.ALL.keySet());
-            ly.offLayouts.remove(JizuraLayouts.ALL.keySet().iterator().next());   // keep one, or nothing would draw
+        y = chips(g, mx, my, bx, y, bw, () -> { for (String[] e : all) off.remove(e[0]); save(); }, Lang.t("lyrics.all"), () -> {
+            for (String[] e : all) off.add(e[0]);
+            if (!allowNone) off.remove(all.get(0)[0]);   // keep one, or nothing would draw
             save();
         }, Lang.t("lyrics.none"));
         int cw = (w - 6) / 2, i = 0;
-        for (var e : JizuraLayouts.ALL.entrySet()) {
-            String key = e.getKey();
+        for (String[] e : all) {
+            String key = e[0];
             int cx = x + (i % 2) * (cw + 6), cy = y + (i / 2) * (ROW + 1);
-            boolean off = ly.offLayouts.contains(key), hov = in(mx, my, cx, cy, cw, ROW);
+            boolean isOff = off.contains(key), hov = in(mx, my, cx, cy, cw, ROW);
             g.fill(cx, cy, cx + cw, cy + ROW, hov ? FIELD_HOVER : FIELD);
-            g.outline(cx + 3, cy + 3, 8, 8, off ? FIELD_EDGE : CYAN);
-            if (!off) g.fill(cx + 5, cy + 5, cx + 9, cy + 9, CYAN);
-            g.text(font, RainiumScreen.body(fit(e.getValue().name(), cw - 18)), cx + 15, cy + 3, off ? FAINT : TEXT, false);
-            hits.add(new Hit(cx, cy, cw, ROW, () -> { if (!ly.offLayouts.remove(key)) ly.offLayouts.add(key); save(); }, null));
+            g.outline(cx + 3, cy + 3, 8, 8, isOff ? FIELD_EDGE : CYAN);
+            if (!isOff) g.fill(cx + 5, cy + 5, cx + 9, cy + 9, CYAN);
+            g.text(font, RainiumScreen.body(fit(e[1], cw - 18)), cx + 15, cy + 3, isOff ? FAINT : TEXT, false);
+            hits.add(new Hit(cx, cy, cw, ROW, () -> { if (!off.remove(key)) off.add(key); save(); }, null));
             i++;
         }
         return y + ((i + 1) / 2) * (ROW + 1) + 6;
@@ -224,6 +254,28 @@ public final class LyricsScreen extends Screen {
             Double d = parse(str);
             if (d == null || d.isNaN() || d.isInfinite()) { say(Lang.t("lyrics.not_a_number"), WARN); return; }
             set.accept(d);
+        }), null));
+        return y + ROW + GAP;
+    }
+
+    /** A colour typed as six hex digits; blank means the style's own. */
+    private int hex(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String key, String value, java.util.function.Consumer<String> set) {
+        rowLabel(g, mx, my, x, y, w, key);
+        int fw = 78, fx = x + w - fw;
+        String id = "h:" + key;
+        boolean editing = id.equals(editId), hov = in(mx, my, fx, y, fw, ROW);
+        Color sw = JizuraNative.Look.color(value);
+        g.fill(fx, y, fx + fw, y + ROW, editing ? INK : hov ? FIELD_HOVER : FIELD);
+        g.outline(fx, y, fw, ROW, editing ? CYAN : FIELD_EDGE);
+        String shown = editing ? "#" + editBuf + ((System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "") : value.isBlank() ? Lang.t("value.lyrics_style_color") : "#" + value.replace("#", "");
+        g.text(font, RainiumScreen.body(shown), fx + 4, y + 3, editing ? TEXT : sw == null ? FAINT : TEXT, false);
+        if (sw != null && !editing) g.fill(fx + fw - 12, y + 3, fx + fw - 4, y + ROW - 3, 0xFF000000 | sw.getRGB());
+        if (editing) editRect = new int[]{fx, y, fw, ROW};
+        hits.add(new Hit(fx, y, fw, ROW, () -> beginEdit(id, value.replace("#", ""), false, str -> {
+            String t = str.trim().replace("#", "");
+            if (t.isEmpty()) { set.accept(""); return; }
+            if (JizuraNative.Look.color(t) == null) { say(Lang.t("lyrics.not_a_colour"), WARN); return; }
+            set.accept("#" + t.toLowerCase(Locale.ROOT));
         }), null));
         return y + ROW + GAP;
     }
@@ -321,7 +373,7 @@ public final class LyricsScreen extends Screen {
                 editReplace = false;
                 return true;
             }
-            char c = typed(k);
+            char c = editNumeric ? typed(k) : hexChar(k);
             if (c != 0) {
                 if (editReplace) editBuf.setLength(0);
                 editReplace = false;
@@ -331,6 +383,13 @@ public final class LyricsScreen extends Screen {
         }
         if (k == RainiumScreen.SC_ESC) { back(); return true; }
         return super.keyPressed(event);
+    }
+
+    private static char hexChar(int k) {
+        char d = RainiumScreen.digit(k);
+        if (d != 0) return d;
+        if (k >= RainiumScreen.SC_A && k <= RainiumScreen.SC_A + 5) return (char) ('a' + (k - RainiumScreen.SC_A));
+        return 0;
     }
 
     private static char typed(int k) {

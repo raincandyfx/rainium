@@ -59,9 +59,23 @@ final class JizuraNative {
     static final int PX = 200, PY = 112, CW = W + 2 * PX, CH = H + 2 * PY;
 
     /** The look's own switches, from the lyrics screen. */
-    record Look(java.util.Set<String> off, boolean decor, boolean hud, double ghost, double grain, double fps) {
-        static final Look DEFAULT = new Look(java.util.Set.of(), true, true, 100, 100, 12);
-        String key() { return new java.util.TreeSet<>(off) + "|" + decor + "|" + hud + "|" + ghost + "|" + grain + "|" + fps; }
+    record Look(java.util.Set<String> off, java.util.Set<String> offIn, java.util.Set<String> offOut, boolean decor, boolean frame, boolean hud,
+                double ghost, double grain, double fps, double speed, double backdrop, double halo, int font, String text, String accent) {
+        static final Look DEFAULT = new Look(java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), true, false, false, 100, 100, 12, 100, 0, 100, -1, "", "");
+        /** Just the layouts switched off and the usual rest (for tests). */
+        static Look off(java.util.Set<String> layouts) { return new Look(layouts, java.util.Set.of(), java.util.Set.of(), true, false, false, 100, 100, 12, 100, 0, 100, -1, "", ""); }
+        String key() {
+            return new java.util.TreeSet<>(off) + "|" + new java.util.TreeSet<>(offIn) + "|" + new java.util.TreeSet<>(offOut) + "|" + decor + "|" + frame + "|" + hud + "|" + ghost + "|" + grain + "|" + fps
+                + "|" + speed + "|" + backdrop + "|" + halo + "|" + font + "|" + text + "|" + accent;
+        }
+        /** A colour typed as #rrggbb (or rrggbb), or null when blank or not a colour. */
+        static Color color(String s) {
+            if (s == null) return null;
+            String t = s.trim();
+            if (t.startsWith("#")) t = t.substring(1);
+            if (!t.matches("[0-9a-fA-F]{6}")) return null;
+            return new Color(Integer.parseInt(t, 16));
+        }
     }
 
     // ------------------------------------------------------------------ styles
@@ -269,14 +283,16 @@ final class JizuraNative {
                 c.end = gi + 1 < groups.size() ? groups.get(gi + 1).get(0).t - 0.05 : Math.max(line.end(), c.start + 0.5);
                 if (c.end < c.start + 0.3) c.end = c.start + 0.3;
                 double dur = c.end - c.start;
-                c.inDur = Math.min(0.3, dur * 0.4);
-                c.outDur = Math.min(0.25, dur * 0.3);
+                double spd = Math.max(0.05, look.speed() / 100.0);   // animation speed: faster means shorter ways in and out
+                c.inDur = Math.min(0.3 / spd, dur * 0.4);
+                c.outDur = Math.min(0.25 / spd, dur * 0.3);
+                c.stagger = 0.04 / spd;
                 StringBuilder sb = new StringBuilder();
                 for (Unit u : grp) { if (sb.length() > 0 && !jp) sb.append(' '); sb.append(u.text); c.words.add(u.text); }
                 c.text = sb.toString();
                 c.seed = seed * 7919L + cuts.size() * 104729L + 17;
                 Rng r = new Rng(c.seed);
-                c.sc = cuts.isEmpty() || r.next() < 0.7 ? style.schemes.get(0) : style.schemes.get((int) (r.next() * style.schemes.size()) % style.schemes.size());
+                c.sc = recolour(cuts.isEmpty() || r.next() < 0.7 ? style.schemes.get(0) : style.schemes.get((int) (r.next() * style.schemes.size()) % style.schemes.size()));
                 c.layout = pickLayout(c, r, recent);
                 recent.add(c.layout);
                 JizuraLayouts.Def def = JizuraLayouts.ALL.get(c.layout);
@@ -287,6 +303,13 @@ final class JizuraNative {
                 duration = Math.max(duration, c.end);
             }
         }
+    }
+
+    /** The scheme with the typed text and accent colours, when there are any. */
+    private Scheme recolour(Scheme sc) {
+        Color t = Look.color(look.text()), a = Look.color(look.accent());
+        if (t == null && a == null) return sc;
+        return new Scheme(sc.bg(), t != null ? t : sc.fg(), t != null ? JizuraKit.mix(t, sc.bg(), 0.35) : sc.sub(), a != null ? a : sc.accent(), a != null ? a : sc.accent2(), sc.ink(), sc.dim(), sc.ghostA(), sc.ghostB());
     }
 
     /** The line's words, with long unspaced runs (Japanese) cut into short pieces so they can come in one by one. */
@@ -323,14 +346,21 @@ final class JizuraNative {
     private double[] enterWeights() {
         Enter[] e = Enter.values();
         double[] w = new double[e.length];
-        for (int i = 0; i < e.length; i++) w[i] = e[i] == Enter.TYPE ? 0 : 1 + bias(style.enterBias, e[i].name().toLowerCase(Locale.ROOT));
-        return w;
+        for (int i = 0; i < e.length; i++) w[i] = look.offIn().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : e[i] == Enter.TYPE ? 0 : 1 + bias(style.enterBias, e[i].name().toLowerCase(Locale.ROOT));
+        return anyOr(w);
     }
 
     private double[] exitWeights() {
         Exit[] e = Exit.values();
         double[] w = new double[e.length];
-        for (int i = 0; i < e.length; i++) w[i] = 1 + bias(style.exitBias, e[i].name().toLowerCase(Locale.ROOT));
+        for (int i = 0; i < e.length; i++) w[i] = look.offOut().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : 1 + bias(style.exitBias, e[i].name().toLowerCase(Locale.ROOT));
+        return anyOr(w);
+    }
+
+    /** If everything was switched off, nothing would ever come in or go out: use them all instead. */
+    private static double[] anyOr(double[] w) {
+        for (double v : w) if (v > 0) return w;
+        java.util.Arrays.fill(w, 1);
         return w;
     }
 
@@ -440,8 +470,10 @@ final class JizuraNative {
         int px = (front.getWidth() - W) / 2, py = (front.getHeight() - H) / 2;   // room for effects to spill past the picture
         java.awt.Graphics2D gb = init(back), gf = init(front);
         try {
+            JizuraKit.forceKind = look.font();
             gb.translate(px, py);
             gf.translate(px, py);
+            if (look.backdrop() > 0) backdrop(gb, ts);
             gf.scale(SCALE, SCALE);
             for (Cut c : cuts) {
                 if (ts < c.start || ts >= c.end) continue;
@@ -455,7 +487,7 @@ final class JizuraNative {
                 }
                 if (look.decor()) decor(gb, c, ts, step);
             }
-            if (look.hud()) hud(gb, ts, step);
+            if (look.frame() || look.hud()) hud(gb, ts, step);
             if (extra) tears(front, step);
             texture(front, step);
         } finally {
@@ -566,6 +598,16 @@ final class JizuraNative {
         }
     }
 
+    /** A dim plate behind the lyrics, in the colour of the line being shown, for reading over a busy scene. */
+    private void backdrop(java.awt.Graphics2D g, double ts) {
+        for (Cut c : cuts) {
+            if (ts < c.start || ts >= c.end) continue;
+            double in = clamp((ts - c.start) / 0.2), out = clamp((c.end - ts) / 0.2);
+            g.setColor(a(c.sc.bg(), Math.min(1, look.backdrop() / 100.0) * Math.min(in, out)));
+            g.fill(new java.awt.geom.Rectangle2D.Double(0, 0, W, H));
+        }
+    }
+
     private void hud(java.awt.Graphics2D g, double ts, long step) {
         if (cuts.isEmpty() || ts < -0.5 || ts > duration + 2) return;
         Scheme sc = style.schemes.get(0);
@@ -574,13 +616,13 @@ final class JizuraNative {
         double m = 16, len = 22;
         g.setStroke(new BasicStroke(1.5f));
         g.setColor(a(sc.fg(), al));
-        for (int i = 0; i < 4; i++) {
+        if (look.frame()) for (int i = 0; i < 4; i++) {
             double x = (i & 1) == 0 ? m : W - m, y = (i & 2) == 0 ? m : H - m;
             double sx = (i & 1) == 0 ? 1 : -1, sy = (i & 2) == 0 ? 1 : -1;
             g.draw(new Line2D.Double(x, y, x + sx * len, y));
             g.draw(new Line2D.Double(x, y, x, y + sy * len));
         }
-        if (!full && weight("hud") <= 0) return;
+        if (!look.hud() || (!full && weight("hud") <= 0)) return;
         int cur = 0;
         for (int i = 0; i < cuts.size(); i++) if (cuts.get(i).start <= ts) cur = i;
         label(g, title.isBlank() ? "UNTITLED" : title.toUpperCase(Locale.ROOT), m + 10, m + 12, sc.fg(), al, false);
