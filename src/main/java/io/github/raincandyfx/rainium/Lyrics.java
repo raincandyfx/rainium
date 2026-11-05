@@ -155,6 +155,7 @@ final class Lyrics {
     }
 
     // ------------------------------------------------------------------ drawing, from the level render hook
+    private static final int BEHIND_ENTITIES = -100;
     private static double followSide = 1, followX = 0.5, followY = 0.42, followDepth = DISTANCE;
     private static double enemyDepth;
 
@@ -312,7 +313,8 @@ final class Lyrics {
         final Vector3f uw = new Vector3f(upW).mul((float) cr).sub(new Vector3f(faceRight).mul((float) sr));
         // the video's picture has room around it for effects to spill into: the quad is that much bigger
         final float vw = video ? (float) (qw * LyricsVideo.SCALE_X) : qw, vh = video ? (float) (qh * LyricsVideo.SCALE_Y) : qh;
-        collector.submitCustomGeometry(new PoseStack(), type, (pose, vc) -> {
+        // an earlier order than the entities (order 0): they are drawn over the lyrics, however near the lyrics are
+        collector.order(BEHIND_ENTITIES).submitCustomGeometry(new PoseStack(), type, (pose, vc) -> {
             if (twoLayers) {
                 quad(pose, vc, back, r, uw, vw, vh, 0f, 0.5f, color);
                 quad(pose, vc, c, r, uw, vw, vh, 0.5f, 1f, color);

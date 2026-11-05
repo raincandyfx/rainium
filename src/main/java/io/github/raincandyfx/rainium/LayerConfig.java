@@ -261,7 +261,7 @@ final class LayerConfig {
         double sidePct = 50;             // how far to the left or right, % of half the screen width
         double opacityPct = 100;
         double floatPct = 100;           // how much it bobs; 0 holds still
-        boolean keepOnScreen = false;    // shrink to fit the screen (off: big effects may spill over the edges)
+        boolean keepOnScreen = true;     // shrink to fit the screen
         int sideMode = 0;                // Fixed: 0 alternate left and right, 1 always left, 2 always right
         double gapPct = 0;               // Follow: extra space between the opponent and the panel, % of half the screen width
         double rollDeg = 0;              // tilt of the panel
