@@ -59,13 +59,18 @@ final class LyricEngine {
 
     /** The look's own switches, from the lyrics screen. */
     record Look(java.util.Set<String> off, java.util.Set<String> offIn, java.util.Set<String> offOut, boolean decor, boolean frame, boolean hud,
-                double ghost, double grain, double fps, double speed, double backdrop, double halo, int font, String text, String accent) {
-        static final Look DEFAULT = new Look(java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), true, false, false, 100, 100, 12, 100, 0, 100, -1, "", "");
+                double ghost, double grain, double fps, double speed, double backdrop, double halo, int font, String text, String accent, int parts) {
+        boolean holds() { return (parts & 1) != 0; }
+        boolean treat() { return (parts & 2) != 0; }
+        boolean camera() { return (parts & 4) != 0; }
+        boolean fx() { return (parts & 8) != 0; }
+        boolean trans() { return (parts & 16) != 0; }
+        static final Look DEFAULT = new Look(java.util.Set.of(), java.util.Set.of(), java.util.Set.of(), true, false, false, 100, 100, 12, 100, 0, 100, -1, "", "", 31);
         /** Just the layouts switched off and the usual rest (for tests). */
-        static Look off(java.util.Set<String> layouts) { return new Look(layouts, java.util.Set.of(), java.util.Set.of(), true, false, false, 100, 100, 12, 100, 0, 100, -1, "", ""); }
+        static Look off(java.util.Set<String> layouts) { return new Look(layouts, java.util.Set.of(), java.util.Set.of(), true, false, false, 100, 100, 12, 100, 0, 100, -1, "", "", 31); }
         String key() {
             return new java.util.TreeSet<>(off) + "|" + new java.util.TreeSet<>(offIn) + "|" + new java.util.TreeSet<>(offOut) + "|" + decor + "|" + frame + "|" + hud + "|" + ghost + "|" + grain + "|" + fps
-                + "|" + speed + "|" + backdrop + "|" + halo + "|" + font + "|" + text + "|" + accent;
+                + "|" + speed + "|" + backdrop + "|" + halo + "|" + font + "|" + text + "|" + accent + "|" + parts;
         }
         /** A colour typed as #rrggbb (or rrggbb), or null when blank or not a colour. */
         static Color color(String s) {
@@ -179,10 +184,12 @@ final class LyricEngine {
     // ------------------------------------------------------------------ cuts
     enum Enter { POP, RISE, SLICE, STRETCH, ASSEMBLE, SPIN, WIPE, SCRAMBLE, DROP, TYPE,
         FLIP, ZOOM, SLIDE_LEFT, SLIDE_RIGHT, SWING, ELASTIC, WAVE, SPIRAL, SQUASH, BLINK, TUMBLE, SHUTTER, RUSH, HOP, FOCUS, UNFOLD, ZIP, FALL_IN, TILT, SPREAD,
-        BLUR, FLICKER, RISE_MASK, DROP_MASK, FLIP_X, DOMINO, FOLD, UNROLL, STROKE_DRAW, OUTLINE_FILL, SPLIT_JOIN, V_SLICE, IRIS, DIAG_WIPE, BLINDS, CHECKER, RANDOM_ORDER, BOUNCE_BIG, SQUASH_DROP, RUBBER, GLITCH_IN, ECHO_IN, WHIP, SKEW_IN, TRACK_IN, TRACK_OUT, BLUR_STAGGER, FADE_STAGGER, INK_BLEED, NEON_ON, CURSOR_SWEEP, STAMP, SPRING_IN, PENDULUM, ROLL_IN, SLINGSHOT, ROCK_SETTLE, BOUNCE_BALL, SNAP_RAIL, FAN_OPEN, CYLINDER, SHUFFLE, STOP_MOTION, RIPPLE, STICKER_PEEL, CRUMPLE, TORN_JOIN, OVEREXPOSE, GLINT, LOUPE, FILM_FEED, BACKLIGHT, LIGHT_LEAK, HEAT_HAZE, CRT_ON, INTERLACE, DITHER, ODOMETER, QUARTERS, PRINT_REGISTER, LIQUID_FILL, WIND_BLOWN, SHADOW_FIRST, TOKOROTEN }
+        BLUR, FLICKER, RISE_MASK, DROP_MASK, FLIP_X, DOMINO, FOLD, UNROLL, STROKE_DRAW, OUTLINE_FILL, SPLIT_JOIN, V_SLICE, IRIS, DIAG_WIPE, BLINDS, CHECKER, RANDOM_ORDER, BOUNCE_BIG, SQUASH_DROP, RUBBER, GLITCH_IN, ECHO_IN, WHIP, SKEW_IN, TRACK_IN, TRACK_OUT, BLUR_STAGGER, FADE_STAGGER, INK_BLEED, NEON_ON, CURSOR_SWEEP, STAMP, SPRING_IN, PENDULUM, ROLL_IN, SLINGSHOT, ROCK_SETTLE, BOUNCE_BALL, SNAP_RAIL, FAN_OPEN, CYLINDER, SHUFFLE, STOP_MOTION, RIPPLE, STICKER_PEEL, CRUMPLE, TORN_JOIN, OVEREXPOSE, GLINT, LOUPE, FILM_FEED, BACKLIGHT, LIGHT_LEAK, HEAT_HAZE, CRT_ON, INTERLACE, DITHER, ODOMETER, QUARTERS, PRINT_REGISTER, LIQUID_FILL, WIND_BLOWN, SHADOW_FIRST, TOKOROTEN,
+        CUT, SLIDE_L, SLIDE_R, SLIDE_WHOLE, FLIP_Y, WAVE_IN, SPIRAL_IN, ZOOM_OUT, RESOLVE, MAGNET, ZIPPER, ZOOM_ALT, TILT_UP, NOTE_UNFOLD, SPLIT_FLAP, LOADING_BAR, MATRIX_RAIN, HATCH_FILL, BRUSH_REVEAL, INK_DROP, INVERT_BOX, ECHO_COUNT, STROKE_ORDER, CLOCK_WIPE, BUBBLES, HR_BLINK_CREEP, HR_JUMP_SCARE, HR_UNEASY, HR_VHOLD, HR_MIRROR_SNAP, HR_MANIFEST, HR_CLAW_REVEAL, KN_WORD_SLAM, KN_TYPE_TO_SLAM, KN_REPLACE_IN, KN_HINGE_DROP, KN_LOOP_IN, KN_PUSH_IN, KN_INERTIA, KN_WORD_SPIN, KN_DIVE_IN, KN_STRETCH_OUT, TY_KEY_FIRST, TY_LINE_WIPE, TY_ZOOM_ONE, TY_UNDER_LIFT, TY_DOT_GROW, TY_BRACKET_OPEN, TY_RETYPE, TY_RUBY_DROP }
     enum Exit { FADE, DRIFT, FALL, EXPLODE, SLICE, SHRINK, GLITCH, SCATTER,
         SLIDE_LEFT, SLIDE_RIGHT, RISE_UP, ZOOM_OUT, SPIN_OUT, FLIP_OUT, COLLAPSE, BLINK, MELT, SWING_OUT, WAVE_OUT, BLUR, TUMBLE, FLY, POP_OUT, ZIP, SQUEEZE, UNRAVEL,
-        WIPE, STRETCH, SINK_MASK, RISE_OUT, FLIP_OUT_X, FLIP_OUT_Y, FOLD_OUT, SQUASH_OUT, TRACK_OUT_WIDE, ZOOM_THROUGH, ZOOM_FAR, TWIST, BLUR_OUT_STAGGER, UNDRAW, OUTLINE_OUT, IRIS_CLOSE, DIAG_WIPE_OUT, BLINDS_CLOSE, CHECKER_OUT, SPLIT_APART, V_SLICE_DROP, DISSOLVE, BACKSPACE, SCRAMBLE_OUT, GLITCH_DISSOLVE, ECHO_OUT, WHIP_OUT, GRAVITY, BURN, SWEEP_COVER, SHATTER_LITE, PEEL_OFF, CRUMPLE_OUT, TEAR_OUT, OVEREXPOSE_OUT, SCAN_OUT, STRIPES_OUT, HALFTONE_OUT, VACUUM_OUT, SAND_OUT, SHRED_OUT, DOMINO_OUT, HINGE_OUT, ROCKET_OFF, BOUNCE_OFF, BALLOON_OFF, DEFLATE_OUT, HAZE_OUT, CLAP_SHUT, LAMP_OFF, SLOT_OUT, CLOCK_OUT, TORNADO_OUT, ROLL_UP_OUT, FLUTTER_OUT, ROLL_OFF, SLASH_OUT, MOSAIC_OUT, SCRIBBLE_OUT, CANDLE_OUT }
+        WIPE, STRETCH, SINK_MASK, RISE_OUT, FLIP_OUT_X, FLIP_OUT_Y, FOLD_OUT, SQUASH_OUT, TRACK_OUT_WIDE, ZOOM_THROUGH, ZOOM_FAR, TWIST, BLUR_OUT_STAGGER, UNDRAW, OUTLINE_OUT, IRIS_CLOSE, DIAG_WIPE_OUT, BLINDS_CLOSE, CHECKER_OUT, SPLIT_APART, V_SLICE_DROP, DISSOLVE, BACKSPACE, SCRAMBLE_OUT, GLITCH_DISSOLVE, ECHO_OUT, WHIP_OUT, GRAVITY, BURN, SWEEP_COVER, SHATTER_LITE, PEEL_OFF, CRUMPLE_OUT, TEAR_OUT, OVEREXPOSE_OUT, SCAN_OUT, STRIPES_OUT, HALFTONE_OUT, VACUUM_OUT, SAND_OUT, SHRED_OUT, DOMINO_OUT, HINGE_OUT, ROCKET_OFF, BOUNCE_OFF, BALLOON_OFF, DEFLATE_OUT, HAZE_OUT, CLAP_SHUT, LAMP_OFF, SLOT_OUT, CLOCK_OUT, TORNADO_OUT, ROLL_UP_OUT, FLUTTER_OUT, ROLL_OFF, SLASH_OUT, MOSAIC_OUT, SCRIBBLE_OUT, CANDLE_OUT,
+        CUT, SLIDE_OUT_L, SLIDE_OUT_R, SQUASH, SCORCH_OUT, ERASER_OUT, GLASS_BREAK, ZIP_OUT, MATRIX_OUT, SNAKE_OUT, FAN_CLOSE, RGB_SPLIT_OUT, SHOCK_OUT, FLOOD_OUT, HR_PULLED_DOWN, HR_LOOK_BACK, HR_TURN_AWAY, HR_SHIVER, HR_SWALLOW, HR_FLICKER_DIE, HR_DRAIN, KN_WORD_KICK, KN_PUSH_OUT, KN_DIVE_GLYPH, KN_LAUNCH, KN_WORD_BLINK, KN_CLOSE_GAP, KN_JUMP_CUT_OUT, KN_STACK_AWAY, TY_STRIKE, TY_TO_DOT, TY_LINE_FEED, TY_BRACKET_CLOSE, TY_TO_INDEX, TY_KEY_LAST, TY_UNDER_SINK, TY_FOLD_VERT }
 
     /** One shot of the video: a line (or a part of a long line) with its look decided. */
     static final class Cut {
@@ -193,6 +200,7 @@ final class LyricEngine {
         Scheme sc;
         Enter enter;
         Exit exit;
+        String hold = "breathe", treat = "none", camera = "", bg = "", fx = "", trans = "";
         long seed;
         Params params = new Params();
         double[] box = {W * 0.3, H * 0.35, W * 0.7, H * 0.65};   // where the text was last drawn, in picture pixels
@@ -315,6 +323,12 @@ final class LyricEngine {
                 c.params = def.plan().plan(new Rng(c.seed ^ 0x5BD1E995L), c, style);
                 c.enter = pick(Enter.values(), enterWeights(), r);
                 c.exit = pick(Exit.values(), exitWeights(), r);
+                c.hold = LyricRegistry.pick(LyricRegistry.HOLD, LyricRegistry.HOLD_W, r, style.horror);
+                c.treat = r.next() < 0.45 ? LyricRegistry.pick(LyricRegistry.TREAT, LyricRegistry.TREAT_W, r, style.horror) : "none";
+                c.camera = r.next() < 0.4 ? LyricRegistry.pick(LyricRegistry.CAMERA, LyricRegistry.CAMERA_W, r, style.horror) : "";
+                c.bg = r.next() < 0.7 ? LyricRegistry.pick(LyricRegistry.BG, LyricRegistry.BG_W, r, style.horror) : "";
+                c.fx = r.next() < 0.22 ? LyricRegistry.pick(LyricRegistry.FX, LyricRegistry.FX_W, r, style.horror) : "";
+                c.trans = r.next() < 0.5 ? LyricRegistry.pick(LyricRegistry.TRANS, LyricRegistry.TRANS_W, r, style.horror) : "";
                 cuts.add(c);
                 duration = Math.max(duration, c.end);
             }
@@ -362,14 +376,14 @@ final class LyricEngine {
     private double[] enterWeights() {
         Enter[] e = Enter.values();
         double[] w = new double[e.length];
-        for (int i = 0; i < e.length; i++) w[i] = look.offIn().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : e[i] == Enter.TYPE ? 0 : 1 + bias(style.enterBias, e[i].name().toLowerCase(Locale.ROOT).replace("_", ""));
+        for (int i = 0; i < e.length; i++) w[i] = (e[i].name().startsWith("HR_") && !style.horror) || look.offIn().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : e[i] == Enter.TYPE ? 0 : 1 + bias(style.enterBias, e[i].name().toLowerCase(Locale.ROOT).replace("_", ""));
         return anyOr(w);
     }
 
     private double[] exitWeights() {
         Exit[] e = Exit.values();
         double[] w = new double[e.length];
-        for (int i = 0; i < e.length; i++) w[i] = look.offOut().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : 1 + bias(style.exitBias, e[i].name().toLowerCase(Locale.ROOT).replace("_", ""));
+        for (int i = 0; i < e.length; i++) w[i] = (e[i].name().startsWith("HR_") && !style.horror) || look.offOut().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : 1 + bias(style.exitBias, e[i].name().toLowerCase(Locale.ROOT).replace("_", ""));
         return anyOr(w);
     }
 
@@ -526,6 +540,56 @@ final class LyricEngine {
             case WIND_BLOWN -> { s.dx = -inv * inv * 380 * K * (0.6 + r1); s.dy = (r2 - 0.5) * inv * 60 * K; s.rot = -inv * 2.5 * r3; s.alpha = clamp(p * 3); }
             case SHADOW_FIRST -> { s.ghost = (1 - clamp(p * 2)) * 0 + inv * 3; s.alpha = clamp(p * 1.6); s.dy = inv * 8 * K; }
             case TOKOROTEN -> { s.wipe = p; s.sx = 1 + inv * 0.3; s.dx = -inv * 30 * K; }
+            case CUT -> s.alpha = 1;
+            case SLIDE_L -> { s.dx = -inv * 420 * K; s.alpha = clamp(p * 3); }
+            case SLIDE_R -> { s.dx = inv * 420 * K; s.alpha = clamp(p * 3); }
+            case SLIDE_WHOLE -> { s.dx = -inv * inv * 520 * K; s.alpha = clamp(p * 4); }
+            case FLIP_Y -> { s.sy = Math.max(0.04, Math.abs(Math.cos(inv * Math.PI))); s.alpha = clamp(p * 5); }
+            case WAVE_IN -> { s.dy = Math.sin(p * 6 + gl.i * 0.9) * (1 - p) * 40 * K; s.alpha = clamp(p * 3); }
+            case SPIRAL_IN -> { double ang = inv * 4 + gl.i * 0.3, rad = inv * 70 * K; s.dx = Math.cos(ang) * rad; s.dy = Math.sin(ang) * rad; s.rot = inv * 2; s.alpha = clamp(p * 3); }
+            case ZOOM_OUT -> { s.sx = s.sy = 0.2 + 0.8 * e; s.ghost = inv * 6; s.alpha = clamp(p * 3); }
+            case RESOLVE -> { if (p < 0.6) s.ch = scramble(gl, step); s.ghost = inv * 12; s.alpha = clamp(p * 4); }
+            case MAGNET -> { s.dx = (gl.i % 2 == 0 ? -1 : 1) * inv * inv * 200 * K; s.dy = (r1 - 0.5) * inv * 30 * K; s.alpha = clamp(p * 4); }
+            case ZIPPER -> { s.dy = (gl.i % 2 == 0 ? -1 : 1) * inv * 60 * K; s.alpha = clamp(p * 4); }
+            case ZOOM_ALT -> { s.sx = s.sy = Math.max(0.05, 1 + inv * (gl.i % 2 == 0 ? 2 : -0.7)); s.alpha = clamp(p * 3); }
+            case TILT_UP -> { s.rot = -inv * 0.4; s.dy = inv * 30 * K; s.alpha = clamp(p * 3); }
+            case NOTE_UNFOLD -> { s.sx = 0.6 + 0.4 * e; s.sy = Math.max(0.02, e); s.alpha = clamp(p * 3); }
+            case SPLIT_FLAP -> { double qd = Math.floor(p * 5) / 5.0; if (p < 0.8) s.ch = scramble(gl, step); s.sy = Math.max(0.08, Math.abs(Math.cos((1 - qd) * Math.PI * 0.5))); s.alpha = clamp(p * 6); }
+            case LOADING_BAR -> s.wipe = Math.floor(p * 8) / 8.0;
+            case MATRIX_RAIN -> { s.dy = -inv * 140 * K * (0.5 + r1); if (p < 0.7) s.ch = scramble(gl, step); s.alpha = clamp(p * 3); }
+            case HATCH_FILL -> { s.wipe = p; s.ghost = inv * 5; s.alpha = clamp(p * 2); }
+            case BRUSH_REVEAL -> { s.wipe = p; s.dy = Math.sin(p * 9 + gl.i) * inv * 5 * K; s.ghost = inv * 4; }
+            case INK_DROP -> { s.dy = -inv * inv * 160 * K; s.sy = 1 + inv * 0.8; s.ghost = inv * 6; s.alpha = clamp(p * 5); }
+            case INVERT_BOX -> { s.ghost = inv * 10; s.sx = s.sy = 0.9 + 0.1 * e; s.alpha = p < 1 ? (hash(step, gl.i + 5) < p + 0.2 ? 1 : 0.3) : 1; }
+            case ECHO_COUNT -> { s.ghost = inv * 20; s.dx = inv * 12 * K; s.alpha = clamp(p * 3); }
+            case STROKE_ORDER -> { s.wipe = clamp(p * 1.4); s.ghost = inv * 3; }
+            case CLOCK_WIPE -> { s.wipe = p; s.rot = inv * 0.3; s.alpha = clamp(p * 4); }
+            case BUBBLES -> { s.dy = inv * 80 * K; s.dx = Math.sin(p * 8 + gl.i) * inv * 10 * K; s.sx = s.sy = Math.max(0.1, 0.3 + 0.7 * E.outBack(p)); s.alpha = clamp(p * 3); }
+            case HR_BLINK_CREEP -> s.alpha = p < 1 ? (hash(step / 3, gl.i + 2) < p * 0.8 ? 1 : 0) : 1;
+            case HR_JUMP_SCARE -> { s.sx = s.sy = 1 + Math.max(0, 0.3 - p) * 5; s.alpha = clamp(p * 20); }
+            case HR_UNEASY -> { s.dx = (hash(step, gl.i) - 0.5) * 8 * K * inv; s.rot = (hash(step + 3, gl.i) - 0.5) * 0.1 * inv; s.alpha = clamp(p * 1.6); }
+            case HR_VHOLD -> { s.dy = ((p * 3) % 1) * 40 * K * inv; s.bands = 3; s.bandDx = inv * 20 * K; s.alpha = clamp(p * 3); }
+            case HR_MIRROR_SNAP -> { s.sx = (p < 1 && step % 4 == 0) ? -1 : 1; s.alpha = clamp(p * 5); }
+            case HR_MANIFEST -> { s.ghost = inv * 16; s.alpha = p * p; }
+            case HR_CLAW_REVEAL -> { s.bands = 4; s.bandDx = inv * 50 * K * (gl.i % 2 == 0 ? 1 : -1); s.alpha = clamp(p * 3); }
+            case KN_WORD_SLAM -> { s.sx = s.sy = 1 + inv * inv * 2.8; s.dy = -inv * inv * 60 * K; s.alpha = clamp(p * 8); }
+            case KN_TYPE_TO_SLAM -> { if (p < 0.5) s.ch = scramble(gl, step); s.sx = s.sy = 1 + (1 - e) * 1.5 * (p < 0.5 ? 0 : 1); s.alpha = clamp(p * 6); }
+            case KN_REPLACE_IN -> { s.dy = inv * 40 * K * ((word & 1) == 0 ? 1 : -1); s.alpha = clamp(p * 4); }
+            case KN_HINGE_DROP -> { s.rot = -inv * 1.4; s.dy = -inv * 60 * K; s.dx = -inv * 30 * K; s.alpha = clamp(p * 4); }
+            case KN_LOOP_IN -> { s.rot = inv * Math.PI * 2; s.dx = -inv * 140 * K; s.alpha = clamp(p * 4); }
+            case KN_PUSH_IN -> { s.dx = ((word & 1) == 0 ? -1 : 1) * inv * inv * 400 * K; s.alpha = clamp(p * 4); }
+            case KN_INERTIA -> { s.dx = -Math.exp(-4 * p) * Math.cos(p * 9) * 160 * K; s.alpha = clamp(p * 6); }
+            case KN_WORD_SPIN -> { s.rot = inv * Math.PI * 2 * ((word & 1) == 0 ? 1 : -1); s.sx = s.sy = Math.max(0.05, e); s.alpha = clamp(p * 4); }
+            case KN_DIVE_IN -> { s.sx = s.sy = 1 + inv * inv * 3; s.dy = -inv * 80 * K; s.alpha = clamp(p * 4); }
+            case KN_STRETCH_OUT -> { s.sx = 1 + inv * 3; s.sy = Math.max(0.2, 1 - inv * 0.5); s.alpha = clamp(p * 4); }
+            case TY_KEY_FIRST -> s.alpha = gl.i == 0 ? clamp(p * 8) : clamp((p - 0.4) * 3);
+            case TY_LINE_WIPE -> { s.wipe = p; s.dx = -inv * 8 * K; }
+            case TY_ZOOM_ONE -> { double k1 = gl.i == 0 ? 1 + inv * 2 : 1; s.sx = s.sy = k1; s.alpha = clamp(p * 4); }
+            case TY_UNDER_LIFT -> { s.dy = inv * 20 * K; s.alpha = clamp(p * 3); }
+            case TY_DOT_GROW -> { s.sx = s.sy = Math.max(0.01, e * e); s.alpha = clamp(p * 5); }
+            case TY_BRACKET_OPEN -> { s.dx = ((gl.i % 9) - 4) * -inv * 14 * K; s.alpha = clamp(p * 3); }
+            case TY_RETYPE -> { if (p < 0.6 && hash(step / 2, gl.i) > p) s.ch = scramble(gl, step); s.alpha = clamp(p * 8); }
+            case TY_RUBY_DROP -> { s.dy = -inv * 30 * K; s.alpha = clamp(p * 4); }
         }
         double q = c.outDur > 0 ? clamp((lt - outStart - gl.i * (c.exit == Exit.BLUR_OUT_STAGGER || c.exit == Exit.DISSOLVE ? 0.04 : 0.01)) / c.outDur) : 0;
         if (q > 0) {
@@ -617,12 +681,50 @@ final class LyricEngine {
                 case MOSAIC_OUT -> { double k = Math.max(0.1, 1 - q * 0.6); s.sx *= k; s.sy *= k; a = hash(step / 2, gl.i * 11 + word) < 1 - q ? 1 - q * 0.5 : 0; }
                 case SCRIBBLE_OUT -> { s.rot += Math.sin(q * 30 + gl.i) * 0.25 * q; s.dx += Math.sin(q * 25 + gl.i * 2) * 8 * K * q; a = 1 - q * q; }
                 case CANDLE_OUT -> { s.dx += Math.sin(q * 14) * q * 6 * K; s.sy *= 1 + q * 0.3; s.dy -= q * 24 * K; s.ghost += q * 5; a = 1 - q; }
+                case CUT -> a = q < 0.999 ? 1 : 0;
+                case SLIDE_OUT_L -> { s.dx -= q * q * 480 * K; a = 1 - q * q; }
+                case SLIDE_OUT_R -> { s.dx += q * q * 480 * K; a = 1 - q * q; }
+                case SQUASH -> { s.sy *= Math.max(0.02, 1 - q * 0.95); s.sx *= 1 + q * 0.5; a = 1 - q * q; }
+                case SCORCH_OUT -> { s.ghost += q * 8; s.dy -= q * 20 * K; a = hash(step, gl.i + 3) < 1 - q ? 1 - q * 0.3 : 0; }
+                case ERASER_OUT -> { s.wipe = 1 - q; a = 1; }
+                case GLASS_BREAK -> { s.dx += (r1 - 0.5) * q * 100 * K; s.dy += q * q * 300 * K * (0.5 + r2); s.rot += (r3 - 0.5) * q * 3; a = 1 - q * q * q; }
+                case ZIP_OUT -> { s.wipe = 1 - q; s.dx += q * 90 * K; a = 1; }
+                case MATRIX_OUT -> { s.dy += q * q * 200 * K * (0.5 + r1); if (q > 0.1 && q < 1) s.ch = scramble(gl, step); a = 1 - q; }
+                case SNAKE_OUT -> { s.dx += Math.sin(q * 9 + gl.i * 0.6) * q * 30 * K; s.dy += q * q * 80 * K; a = 1 - q; }
+                case FAN_CLOSE -> { s.rot += q * 1.1; s.dx += q * 40 * K; s.dy -= q * 40 * K; a = 1 - q; }
+                case RGB_SPLIT_OUT -> { s.ghost += q * 20; s.dx += (r1 - 0.5) * q * 20 * K; a = 1 - q * q; }
+                case SHOCK_OUT -> { s.sx *= 1 + q * 0.6; s.ghost += q * 14; s.dx += (hash(step, gl.i) - 0.5) * q * 40 * K; a = 1 - q * q; }
+                case FLOOD_OUT -> { s.dy += q * 120 * K; s.sy *= 1 + q * 0.5; a = 1 - q; }
+                case HR_PULLED_DOWN -> { s.dy += q * q * 260 * K; s.sy *= 1 + q * 1.5; a = 1 - q * q; }
+                case HR_LOOK_BACK -> { s.sx *= Math.max(0.05, Math.cos(q * Math.PI * 0.5)); a = 1 - q * q; }
+                case HR_TURN_AWAY -> { s.dx += q * q * 60 * K * (gl.i % 2 == 0 ? 1 : -1); s.rot += q * 0.2; a = 1 - q; }
+                case HR_SHIVER -> { s.dx += Math.sin(step * 2.0 + gl.i) * 8 * K * q; a = 1 - q * q * q; }
+                case HR_SWALLOW -> { double k = Math.max(0.01, 1 - q); s.sx *= k; s.sy *= k; s.dy -= q * 10 * K; a = 1 - q * q; }
+                case HR_FLICKER_DIE -> a = hash(step, gl.i + 13) < (1 - q) * (1 - q) ? 1 : 0;
+                case HR_DRAIN -> { s.dy += q * 70 * K; s.ghost += q * 10; a = 1 - q; }
+                case KN_WORD_KICK -> { s.dx += q * q * 420 * K * ((word & 1) == 0 ? 1 : -1); s.rot += q * 0.6; a = 1 - q * q; }
+                case KN_PUSH_OUT -> { s.dx += ((word & 1) == 0 ? -1 : 1) * q * q * 420 * K; a = 1 - q * q; }
+                case KN_DIVE_GLYPH -> { s.sx *= 1 + q * q * 3; s.sy *= 1 + q * q * 3; a = 1 - q * q; }
+                case KN_LAUNCH -> { s.dy -= q * q * 400 * K; s.sy *= 1 + q * 1.2; a = 1 - q; }
+                case KN_WORD_BLINK -> a = hash(step / 2, word + 5) < 1 - q ? 1 : 0;
+                case KN_CLOSE_GAP -> { s.dx += ((gl.i % 10) - 4.5) * -q * 8 * K; a = 1 - q * q; }
+                case KN_JUMP_CUT_OUT -> { if (q > 0.3) { s.sx *= 1.12; s.sy *= 1.12; } a = q < 0.6 ? 1 : 0; }
+                case KN_STACK_AWAY -> { s.dy += q * 30 * K * ((word % 3) - 1); a = 1 - q * q; }
+                case TY_STRIKE -> { s.sy *= 1 - q * 0.3; a = 1 - q; }
+                case TY_TO_DOT -> { double k = Math.max(0.1, 1 - q * 0.9); s.sx *= k; s.sy *= k; a = 1 - q * q; }
+                case TY_LINE_FEED -> { s.dy += q * 40 * K; a = 1 - q; }
+                case TY_BRACKET_CLOSE -> { s.dx += (4 - (gl.i % 9)) * q * 12 * K; a = 1 - q * q; }
+                case TY_TO_INDEX -> { double k = 1 - q * 0.6; s.sx *= k; s.sy *= k; s.dy -= q * 30 * K; s.dx += q * 40 * K; a = 1 - q * q; }
+                case TY_KEY_LAST -> a = gl.i == 0 ? 1 - clamp(q * 3 - 2) : 1 - clamp(q * 2);
+                case TY_UNDER_SINK -> { s.dy += q * q * 30 * K; a = 1 - q; }
+                case TY_FOLD_VERT -> { s.sy *= Math.max(0.02, Math.abs(Math.cos(q * Math.PI * 0.5))); a = 1 - q * q; }
             }
             s.alpha *= a;
         }
         if (p >= 1 && q <= 0 && !it.noHold) {
             s.dy += Math.sin(lt * 1.7 + gl.i * 0.6) * 1.4 * K;
             s.ghost += 0.5 + hash(step / 3, gl.i) * 1.5;
+            if (look.holds() && c.hold != null) LyricHold.apply(c.hold, s, gl, lt, step, K, word, 1);
         }
         return s;
     }
@@ -666,12 +768,41 @@ final class LyricEngine {
                 }
                 if (look.decor()) decor(gb, c, ts, step);
             }
+            post(front, back, ts, step, px, py);
             if (look.frame() || look.hud()) hud(gb, ts, step);
             if (extra) tears(front, step);
             texture(front, step);
         } finally {
             gb.dispose();
             gf.dispose();
+        }
+    }
+
+    /** Camera move, screen effect and transition of the cut that is up, applied to the finished layers. */
+    private void post(BufferedImage front, BufferedImage back, double ts, long step, int px, int py) {
+        Cut c = null;
+        for (Cut k : cuts) if (ts >= k.start && ts < k.end) { c = k; break; }
+        if (c == null) return;
+        double lt = ts - c.start, dur = c.end - c.start;
+        try {
+            if (look.camera() && c.camera != null && !c.camera.isEmpty()) {
+                java.awt.geom.AffineTransform t = java.awt.geom.AffineTransform.getTranslateInstance(px, py);
+                t.concatenate(LyricCam.at(c.camera, lt, dur, step, W, H));
+                t.translate(-px, -py);
+                LyricFx.transform(front, t);
+                LyricFx.transform(back, t);
+            }
+            if (look.fx() && c.fx != null && !c.fx.isEmpty()) {
+                double fs = dur * (0.3 + 0.35 * hash(c.seed, 77));
+                if (lt >= fs && lt < fs + 0.4) LyricFx.apply(c.fx, front, back, (lt - fs) / 0.4, step, px, py, W, H, c.sc.accent(), c.sc.accent2());
+            }
+            if (look.trans() && c.trans != null && !c.trans.isEmpty() && lt < 0.45) {
+                double u = E.outCubic(clamp(lt / 0.45));
+                LyricFx.transition(c.trans, front, u, step, px, py, W, H);
+                LyricFx.transition(c.trans, back, u, step, px, py, W, H);
+            }
+        } catch (RuntimeException ex) {
+            // an effect that fails costs only this frame
         }
     }
 
@@ -704,6 +835,21 @@ final class LyricEngine {
         if (al <= 0.01) return;
         double cx = (c.box[0] + c.box[2]) / 2, cy = (c.box[1] + c.box[3]) / 2;
         double bw = c.box[2] - c.box[0], bh = c.box[3] - c.box[1];
+        g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        // the rest of the decorations: the ones this look names (by its weights) and now and then one more from the whole set
+        int drawn = 0;
+        double lt = ts - c.start;
+        for (String key : LyricRegistry.DECOR) {
+            if (drawn >= 3) break;
+            if (style.decor.getOrDefault(key, 0.0) <= 0 || LyricDecor.HANDLED.contains(key)) continue;
+            if (!has(c, key, 0.05)) continue;
+            LyricDecor.paint(key, g, sc, ts, lt, step, al, cx, cy, bw, bh, W, H, c.seed);
+            drawn++;
+        }
+        if (drawn < 3 && hash(c.seed, 991) < 0.45) {
+            String key = LyricRegistry.pick(LyricRegistry.DECOR, LyricRegistry.DECOR_W, new Rng(c.seed ^ 0x77L), style.horror);
+            if (!LyricDecor.HANDLED.contains(key)) LyricDecor.paint(key, g, sc, ts, lt, step, al, cx, cy, bw, bh, W, H, c.seed);
+        }
         g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         if (has(c, "rings", 0.12)) {
@@ -784,6 +930,7 @@ final class LyricEngine {
             double in = clamp((ts - c.start) / 0.2), out = clamp((c.end - ts) / 0.2);
             g.setColor(a(c.sc.bg(), Math.min(1, look.backdrop() / 100.0) * Math.min(in, out)));
             g.fill(new java.awt.geom.Rectangle2D.Double(0, 0, W, H));
+            LyricBg.paint(c.bg, g, c.sc, ts, ts - c.start, (long) Math.floor(ts / stepSec + 1e-6), Math.min(1, look.backdrop() / 100.0) * Math.min(in, out), W, H, c.seed);
         }
     }
 

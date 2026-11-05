@@ -291,12 +291,14 @@ final class LayerConfig {
         int seed = 1;                    // variation (each song mixes in its own)
         boolean motifs = true;           // Japanese motifs
         boolean newEffects = false;      // the effects added after its first version
+        boolean holds = true, treatments = true, cameraMoves = true, screenFx = true, transitions = true;   // idle motion, text treatments, camera moves, screen effects, cut transitions
 
         /** The video's look from these settings. */
         LyricEngine.Look look() {
             int fk = switch (font) { case "sans" -> 0; case "serif" -> 1; case "mono" -> 2; default -> -1; };
             return new LyricEngine.Look(java.util.Set.copyOf(offLayouts), java.util.Set.copyOf(offEnters), java.util.Set.copyOf(offExits), decor, frame, hud,
-                ghostPct, grainPct, fps, speedPct, backdropPct, haloPct, fk, textColor, accentColor);
+                ghostPct, grainPct, fps, speedPct, backdropPct, haloPct, fk, textColor, accentColor,
+                (holds ? 1 : 0) | (treatments ? 2 : 0) | (cameraMoves ? 4 : 0) | (screenFx ? 8 : 0) | (transitions ? 16 : 0));
         }
     }
 
@@ -446,6 +448,11 @@ final class LayerConfig {
             if (lm.get("avoid_enemies") instanceof Boolean b) ly.avoidEnemies = b;
             if (lm.get("layouts_off") instanceof List<?> l) { ly.offLayouts.clear(); for (Object o : l) if (o instanceof String t) ly.offLayouts.add(t); }
             if (lm.get("decorations") instanceof Boolean b) ly.decor = b;
+            if (lm.get("holds") instanceof Boolean b) ly.holds = b;
+            if (lm.get("treatments") instanceof Boolean b) ly.treatments = b;
+            if (lm.get("camera_moves") instanceof Boolean b) ly.cameraMoves = b;
+            if (lm.get("screen_effects") instanceof Boolean b) ly.screenFx = b;
+            if (lm.get("transitions") instanceof Boolean b) ly.transitions = b;
             if (lm.get("hud") instanceof Boolean b) ly.hud = b;
             if (lm.get("ghost_percent") instanceof Number n) ly.ghostPct = n.doubleValue();
             if (lm.get("grain_percent") instanceof Number n) ly.grainPct = n.doubleValue();
@@ -673,6 +680,11 @@ final class LayerConfig {
         ly.put("avoid_enemies", lyrics.avoidEnemies);
         ly.put("layouts_off", new java.util.ArrayList<>(lyrics.offLayouts));
         ly.put("decorations", lyrics.decor);
+        ly.put("holds", lyrics.holds);
+        ly.put("treatments", lyrics.treatments);
+        ly.put("camera_moves", lyrics.cameraMoves);
+        ly.put("screen_effects", lyrics.screenFx);
+        ly.put("transitions", lyrics.transitions);
         ly.put("hud", lyrics.hud);
         ly.put("ghost_percent", lyrics.ghostPct);
         ly.put("grain_percent", lyrics.grainPct);

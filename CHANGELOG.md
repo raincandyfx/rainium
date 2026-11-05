@@ -2,6 +2,19 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.11 (dev build)
+
+- **The rest of the effects.** Everything else from the original lyric video is in now, as condensed re-creations (simpler drawing, same names and ideas). Each line gets a mix picked by the look's taste:
+  - **144 ways in and 123 ways out** in all (50 and 37 more): cut, whole-line slides, flip, split flap, loading bar, matrix rain, hatch and brush reveals, ink drop, bubbles, clock wipe; exits such as glass break, matrix, snake, eraser, scorch, RGB split, shock and flood; plus the kinetic and typographic sets (word slam, hinge drop, inertia, dive, launch, close gap, key first or last, retype, to dot, to index, fold).
+  - **52 holds** for while the line is up (jitter, breathe, wave, heartbeat, jelly, echo trail, pluck, cursor and more).
+  - **62 text looks**: outline, double outline, extrude, long and hard shadow, glow, neon, chrome, rainbow, halftone, stripes, hatch, marker, highlight, karaoke fill, ransom, reflection, sticker and others.
+  - **66 backgrounds** (patterns such as seigaiha and asanoha, skies, skyline, mountains, waves, rain, snow, film strip, VHS, retro grid, split screens and more). They only show when the backdrop setting is above zero, so they don't cover the world by default.
+  - **36 camera moves** over the whole picture (pushes, pans, rolls, shakes, snaps, whip, crash zoom, vertigo).
+  - **69 screen effects** (slice, block, invert, flash, mosaic, chroma, bloom, posterise, static, CRT off, ripple and more) and **27 transitions** into a line (wipes, iris, doors, blinds, checker, push, whip, spin, ink blob, pixelate...).
+  - **130 decorations** (the weighted list the styles already name): marks, stamps, weather, interface bits, Japanese ornaments, paper and desk objects.
+  - Five new switches on the lyrics page: holds, text looks, camera moves, screen effects, transitions. The horror versions of all of these only come up in the horror styles.
+- Not yet tried in a real game. Some of the condensed ones are rough, and a few (such as the ruby ones) are not included.
+
 ## 0.9.10 (dev build)
 
 - **Face me.** A placement option for the Fixed panel: it keeps turning to face you as you move. It runs for a share of each line (100 % is the whole time, 50 % the first half) and/or a number of seconds (1 s is one second from the start of the line); after that it stays at the angle it had. If both are set, whichever ends first wins.

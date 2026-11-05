@@ -133,6 +133,11 @@ public final class LyricsScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "lyrics_motifs", ly.motifs, () -> { ly.motifs = !ly.motifs; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_new_effects", ly.newEffects, () -> { ly.newEffects = !ly.newEffects; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_decor", ly.decor, () -> { ly.decor = !ly.decor; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_holds", ly.holds, () -> { ly.holds = !ly.holds; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_treatments", ly.treatments, () -> { ly.treatments = !ly.treatments; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_camera", ly.cameraMoves, () -> { ly.cameraMoves = !ly.cameraMoves; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_screenfx", ly.screenFx, () -> { ly.screenFx = !ly.screenFx; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_transitions", ly.transitions, () -> { ly.transitions = !ly.transitions; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_frame", ly.frame, () -> { ly.frame = !ly.frame; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_hud", ly.hud, () -> { ly.hud = !ly.hud; save(); });
         y = number(g, mx, my, x, y, w, "lyrics_ghost", ly.ghostPct, " %", v -> { ly.ghostPct = v; save(); });

@@ -490,8 +490,11 @@ final class LyricKit {
             final Item item = it;
             LyricEngine.Enter enter = it.enter != null ? LyricEngine.Enter.valueOf(it.enter) : cut.enter;
             Function<GL, State> fn = gl -> engine.state(this, cut, enter, item, gl, ltI, lt, outStart, seed, step);
-            return drawItem(it, fn);
+            inMain = true;
+            try { return drawItem(it, fn); } finally { inMain = false; }
         }
+
+        boolean inMain;
 
         BB measureBox(Item it) {
             Layout l = layoutText(it);
@@ -570,8 +573,9 @@ final class LyricKit {
                     gg.setColor(a(sc.bg(), 0.85));
                     gg.draw(use);
                 }
-                if (it.fill) { gg.setColor(it.color); gg.fill(use); }
-                if (it.stroke > 0) {
+                boolean treated = inMain && engine.look.treat() && LyricTreat.paint(cut.treat, gg, use, it, gl, s, al, sc, this);
+                if (!treated && it.fill) { gg.setColor(it.color); gg.fill(use); }
+                if (!treated && it.stroke > 0) {
                     gg.setStroke(new BasicStroke((float) it.stroke, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     gg.setColor(it.strokeColor != null ? it.strokeColor : it.color);
                     gg.draw(use);
