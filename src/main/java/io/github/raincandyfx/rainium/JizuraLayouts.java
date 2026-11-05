@@ -582,6 +582,6 @@ final class JizuraLayouts {
 
         JizuraKinetic.init();
         JizuraCompose.init();
-        JizuraCompose2.init();
+        JizuraCompose2.init(); JizuraTypo.init();
     }
 }

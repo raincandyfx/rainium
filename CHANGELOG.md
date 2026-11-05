@@ -7,7 +7,7 @@ Rainium is in beta (0.x) until 1.0.0.
 - **No more border on the panel.** The corner brackets and the labels were the "border"; both are off by default now (switches on the lyrics page).
 - **Effects may spill over** the edge of the picture: "Keep on screen" is off by default.
 - **More settings:** font, text and accent colour, speed, backdrop, halo, panel roll, gap, frame, HUD, and per-way on/off lists for ways in and out.
-- **Eleven more JIZURA layouts** (50 in all): split screen, mirror, sideways, edge frame, hanko, genkou, quote, ruler, search bar, chat and notification.
+- **Sixteen more JIZURA layouts** (55 in all): split screen, mirror, sideways, edge frame, hanko, genkou, quote, ruler, search bar, chat, notification, and from its typography pack: key glyph between small text, cropped giant type, cross setting, text hidden by a band and ruled lines.
 - *Not yet tried in a real game.*
 
 ## 0.9.8 (dev build)
