@@ -29,42 +29,42 @@ final class JizuraCompose {
     private static final double W = Env.W, H = Env.H, U = Math.min(W, H);
 
     // ------------------------------------------------------------------ helpers
-    private static String strip(String t) { return t == null ? "" : t.replaceAll("\\s+", ""); }
-    private static boolean hasLatin(String t) { return t != null && t.matches("(?s).*[A-Za-z].*"); }
-    private static String flat(String t) { return hasLatin(t) ? t.trim().replaceAll("\\s+", " ") : strip(t); }
-    private static int gcount(String t) { return JizuraKit.glyphCount(t); }
-    private static List<String> chars(String s) { List<String> o = new ArrayList<>(); s.codePoints().forEach(cp -> o.add(new String(Character.toChars(cp)))); return o; }
-    private static String body(Env e) { List<String> f = e.st.fonts.get("body"); return f == null || f.isEmpty() ? "gothic_med" : f.get(0); }
-    private static String mono(Env e) { List<String> f = e.st.fonts.get("mono"); return f == null || f.isEmpty() ? "mono" : f.get(0); }
-    private static String two(int n) { return String.format(Locale.ROOT, "%02d", n); }
-    private static String lineNo(Env e) { return two(Math.max(0, e.cut.line) + 1); }
-    private static String fmtTime(double t) { int cs = (int) Math.max(0, t * 100); return String.format(Locale.ROOT, "%02d:%02d.%02d", cs / 6000, (cs / 100) % 60, cs % 100); }
-    private static double tout(Env e) { return 1 - E.inCubic(e.pOut); }
-    private static BB box(double x0, double y0, double x1, double y1) { return new BB(x0, y0, x1, y1); }
-    private static double smallSize(Env e) { return clamp(U * 0.024, 14, 34); }
-    private static double tin(Env e, double d, double len, DoubleUnaryOperator ease) { return ease.applyAsDouble(clamp((e.lt - d) / Math.max(0.01, len))); }
-    private static double tin(Env e, double d, double len) { return tin(e, d, len, E::outExpo); }
-    private static boolean isSmallKana(String c) { return "ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ".contains(c); }
-    private static boolean isPunct(String c) { return c.matches("[、。，．,.!?！？…‥・「」『』（）()【】〈〉《》〔〕［］\\[\\]'\"“”‘’〜～:：;；\\-—―]"); }
-    private static boolean isBad(String c) { return isSmallKana(c) || isPunct(c) || c.equals("ー") || c.equals(" "); }
+    static String strip(String t) { return t == null ? "" : t.replaceAll("\\s+", ""); }
+    static boolean hasLatin(String t) { return t != null && t.matches("(?s).*[A-Za-z].*"); }
+    static String flat(String t) { return hasLatin(t) ? t.trim().replaceAll("\\s+", " ") : strip(t); }
+    static int gcount(String t) { return JizuraKit.glyphCount(t); }
+    static List<String> chars(String s) { List<String> o = new ArrayList<>(); s.codePoints().forEach(cp -> o.add(new String(Character.toChars(cp)))); return o; }
+    static String body(Env e) { List<String> f = e.st.fonts.get("body"); return f == null || f.isEmpty() ? "gothic_med" : f.get(0); }
+    static String mono(Env e) { List<String> f = e.st.fonts.get("mono"); return f == null || f.isEmpty() ? "mono" : f.get(0); }
+    static String two(int n) { return String.format(Locale.ROOT, "%02d", n); }
+    static String lineNo(Env e) { return two(Math.max(0, e.cut.line) + 1); }
+    static String fmtTime(double t) { int cs = (int) Math.max(0, t * 100); return String.format(Locale.ROOT, "%02d:%02d.%02d", cs / 6000, (cs / 100) % 60, cs % 100); }
+    static double tout(Env e) { return 1 - E.inCubic(e.pOut); }
+    static BB box(double x0, double y0, double x1, double y1) { return new BB(x0, y0, x1, y1); }
+    static double smallSize(Env e) { return clamp(U * 0.024, 14, 34); }
+    static double tin(Env e, double d, double len, DoubleUnaryOperator ease) { return ease.applyAsDouble(clamp((e.lt - d) / Math.max(0.01, len))); }
+    static double tin(Env e, double d, double len) { return tin(e, d, len, E::outExpo); }
+    static boolean isSmallKana(String c) { return "ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ".contains(c); }
+    static boolean isPunct(String c) { return c.matches("[、。，．,.!?！？…‥・「」『』（）()【】〈〉《》〔〕［］\\[\\]'\"“”‘’〜～:：;；\\-—―]"); }
+    static boolean isBad(String c) { return isSmallKana(c) || isPunct(c) || c.equals("ー") || c.equals(" "); }
 
-    private static JizuraKit.Measure meas(String text, String font, double size, double track, double lead) {
+    static JizuraKit.Measure meas(String text, String font, double size, double track, double lead) {
         return JizuraKit.measure(new Item(text, font, size).track(track).lead(lead));
     }
-    private static double fit(String text, String font, double maxW, double maxH, double track, double lead) {
+    static double fit(String text, String font, double maxW, double maxH, double track, double lead) {
         return JizuraKit.fitSize(text, font, maxW, maxH, new Item("", "", 1).track(track).lead(lead));
     }
-    private static Item it(String text, String font, double size, double x, double y) { return new Item(text, font, size).at(x, y); }
+    static Item it(String text, String font, double size, double x, double y) { return new Item(text, font, size).at(x, y); }
 
     /** Readable text colour on a plate, preferring the scheme's own colours. */
-    private static Color onCol(JizuraNative.Scheme sc, Color plate) {
+    static Color onCol(JizuraNative.Scheme sc, Color plate) {
         double a = JizuraKit.contrast(sc.bg(), plate), b = JizuraKit.contrast(sc.fg(), plate);
         if (Math.max(a, b) >= 2.4) return a >= b ? sc.bg() : sc.fg();
         return JizuraKit.lum(plate) > 0.5 ? new Color(0x111111) : Color.WHITE;
     }
 
     /** A second line of copy: the plain lyric line when it differs, else the note, else the line number. */
-    private static String altCopy(Env e) {
+    static String altCopy(Env e) {
         Cut c = e.cut;
         if (c.lineText != null && !strip(c.lineText).isEmpty() && !strip(c.lineText).equals(strip(c.text))) return c.lineText;
         if (c.note != null && !c.note.isBlank()) return c.note;
@@ -72,10 +72,10 @@ final class JizuraCompose {
     }
 
     /** Text broken into balanced lines of at most about maxPer characters. */
-    private static String brk(String text, int maxPer) { return JizuraKit.splitLines(text.trim(), Math.max(1, maxPer)); }
+    static String brk(String text, int maxPer) { return JizuraKit.splitLines(text.trim(), Math.max(1, maxPer)); }
 
     /** k chunks of the text, at word boundaries where there are any. */
-    private static List<String> splitK(String text, int k) {
+    static List<String> splitK(String text, int k) {
         String t = text.trim();
         List<String> out = new ArrayList<>();
         if (k <= 1 || gcount(t) <= 1) { out.add(t); return out; }
@@ -85,7 +85,7 @@ final class JizuraCompose {
     }
 
     /** Single glyphs, with small kana and punctuation kept on the glyph before. */
-    private static List<String> charUnits(String text) {
+    static List<String> charUnits(String text) {
         List<String> out = new ArrayList<>();
         for (String ch : chars(strip(text))) {
             if (!out.isEmpty() && isBad(ch)) out.set(out.size() - 1, out.get(out.size() - 1) + ch);
