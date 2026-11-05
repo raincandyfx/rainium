@@ -582,6 +582,6 @@ final class LyricLayouts {
 
         LyricKinetic.init();
         LyricCompose.init();
-        LyricCompose2.init(); LyricTypo.init(); LyricTypo2.init();
+        LyricCompose2.init(); LyricTypo.init(); LyricTypo2.init(); LyricPaper.init();
     }
 }
