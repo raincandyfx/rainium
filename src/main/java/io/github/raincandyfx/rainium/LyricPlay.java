@@ -353,17 +353,18 @@ final class LyricPlay {
         env.rect(x0, y0, w, h, new Color(0x080808), a);
         String t = flat(env.cut.text);
         double size = h * 0.56, tw = meas(t, p.s("font"), size, 0.1, 1.2).w();
-        double off = Math.max(0, lt - 0.15) * p.d("speed");
-        double x = Math.max(x0 + w * 0.05, x0 + w - off), x2 = tw > w * 0.9 ? x0 + w - off : x0 + w / 2 - tw / 2;
         Color led = plate(env, sc.accent(), sc.fg());
+        double x;
+        if (tw <= w * 0.9) x = x0 + w / 2 - tw / 2 + Math.max(0, 0.35 - lt) * w * 1.2;
+        else x = x0 + w * 0.05 - Math.max(0, lt - 0.2) * Math.min(p.d("speed"), (tw - w * 0.9) / Math.max(0.5, env.dur() * 0.6));
         var old = env.g.getClip();
         env.g.clip(new Rectangle2D.Double(x0, y0, w, h));
-        BB bb = env.draw(it(t, p.s("font"), size, tw > w * 0.9 ? x2 : (lt < 0.5 ? x0 + w - off * 2 : x0 + w / 2 - tw / 2), y0 + h / 2).align(tw > w * 0.9 ? "left" : "left").track(0.1).color(led).alpha(a).noGhost());
+        env.draw(it(t, p.s("font"), size, x, y0 + h / 2).align("left").track(0.1).color(led).alpha(a).noGhost());
         env.g.setClip(old);
         int cols = (int) (w / (U * 0.012)), rows = (int) (h / (U * 0.012));
         for (int gy = 0; gy < rows; gy++) env.line(new double[][]{{x0, y0 + gy * h / rows}, {x0 + w, y0 + gy * h / rows}}, Color.BLACK, hair() * 2, 0.55 * a);
         for (int gx = 0; gx < cols; gx++) env.line(new double[][]{{x0 + gx * w / cols, y0}, {x0 + gx * w / cols, y0 + h}}, Color.BLACK, hair() * 2, 0.55 * a);
-        return bb != null ? bb : box(x0, y0, x0 + w, y0 + h);
+        return box(x0, y0, x0 + w, y0 + h);
     }
 
     // ------------------------------------------------------------------ billboard
