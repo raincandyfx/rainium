@@ -1,12 +1,12 @@
 package io.github.raincandyfx.rainium;
 
-import io.github.raincandyfx.rainium.JizuraKit.BB;
-import io.github.raincandyfx.rainium.JizuraKit.E;
-import io.github.raincandyfx.rainium.JizuraKit.Env;
-import io.github.raincandyfx.rainium.JizuraKit.GL;
-import io.github.raincandyfx.rainium.JizuraKit.Item;
-import io.github.raincandyfx.rainium.JizuraKit.Params;
-import io.github.raincandyfx.rainium.JizuraNative.Cut;
+import io.github.raincandyfx.rainium.LyricKit.BB;
+import io.github.raincandyfx.rainium.LyricKit.E;
+import io.github.raincandyfx.rainium.LyricKit.Env;
+import io.github.raincandyfx.rainium.LyricKit.GL;
+import io.github.raincandyfx.rainium.LyricKit.Item;
+import io.github.raincandyfx.rainium.LyricKit.Params;
+import io.github.raincandyfx.rainium.LyricEngine.Cut;
 
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
@@ -16,21 +16,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.github.raincandyfx.rainium.JizuraKit.DEG;
-import static io.github.raincandyfx.rainium.JizuraKit.TAU;
-import static io.github.raincandyfx.rainium.JizuraKit.clamp;
-import static io.github.raincandyfx.rainium.JizuraKit.lerp;
-import static io.github.raincandyfx.rainium.JizuraKit.r;
-import static io.github.raincandyfx.rainium.JizuraLayouts.def;
-import static io.github.raincandyfx.rainium.JizuraLayouts.fontPick;
+import static io.github.raincandyfx.rainium.LyricKit.DEG;
+import static io.github.raincandyfx.rainium.LyricKit.TAU;
+import static io.github.raincandyfx.rainium.LyricKit.clamp;
+import static io.github.raincandyfx.rainium.LyricKit.lerp;
+import static io.github.raincandyfx.rainium.LyricKit.r;
+import static io.github.raincandyfx.rainium.LyricLayouts.def;
+import static io.github.raincandyfx.rainium.LyricLayouts.fontPick;
 
 /**
- * JIZURA's kinetic layouts (word-timed stacks, turns, swaps, dives, flows, cuts and so on), ported from
- * its source (https://github.com/852wa/JIZURA, MIT, (c) 2026 hakoniwa). The picture is landscape, so the
+ * The kinetic layouts (word-timed stacks, turns, swaps, dives, flows, cuts and so on), ported from
+ * its source (see Credits). The picture is landscape, so the
  * portrait branches of the originals are left out.
  */
-final class JizuraKinetic {
-    private JizuraKinetic() {}
+final class LyricKinetic {
+    private LyricKinetic() {}
 
     private static final double W = Env.W, H = Env.H, U = Math.min(W, H);
 
@@ -38,7 +38,7 @@ final class JizuraKinetic {
     private static String strip(String t) { return t == null ? "" : t.replaceAll("\\s+", ""); }
     private static boolean hasLatin(String t) { return t != null && t.matches("(?s).*[A-Za-z].*"); }
     private static String flat(String t) { return hasLatin(t) ? t.trim().replaceAll("\\s+", " ") : strip(t); }
-    private static int gcount(String t) { return JizuraKit.glyphCount(t); }
+    private static int gcount(String t) { return LyricKit.glyphCount(t); }
     private static List<String> chars(String s) { List<String> o = new ArrayList<>(); s.codePoints().forEach(cp -> o.add(new String(Character.toChars(cp)))); return o; }
     private static String body(Env e) { List<String> f = e.st.fonts.get("body"); return f == null || f.isEmpty() ? "gothic_med" : f.get(0); }
     private static String mono(Env e) { List<String> f = e.st.fonts.get("mono"); return f == null || f.isEmpty() ? "mono" : f.get(0); }
@@ -49,26 +49,26 @@ final class JizuraKinetic {
     private static double[] rotV(double x, double y, double a) { double c = Math.cos(a * DEG), s = Math.sin(a * DEG); return new double[]{x * c - y * s, x * s + y * c}; }
     private static double sprg(double t, double k, double f) { return t <= 0 ? 1 : Math.exp(-k * t) * Math.cos(f * t); }
     private static double bellK(double k) { return Math.sin(Math.PI * clamp(k)); }
-    private static Color accOn(JizuraNative.Scheme sc) { return JizuraKit.contrast(sc.accent(), sc.bg()) >= 1.7 ? sc.accent() : sc.fg(); }
+    private static Color accOn(LyricEngine.Scheme sc) { return LyricKit.contrast(sc.accent(), sc.bg()) >= 1.7 ? sc.accent() : sc.fg(); }
 
-    private static Color onCol(JizuraNative.Scheme sc, Color fill) {
+    private static Color onCol(LyricEngine.Scheme sc, Color fill) {
         Color best = null;
         double bv = 0;
         for (Color c : new Color[]{sc.bg(), sc.fg(), sc.ink(), sc.accent(), sc.sub()}) {
             if (c == null || c.equals(fill)) continue;
-            double k = JizuraKit.contrast(c, fill);
+            double k = LyricKit.contrast(c, fill);
             if (k > bv) { bv = k; best = c; }
         }
-        return bv >= 2.6 ? best : JizuraKit.lum(fill) > 0.5 ? new Color(0x111111) : Color.WHITE;
+        return bv >= 2.6 ? best : LyricKit.lum(fill) > 0.5 ? new Color(0x111111) : Color.WHITE;
     }
 
     private static Item it(String text, String font, double size, double x, double y) { return new Item(text, font, size).at(x, y); }
 
-    private static JizuraKit.Measure meas(String text, String font, double size, double track, double lead) {
-        return JizuraKit.measure(new Item(text, font, size).track(track).lead(lead));
+    private static LyricKit.Measure meas(String text, String font, double size, double track, double lead) {
+        return LyricKit.measure(new Item(text, font, size).track(track).lead(lead));
     }
     private static double em(String text, String font, double track) { return meas(text, font, 100, track, 1.3).w() / 100; }
-    private static double fit(String text, String font, double maxW, double maxH, double track) { return JizuraKit.fitSize(text, font, maxW, maxH, new Item("", "", 1).track(track)); }
+    private static double fit(String text, String font, double maxW, double maxH, double track) { return LyricKit.fitSize(text, font, maxW, maxH, new Item("", "", 1).track(track)); }
 
     /** The cut's word chunks, merged or split to a usable count. */
     private static List<String> unitsOf(Cut cut, int maxU, int minU) {
@@ -109,7 +109,7 @@ final class JizuraKinetic {
             return new String[]{t.substring(0, bi).trim(), t.substring(bi + 1).trim()};
         }
         int n = chars(t).size();
-        String[] parts = JizuraKit.splitLines(t, (int) Math.ceil(n / 2.0)).split("\n");
+        String[] parts = LyricKit.splitLines(t, (int) Math.ceil(n / 2.0)).split("\n");
         return parts.length >= 2 ? new String[]{parts[0], String.join("", Arrays.copyOfRange(parts, 1, parts.length))} : new String[]{t};
     }
 
@@ -168,7 +168,7 @@ final class JizuraKinetic {
     }
 
     private static Flow flow(List<String> units, String font, double maxW, double maxH, double maxSize, double track) {
-        return flowUnits(units, font, maxW, maxH, maxSize, 4, track, units.stream().anyMatch(JizuraKinetic::hasLatin) ? 0.32 : 0.08, 1.22);
+        return flowUnits(units, font, maxW, maxH, maxSize, 4, track, units.stream().anyMatch(LyricKinetic::hasLatin) ? 0.32 : 0.08, 1.22);
     }
 
     // ------------------------------------------------------------------ registration
@@ -176,51 +176,51 @@ final class JizuraKinetic {
         def("knSlamStack", "積み上げ", n -> n >= 2 && n <= 18,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("align", rng.pick("center", "center", "left", "right")).with("from", rng.pick("scale", "scale", "drop", "side"))
                 .with("acc", rng.integer(0, 5)).with("tilt", rng.chance(0.35) ? rng.range(2, 4) * rng.pick(1, -1) : 0).with("rule", rng.chance(0.55)),
-            JizuraKinetic::slamStack);
+            LyricKinetic::slamStack);
         def("knQuarterTurn", "直角ターン", n -> n >= 2 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "serif")).with("sgn", rng.pick(1, -1)).with("acc", rng.integer(0, 3)).with("joint", rng.chance(0.6)),
-            JizuraKinetic::quarterTurn);
+            LyricKinetic::quarterTurn);
         def("knSwapCenter", "入れ替わり", n -> n >= 2 && n <= 18,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("fontL", fontPick(rng, st, "display", "serif")).with("mode", rng.pick("roll", "punch", "slide", "roll"))
                 .with("ticks", rng.chance(0.7)).with("acc", rng.chance(0.5)),
-            JizuraKinetic::swapCenter);
+            LyricKinetic::swapCenter);
         def("knZoomDive", "文字へ潜る", n -> n >= 2 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "serif")).with("cap", rng.chance(0.75)).with("acc", rng.chance(0.5)),
-            JizuraKinetic::zoomDive);
+            LyricKinetic::zoomDive);
         def("knFlowSnap", "流れて整列", n -> n >= 3 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "body")).with("amp", rng.range(0.1, 0.16)).with("lam", rng.range(0.45, 0.7)).with("grid", rng.pick("cells", "cells", "rules")).with("acc", rng.integer(0, 15)),
-            JizuraKinetic::flowSnap);
+            LyricKinetic::flowSnap);
         def("knSeesaw", "シーソー", n -> n >= 2 && n <= 14,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("order", rng.pick("lr", "lr", "out")).with("acc", rng.chance(0.5)).with("fulc", rng.pick("tri", "tri", "round")),
-            JizuraKinetic::seesaw);
+            LyricKinetic::seesaw);
         def("knTypeSlam", "タイプ→スラム", n -> n >= 2 && n <= 24,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("key", rng.pick("long", "long", "last")).with("side", rng.pick("below", "below", "above")).with("burst", rng.chance(0.7)),
-            JizuraKinetic::typeSlam);
+            LyricKinetic::typeSlam);
         def("knRhythmCuts", "語のカット割り", n -> n >= 2 && n <= 18,
             (rng, cut, st) -> {
                 List<String> sh = new ArrayList<>(SHOTS);
                 for (int i = sh.size() - 1; i > 0; i--) { int j = rng.integer(0, i); String t = sh.get(i); sh.set(i, sh.get(j)); sh.set(j, t); }
                 return new Params().with("font", fontPick(rng, st, "display")).with("fontB", fontPick(rng, st, "display", "serif")).with("shots", sh).with("side", rng.pick(1, -1)).with("fin", rng.pick("center", "center", "left"));
             },
-            JizuraKinetic::rhythmCuts);
+            LyricKinetic::rhythmCuts);
         def("knPathRide", "ループ軌道", n -> n >= 2 && n <= 14,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("side", rng.pick(1, 1, -1)).with("rail", rng.pick("dash", "line", "dots")).with("acc", rng.chance(0.5)),
-            JizuraKinetic::pathRide);
+            LyricKinetic::pathRide);
         def("knGearWords", "歯車", n -> n >= 2 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("dir", rng.pick(1, -1)).with("fillMode", rng.pick("alt", "alt", "ink", "ring")),
-            JizuraKinetic::gearWords);
+            LyricKinetic::gearWords);
         def("knCollide", "正面衝突", n -> n >= 2 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("acc", rng.pick("A", "B", "none")).with("spark", rng.chance(0.8)).with("at", rng.range(0.28, 0.36)),
-            JizuraKinetic::collide);
+            LyricKinetic::collide);
         def("knTumble", "箱転がし", n -> n >= 2 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("box", rng.pick("plate", "frame", "none")).with("acc", rng.integer(0, 5)).with("floor", rng.chance(0.7)),
-            JizuraKinetic::tumble);
+            LyricKinetic::tumble);
         def("knReflow", "縦から横へ", n -> n >= 2 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "serif", "display")).with("dir", "v2h").with("swirl", rng.pick(1, -1)).with("at", rng.range(0.36, 0.46)),
-            JizuraKinetic::reflow);
+            LyricKinetic::reflow);
         def("knPadGrid", "パッド", n -> n >= 2 && n <= 18,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("round", rng.chance(0.5)).with("flash", rng.pick("accent", "accent", "ink")).with("beat", rng.chance(0.7)),
-            JizuraKinetic::padGrid);
+            LyricKinetic::padGrid);
     }
 
     // ================================================================== 1 knSlamStack
@@ -307,7 +307,7 @@ final class JizuraKinetic {
         for (int i = 0; i < n; i++) {
             L[i] = em(units.get(i), font, 0.03);
             List<String> cs = chars(units.get(i).trim());
-            lastAdv[i] = JizuraKit.adv(font, cs.isEmpty() ? "字" : cs.get(cs.size() - 1));
+            lastAdv[i] = LyricKit.adv(font, cs.isEmpty() ? "字" : cs.get(cs.size() - 1));
         }
         double sgn = Pm.d("sgn");
         double[] ga = new double[n], gcx = new double[n], gcy = new double[n], gex = new double[n], gey = new double[n];
@@ -441,16 +441,16 @@ final class JizuraKinetic {
             if (e < 1) {
                 int i = k - 1;
                 double s0 = Math.min(Math.min(fit(units.get(i), font, W * 0.78, H * 0.4, 0.02), H * 0.34), W * 0.6);
-                JizuraKit.Layout lay = JizuraKit.layoutText(new Item(units.get(i), font, 1).track(0.02));
+                LyricKit.Layout lay = LyricKit.layoutText(new Item(units.get(i), font, 1).track(0.02));
                 GL focusG = null;
                 List<GL> gs = new ArrayList<>();
                 for (GL g : lay) if (!g.ch.isBlank()) gs.add(g);
-                for (GL g : gs) if (JizuraKit.isKanji(g.ch)) { focusG = g; break; }
+                for (GL g : gs) if (LyricKit.isKanji(g.ch)) { focusG = g; break; }
                 if (focusG == null && !gs.isEmpty()) focusG = gs.get(gs.size() / 2);
                 double fx = focusG == null ? 0 : focusG.x, fy = focusG == null ? 0 : focusG.y;
                 double px = lerp(cx + fx * s0, cx, E.inOutCubic(e)), py = lerp(cy + fy * s0, cy, E.inOutCubic(e));
                 double s = Math.exp(Math.pow(e, 1.6) * Math.log(36));
-                Item item = it(units.get(i), font, s0 * s, px - fx * s0 * s, py - fy * s0 * s).track(0.02).alpha(1 - JizuraKit.smooth(0.55, 1, e)).color(acc && i % 2 == 1 ? accC : sc.fg()).mi(miAt(env, ts[i]));
+                Item item = it(units.get(i), font, s0 * s, px - fx * s0 * s, py - fy * s0 * s).track(0.02).alpha(1 - LyricKit.smooth(0.55, 1, e)).color(acc && i % 2 == 1 ? accC : sc.fg()).mi(miAt(env, ts[i]));
                 item.noHold = true;
                 env.mainDraw(item);
             }
@@ -480,7 +480,7 @@ final class JizuraKinetic {
         List<String> cs = chars(t0);
         int n = cs.size();
         String ft; double trk;
-        if (lat) { ft = JizuraKit.splitLines(t0, 18); trk = 0.02; }
+        if (lat) { ft = LyricKit.splitLines(t0, 18); trk = 0.02; }
         else {
             int m = n, c0 = Math.max(2, Math.min(6, (int) Math.ceil(Math.sqrt(m * 1.6)))), cols = (int) Math.ceil(m / Math.ceil(m / (double) c0));
             List<String> rows = new ArrayList<>();
@@ -488,8 +488,8 @@ final class JizuraKinetic {
             ft = String.join("\n", rows); trk = 0.3;
         }
         double lead = lat ? 1.25 : 1.3;
-        double fsz = Math.min(JizuraKit.fitSize(ft, font, W * 0.8, H * 0.62, new Item("", "", 1).track(trk).lead(lead)), H * 0.2);
-        JizuraKit.Layout lay = JizuraKit.layoutText(new Item(ft, font, fsz).track(trk).lead(lead).align(lat ? "center" : "left"));
+        double fsz = Math.min(LyricKit.fitSize(ft, font, W * 0.8, H * 0.62, new Item("", "", 1).track(trk).lead(lead)), H * 0.2);
+        LyricKit.Layout lay = LyricKit.layoutText(new Item(ft, font, fsz).track(trk).lead(lead).align(lat ? "center" : "left"));
         double ox = W / 2 - (lat ? 0 : lay.W / 2), oy = H / 2;
         List<GL> gl = new ArrayList<>();
         for (GL g : lay) gl.add(g);
@@ -497,7 +497,7 @@ final class JizuraKinetic {
         double tS = clamp(env.dur() * 0.42, 0.45, 1.5);
         double[] advs = new double[gn];
         double totA = 0;
-        for (int i = 0; i < gn; i++) { advs[i] = JizuraKit.adv(font, gl.get(i).ch) * 1.08 + (i > 0 && gl.get(i).li != gl.get(i - 1).li ? 0.35 : 0); totA += advs[i]; }
+        for (int i = 0; i < gn; i++) { advs[i] = LyricKit.adv(font, gl.get(i).ch) * 1.08 + (i > 0 && gl.get(i).li != gl.get(i - 1).li ? 0.35 : 0); totA += advs[i]; }
         double fs = Math.min(H * 0.15, W * 0.95 / Math.max(4, totA));
         double[] offs = new double[gn];
         double acc0 = 0;
@@ -533,7 +533,7 @@ final class JizuraKinetic {
                 for (int q2 = 0; q2 <= cols; q2++) { double x = gx0 + q2 * cell; env.line(new double[][]{{x, gy0}, {x, gy0 + rows * rh * ge}}, sc.sub(), lw, 0.55); }
             } else {
                 for (int li = 0; li < lines.length; li++) {
-                    double w = JizuraKit.measure(new Item(lines[li], font, fsz).track(trk)).w(), y = oy + (li - (lines.length - 1) / 2.0) * rh + fsz * 0.62;
+                    double w = LyricKit.measure(new Item(lines[li], font, fsz).track(trk)).w(), y = oy + (li - (lines.length - 1) / 2.0) * rh + fsz * 0.62;
                     double x0 = lat ? W / 2 - w / 2 : ox;
                     env.line(new double[][]{{x0, y}, {x0 + w * ge, y}}, sc.sub(), lw * 1.5, 0.7);
                 }
@@ -637,7 +637,7 @@ final class JizuraKinetic {
             bb = ub(bb, env.mainDraw(it(key, font, ks * (1 + 2.4 * f), W / 2, ky).sx(1 + sq * 0.5).sy(1 - sq).track(0.01).alpha(clamp(q * 4)).color(sc.fg()).mi(miAt(env, tS))));
             if (Pm.b("burst") && land > 0 && land < 0.5) {
                 double a = 1 - land / 0.5, R0 = ks * 0.9, lw = Math.max(2, U * 0.004);
-                JizuraKit.Measure mK = meas(key, font, ks, 0.01, 1.3);
+                LyricKit.Measure mK = meas(key, font, ks, 0.01, 1.3);
                 for (int j = 0; j < 10; j++) {
                     double an = (j / 10.0) * TAU + r(c.seed, j, 5, 0) * 0.4, r0 = Math.max(mK.w(), mK.h()) * 0.55 + R0 * 0.15 + land * U * 0.25, r1 = r0 + U * 0.05 * a;
                     double syy = mK.h() / Math.max(mK.w(), mK.h()) + 0.35;
@@ -681,10 +681,10 @@ final class JizuraKinetic {
             if (shot.equals("huge")) item.size = Math.min(fit(t, font, W * 0.82, H * 0.6, 0.02), H * 0.54);
             else if (shot.equals("vert") && !hasLatin(t)) {
                 item.text = vtxt; item.vertical = true; item.x = W / 2 + side * W * 0.22;
-                item.size = Math.min(JizuraKit.fitSize(vtxt, font, W * 0.4, H * 0.8, new Item("", "", 1).vertical(true).track(0.02)), W * 0.26);
+                item.size = Math.min(LyricKit.fitSize(vtxt, font, W * 0.4, H * 0.8, new Item("", "", 1).vertical(true).track(0.02)), W * 0.26);
             } else if (shot.equals("small") || shot.equals("vert")) {
                 item.size = Math.min(fit(t, fontB, W * 0.4, H * 0.12, 0.12), H * 0.1); item.font = fontB; item.track = 0.12;
-                JizuraKit.Measure m = JizuraKit.measure(item);
+                LyricKit.Measure m = LyricKit.measure(item);
                 double pw = m.w() / 2 + item.size * 0.8, ph = m.h() / 2 + item.size * 0.6, L = item.size * 0.6, lw = Math.max(2, U * 0.003), e = E.outExpo(dt / 0.2);
                 for (int[] ab : new int[][]{{-1, -1}, {1, -1}, {1, 1}, {-1, 1}}) {
                     double cx = W / 2 + ab[0] * pw * (1.3 - 0.3 * e), cy = H / 2 + ab[1] * ph * (1.3 - 0.3 * e);
@@ -692,7 +692,7 @@ final class JizuraKinetic {
                 }
             } else if (shot.equals("crop")) {
                 item.size = Math.min(fit(t, font, W * 1.02, H * 0.7, 0), H * 0.66); item.align = "left"; item.track = 0;
-                JizuraKit.Measure m = JizuraKit.measure(item);
+                LyricKit.Measure m = LyricKit.measure(item);
                 item.x = W * 0.97 - m.w(); item.y = H / 2 + H * 0.04;
             } else if (shot.equals("band")) {
                 item.size = Math.min(fit(t, font, W * 0.8, H * 0.24, 0.06), H * 0.22); item.track = 0.06;
@@ -759,7 +759,7 @@ final class JizuraKinetic {
         int n = cs.size();
         double[] adv = new double[n], offs = new double[n];
         double Lt = 0;
-        for (int i = 0; i < n; i++) { adv[i] = JizuraKit.adv(font, cs.get(i)) * size * 1.04; offs[i] = Lt + adv[i] / 2; Lt += adv[i]; }
+        for (int i = 0; i < n; i++) { adv[i] = LyricKit.adv(font, cs.get(i)) * size * 1.04; offs[i] = Lt + adv[i] / 2; Lt += adv[i]; }
         double R = clamp(Lt / TAU * 1.15, size * 1.5, Math.min(H * 0.28, W * 0.3));
         int side = Pm.i("side");
         double yL = H / 2 + side * R * 0.6;
@@ -771,7 +771,7 @@ final class JizuraKinetic {
         sHead += E.inCubic(env.pOut) * W * 1.3;
         double out = tout(env);
         Color accC = accOn(sc);
-        double ra = E.outCubic(lt / 0.3) * out * (1 - 0.6 * JizuraKit.smooth(T, T + 0.5, lt));
+        double ra = E.outCubic(lt / 0.3) * out * (1 - 0.6 * LyricKit.smooth(T, T + 0.5, lt));
         if (ra > 0.01) {
             double lw = Math.max(1.2, U * 0.0022);
             List<double[]> pts = new ArrayList<>();
@@ -800,8 +800,8 @@ final class JizuraKinetic {
         double[] rs0 = new double[n];
         for (int i = 0; i < n; i++) {
             String t = units.get(i);
-            txt[i] = !hasLatin(t) && gcount(t) > 3 ? JizuraKit.splitLines(strip(t), (int) Math.ceil(gcount(t) / 2.0)) : t;
-            JizuraKit.Measure m = meas(txt[i], font, 1, 0.02, 1.05);
+            txt[i] = !hasLatin(t) && gcount(t) > 3 ? LyricKit.splitLines(strip(t), (int) Math.ceil(gcount(t) / 2.0)) : t;
+            LyricKit.Measure m = meas(txt[i], font, 1, 0.02, 1.05);
             rs0[i] = Math.hypot(m.w(), m.h()) / 2 * 1.12 + 0.18;
         }
         double[] sorted = rs0.clone();
@@ -969,12 +969,12 @@ final class JizuraKinetic {
         int vCols = n <= 5 ? 1 : n <= 12 ? 2 : 3, per = (int) Math.ceil(n / (double) vCols);
         List<String> vt = new ArrayList<>();
         for (int i = 0; i < n; i += per) vt.add(String.join("", cs.subList(i, Math.min(n, i + per))));
-        String vtext = String.join("\n", vt), htext = JizuraKit.splitLines(t0, lat ? 20 : 14);
-        double sv = Math.min(JizuraKit.fitSize(vtext, font, W * 0.5, H * 0.8, new Item("", "", 1).vertical(true).lead(1.3).track(0.04)), W * 0.3);
-        double sh = Math.min(JizuraKit.fitSize(htext, font, W * 0.84, H * 0.4, new Item("", "", 1).lead(1.25).track(0.04)), H * 0.24);
+        String vtext = String.join("\n", vt), htext = LyricKit.splitLines(t0, lat ? 20 : 14);
+        double sv = Math.min(LyricKit.fitSize(vtext, font, W * 0.5, H * 0.8, new Item("", "", 1).vertical(true).lead(1.3).track(0.04)), W * 0.3);
+        double sh = Math.min(LyricKit.fitSize(htext, font, W * 0.84, H * 0.4, new Item("", "", 1).lead(1.25).track(0.04)), H * 0.24);
         List<GL> LV = new ArrayList<>(), LH = new ArrayList<>();
-        for (GL g : JizuraKit.layoutText(new Item(vtext, font, sv).vertical(true).lead(1.3).track(0.04))) if (!g.ch.isBlank()) LV.add(g);
-        for (GL g : JizuraKit.layoutText(new Item(htext, font, sh).lead(1.25).track(0.04))) if (!g.ch.isBlank()) LH.add(g);
+        for (GL g : LyricKit.layoutText(new Item(vtext, font, sv).vertical(true).lead(1.3).track(0.04))) if (!g.ch.isBlank()) LV.add(g);
+        for (GL g : LyricKit.layoutText(new Item(htext, font, sh).lead(1.25).track(0.04))) if (!g.ch.isBlank()) LH.add(g);
         boolean h2v = Pm.s("dir").equals("h2v");
         List<GL> A = h2v ? LH : LV, B = h2v ? LV : LH;
         double sA = h2v ? sh : sv, sB = h2v ? sv : sh;

@@ -1,13 +1,13 @@
 package io.github.raincandyfx.rainium;
 
-import io.github.raincandyfx.rainium.JizuraKit.BB;
-import io.github.raincandyfx.rainium.JizuraKit.E;
-import io.github.raincandyfx.rainium.JizuraKit.Env;
-import io.github.raincandyfx.rainium.JizuraKit.Item;
-import io.github.raincandyfx.rainium.JizuraKit.Params;
-import io.github.raincandyfx.rainium.JizuraKit.Rng;
-import io.github.raincandyfx.rainium.JizuraNative.Cut;
-import io.github.raincandyfx.rainium.JizuraNative.Style;
+import io.github.raincandyfx.rainium.LyricKit.BB;
+import io.github.raincandyfx.rainium.LyricKit.E;
+import io.github.raincandyfx.rainium.LyricKit.Env;
+import io.github.raincandyfx.rainium.LyricKit.Item;
+import io.github.raincandyfx.rainium.LyricKit.Params;
+import io.github.raincandyfx.rainium.LyricKit.Rng;
+import io.github.raincandyfx.rainium.LyricEngine.Cut;
+import io.github.raincandyfx.rainium.LyricEngine.Style;
 
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
@@ -18,29 +18,29 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.IntPredicate;
 
-import static io.github.raincandyfx.rainium.JizuraKit.DEG;
-import static io.github.raincandyfx.rainium.JizuraKit.TAU;
-import static io.github.raincandyfx.rainium.JizuraKit.a;
-import static io.github.raincandyfx.rainium.JizuraKit.clamp;
-import static io.github.raincandyfx.rainium.JizuraKit.fitSize;
-import static io.github.raincandyfx.rainium.JizuraKit.glyphCount;
-import static io.github.raincandyfx.rainium.JizuraKit.lerp;
-import static io.github.raincandyfx.rainium.JizuraKit.lum;
-import static io.github.raincandyfx.rainium.JizuraKit.measure;
-import static io.github.raincandyfx.rainium.JizuraKit.mix;
-import static io.github.raincandyfx.rainium.JizuraKit.r;
-import static io.github.raincandyfx.rainium.JizuraKit.rr;
-import static io.github.raincandyfx.rainium.JizuraKit.rs;
-import static io.github.raincandyfx.rainium.JizuraKit.splitLines;
+import static io.github.raincandyfx.rainium.LyricKit.DEG;
+import static io.github.raincandyfx.rainium.LyricKit.TAU;
+import static io.github.raincandyfx.rainium.LyricKit.a;
+import static io.github.raincandyfx.rainium.LyricKit.clamp;
+import static io.github.raincandyfx.rainium.LyricKit.fitSize;
+import static io.github.raincandyfx.rainium.LyricKit.glyphCount;
+import static io.github.raincandyfx.rainium.LyricKit.lerp;
+import static io.github.raincandyfx.rainium.LyricKit.lum;
+import static io.github.raincandyfx.rainium.LyricKit.measure;
+import static io.github.raincandyfx.rainium.LyricKit.mix;
+import static io.github.raincandyfx.rainium.LyricKit.r;
+import static io.github.raincandyfx.rainium.LyricKit.rr;
+import static io.github.raincandyfx.rainium.LyricKit.rs;
+import static io.github.raincandyfx.rainium.LyricKit.splitLines;
 
 /**
- * JIZURA's core layouts, ported from its source (https://github.com/852wa/JIZURA, MIT, © 2026 hakoniwa)
+ * The core layouts, ported from its source (see Credits)
  * to Java: center, mixed, vcols, marquee, tile, scatter, ring, wave, huge, labels, condensed, gloss,
  * type, diag, circle, stack and pill. Each has a plan (choices made once per cut) and a render
- * (what's drawn at a moment), written against the same kind of drawing calls (JizuraKit.Env).
+ * (what's drawn at a moment), written against the same kind of drawing calls (LyricKit.Env).
  */
-final class JizuraLayouts {
-    private JizuraLayouts() {}
+final class LyricLayouts {
+    private LyricLayouts() {}
 
     interface Plan { Params plan(Rng rng, Cut cut, Style st); }
     interface Render { BB render(Env env); }
@@ -109,7 +109,7 @@ final class JizuraLayouts {
                     if ("ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ".contains(ch)) k *= 0.8;
                     fonts[i] = (kanji || kata) ? P.s("fontBig") : (r(s, i, 4) < 0.55 ? P.s("fontSmall") : P.s("fontBig"));
                     ks[i] = k;
-                    ws[i] = JizuraKit.adv(fonts[i], ch) * k * 0.96;
+                    ws[i] = LyricKit.adv(fonts[i], ch) * k * 0.96;
                 }
                 BB all = null;
                 for (int rI = 0; rI < rows; rI++) {
@@ -224,7 +224,7 @@ final class JizuraLayouts {
                 double size = Math.min(fitSize(mt, P.s("font"), W * 0.8, H * 0.34, new Item("", "", 1).track(0.04).lead(1.15)), H * 0.3);
                 Item it = new Item(mt, P.s("font"), size).at(W / 2, H / 2).track(0.04).lead(1.15).color(env.sc.fg());
                 if (P.s("knock").equals("box")) {
-                    JizuraKit.Measure m = measure(it);
+                    LyricKit.Measure m = measure(it);
                     double e = E.outExpo(env.pIn * 1.4);
                     env.rect(W / 2 - (m.w() / 2 + size * 0.35) * e, H / 2 - m.h() / 2 - size * 0.28, (m.w() + size * 0.7) * e, m.h() + size * 0.56, env.sc.bg(), 1);
                 } else {
@@ -341,7 +341,7 @@ final class JizuraLayouts {
                 if (P.b("label")) {
                     double ls = clamp(H * 0.028, 16, 30);
                     double al = E.outCubic(clamp((env.lt - env.cut.inDur * 0.5) / 0.2)) * (1 - env.pOut);
-                    JizuraKit.Measure lt = measure(new Item(env.cut.text, body(env), ls).track(0.12));
+                    LyricKit.Measure lt = measure(new Item(env.cut.text, body(env), ls).track(0.12));
                     env.rect(W * 0.05, H * 0.86 - ls, lt.w() + ls * 1.4, ls * 2, env.sc.ink(), al);
                     env.draw(new Item(env.cut.text, body(env), ls).track(0.12).align("left").at(W * 0.05 + ls * 0.7, H * 0.86).color(env.sc.bg()).alpha(al).noGhost());
                 }
@@ -365,7 +365,7 @@ final class JizuraLayouts {
                 class Label {
                     void draw(String u, double x, double y, double rot, double fs, double q) {
                         if (q <= 0) return;
-                        JizuraKit.Measure m = measure(new Item(u, P.s("font"), fs).track(0.04));
+                        LyricKit.Measure m = measure(new Item(u, P.s("font"), fs).track(0.04));
                         double w = m.w() + fs * 0.7, h = fs * 1.36;
                         AffineTransform keep = env.g.getTransform();
                         env.g.translate(x, y); env.g.rotate(rot * DEG); env.g.scale(q, q);
@@ -466,7 +466,7 @@ final class JizuraLayouts {
                 double x = left ? W * 0.13 : W / 2;
                 if (P.b("prompt")) env.draw(new Item(">", mono(env), size * 0.8).at((left ? x : x - measure(new Item(text, P.s("font"), size).track(0.06)).w() / 2) - size * 0.9, H / 2 - (text.split("\n").length - 1) * size * 0.67).color(env.sc.accent()).noGhost());
                 Item it = new Item(text, P.s("font"), size).at(x, H / 2).align(left ? "left" : "center").track(0.06).lead(1.35).color(env.sc.fg());
-                if (env.cut.enter == JizuraNative.Enter.POP || env.cut.enter == JizuraNative.Enter.RISE) it.enter = "TYPE";
+                if (env.cut.enter == LyricEngine.Enter.POP || env.cut.enter == LyricEngine.Enter.RISE) it.enter = "TYPE";
                 BB bb = env.mainDraw(it);
                 double ms = clamp(H * 0.02, 12, 20);
                 env.draw(new Item("LINE " + two(env.cut.line + 1) + " ─ " + fmtTime(env.t), mono(env), ms).align("left").at(W * 0.13, H * 0.8).color(env.sc.sub()).alpha(0.8).noGhost());
@@ -552,7 +552,7 @@ final class JizuraLayouts {
             env -> {
                 Params P = env.P(); String text = env.cut.text;
                 double size = Math.min(fitSize(text, P.s("font"), W * 0.62, H * 0.2, new Item("", "", 1).track(0.04)), H * 0.17);
-                JizuraKit.Measure m = measure(new Item(text, P.s("font"), size).track(0.04));
+                LyricKit.Measure m = measure(new Item(text, P.s("font"), size).track(0.04));
                 double w = m.w() + size * 1.3, h = size * 1.6;
                 double e = E.outExpo(clamp(env.lt / (env.cut.inDur * 0.9))) * (1 - E.inExpo(env.pOut));
                 double ww = Math.max(h, w * e);
@@ -571,7 +571,7 @@ final class JizuraLayouts {
                     for (int i = 0; i < 3; i++) {
                         double q = E.outBack(clamp((env.lt - 0.15 - i * 0.06) / 0.25), 2) * (1 - env.pOut);
                         if (q <= 0) continue;
-                        JizuraKit.Measure mm = measure(new Item(labs[i], body(env), fs).track(0.1));
+                        LyricKit.Measure mm = measure(new Item(labs[i], body(env), fs).track(0.1));
                         double px = W / 2 + (i == 0 ? -w * 0.3 : i == 1 ? w * 0.42 : w * 0.1), py = H / 2 + (i == 1 ? -h * 0.95 : h * 0.95);
                         env.rrect(px - (mm.w() / 2 + fs * 0.8) * q, py - fs * 0.85, (mm.w() + fs * 1.6) * q, fs * 1.7, fs * 0.85, null, 1, env.sc.fg(), 1.3 * 2.4);
                         env.draw(new Item(labs[i], body(env), fs).track(0.1).at(px, py).color(env.sc.fg()).alpha(q).noGhost());
@@ -580,8 +580,8 @@ final class JizuraLayouts {
                 return bb;
             });
 
-        JizuraKinetic.init();
-        JizuraCompose.init();
-        JizuraCompose2.init(); JizuraTypo.init();
+        LyricKinetic.init();
+        LyricCompose.init();
+        LyricCompose2.init(); LyricTypo.init();
     }
 }

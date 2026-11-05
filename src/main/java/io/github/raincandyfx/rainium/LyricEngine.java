@@ -1,13 +1,13 @@
 package io.github.raincandyfx.rainium;
 
-import io.github.raincandyfx.rainium.JizuraKit.BB;
-import io.github.raincandyfx.rainium.JizuraKit.E;
-import io.github.raincandyfx.rainium.JizuraKit.Env;
-import io.github.raincandyfx.rainium.JizuraKit.GL;
-import io.github.raincandyfx.rainium.JizuraKit.Item;
-import io.github.raincandyfx.rainium.JizuraKit.Params;
-import io.github.raincandyfx.rainium.JizuraKit.Rng;
-import io.github.raincandyfx.rainium.JizuraKit.State;
+import io.github.raincandyfx.rainium.LyricKit.BB;
+import io.github.raincandyfx.rainium.LyricKit.E;
+import io.github.raincandyfx.rainium.LyricKit.Env;
+import io.github.raincandyfx.rainium.LyricKit.GL;
+import io.github.raincandyfx.rainium.LyricKit.Item;
+import io.github.raincandyfx.rainium.LyricKit.Params;
+import io.github.raincandyfx.rainium.LyricKit.Rng;
+import io.github.raincandyfx.rainium.LyricKit.State;
 
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
@@ -37,24 +37,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SplittableRandom;
 
-import static io.github.raincandyfx.rainium.JizuraKit.clamp;
+import static io.github.raincandyfx.rainium.LyricKit.clamp;
 
 /**
- * A native (plain Java2D) lyric video in the manner of JIZURA (https://github.com/852wa/JIZURA, MIT,
- * (c) 2026 hakoniwa): kinetic typography with its colour schemes, chromatic ghosting, HUD frame and
- * Japanese motifs. The layouts (JizuraLayouts) are ported from JIZURA's own source; the way each
+ * A native (plain Java2D) lyric video as a kinetic-type lyric video (see Credits): kinetic typography with its colour schemes, chromatic ghosting, HUD frame and
+ * Japanese motifs. The layouts (LyricLayouts) are ported from the reference source; the way each
  * character comes in and goes out is this class's own. The style data (palettes, which layouts and
- * motions each style prefers) is taken from JIZURA's style table.
+ * motions each style prefers) is taken from the reference style table.
  *
  * Two transparent layers are drawn: BACK (decorations) and FRONT (the lyrics). Nothing is ever drawn
  * over the whole picture, so the world stays visible around the lyrics.
  *
  * Pure (no game classes), so the tests can render frames headlessly.
  */
-final class JizuraNative {
+final class LyricEngine {
     static final int W = 800, H = 450;
     static final double SCALE = W / Env.W;      // layouts are drawn in a 1920x1080 space
-    static final double STEP = 1.0 / 12;        // JIZURA moves in steps, about twelve a second
+    static final double STEP = 1.0 / 12;        // The picture moves in steps, about twelve a second
     /** Room around the picture where effects may overshoot instead of being cut at its edge: the texture is this much bigger on every side. */
     static final int PX = 200, PY = 112, CW = W + 2 * PX, CH = H + 2 * PY;
 
@@ -107,13 +106,13 @@ final class JizuraNative {
     @SuppressWarnings("unchecked")
     private static Map<String, Style> loadStyles() {
         Map<String, Style> out = new LinkedHashMap<>();
-        try (InputStream in = JizuraNative.class.getResourceAsStream("/assets/rainium/jizura/styles.json")) {
+        try (InputStream in = LyricEngine.class.getResourceAsStream("/assets/rainium/lyricvideo/styles.json")) {
             if (in != null) {
                 Map<String, Object> root = (Map<String, Object>) Json.parse(new String(in.readAllBytes(), StandardCharsets.UTF_8));
                 if (root.get("_fonts") instanceof Map<?, ?> fm)
                     for (var f : ((Map<String, Object>) fm).entrySet()) {
                         Map<String, Object> d = (Map<String, Object>) f.getValue();
-                        JizuraKit.defineFace(f.getKey(), String.valueOf(d.get("kind")), num(d.get("weight")));
+                        LyricKit.defineFace(f.getKey(), String.valueOf(d.get("kind")), num(d.get("weight")));
                     }
                 for (var e : root.entrySet()) {
                     if (e.getKey().startsWith("_")) continue;
@@ -193,9 +192,9 @@ final class JizuraNative {
     final Look look;
     final double stepSec;
 
-    JizuraNative(String styleId, long seed, boolean motifs, boolean extra, String title) { this(styleId, seed, motifs, extra, title, Look.DEFAULT); }
+    LyricEngine(String styleId, long seed, boolean motifs, boolean extra, String title) { this(styleId, seed, motifs, extra, title, Look.DEFAULT); }
 
-    JizuraNative(String styleId, long seed, boolean motifs, boolean extra, String title, Look look) {
+    LyricEngine(String styleId, long seed, boolean motifs, boolean extra, String title, Look look) {
         this.look = look;
         this.stepSec = 1.0 / Math.max(0.5, look.fps());
         this.style = style(styleId);
@@ -269,7 +268,7 @@ final class JizuraNative {
             List<Unit> cur = new ArrayList<>();
             int n = 0;
             for (Unit u : units) {
-                int g = JizuraKit.glyphCount(u.text);
+                int g = LyricKit.glyphCount(u.text);
                 if (!cur.isEmpty() && n + g > limit) { groups.add(cur); cur = new ArrayList<>(); n = 0; }
                 cur.add(u); n += g;
             }
@@ -295,7 +294,7 @@ final class JizuraNative {
                 c.sc = recolour(cuts.isEmpty() || r.next() < 0.7 ? style.schemes.get(0) : style.schemes.get((int) (r.next() * style.schemes.size()) % style.schemes.size()));
                 c.layout = pickLayout(c, r, recent);
                 recent.add(c.layout);
-                JizuraLayouts.Def def = JizuraLayouts.ALL.get(c.layout);
+                LyricLayouts.Def def = LyricLayouts.ALL.get(c.layout);
                 c.params = def.plan().plan(new Rng(c.seed ^ 0x5BD1E995L), c, style);
                 c.enter = pick(Enter.values(), enterWeights(), r);
                 c.exit = pick(Exit.values(), exitWeights(), r);
@@ -309,7 +308,7 @@ final class JizuraNative {
     private Scheme recolour(Scheme sc) {
         Color t = Look.color(look.text()), a = Look.color(look.accent());
         if (t == null && a == null) return sc;
-        return new Scheme(sc.bg(), t != null ? t : sc.fg(), t != null ? JizuraKit.mix(t, sc.bg(), 0.35) : sc.sub(), a != null ? a : sc.accent(), a != null ? a : sc.accent2(), sc.ink(), sc.dim(), sc.ghostA(), sc.ghostB());
+        return new Scheme(sc.bg(), t != null ? t : sc.fg(), t != null ? LyricKit.mix(t, sc.bg(), 0.35) : sc.sub(), a != null ? a : sc.accent(), a != null ? a : sc.accent2(), sc.ink(), sc.dim(), sc.ghostA(), sc.ghostB());
     }
 
     /** The line's words, with long unspaced runs (Japanese) cut into short pieces so they can come in one by one. */
@@ -376,11 +375,11 @@ final class JizuraNative {
 
     /** A layout that suits the text, leaning on the style's taste and away from what was just shown. */
     private String pickLayout(Cut c, Rng r, List<String> recent) {
-        int n = JizuraKit.glyphCount(c.text);
+        int n = LyricKit.glyphCount(c.text);
         boolean jp = cjk(c.text);
         List<String> names = new ArrayList<>();
         List<Double> w = new ArrayList<>();
-        for (var e : JizuraLayouts.ALL.entrySet()) {
+        for (var e : LyricLayouts.ALL.entrySet()) {
             if (!e.getValue().fits().test(n) || look.off().contains(e.getKey())) continue;
             double k = 1 + bias(style.layoutBias, e.getKey());
             int back = recent.lastIndexOf(e.getKey());
@@ -413,7 +412,7 @@ final class JizuraNative {
         double p = clamp((ltI - reveal) / Math.max(0.05, c.inDur));
         double e = E.outCubic(p), inv = 1 - e;
         int word = (int) it.mi;
-        double r1 = JizuraKit.r(seed, gl.i, 1), r2 = JizuraKit.r(seed, gl.i, 2), r3 = JizuraKit.r(seed, gl.i, 3);
+        double r1 = LyricKit.r(seed, gl.i, 1), r2 = LyricKit.r(seed, gl.i, 2), r3 = LyricKit.r(seed, gl.i, 3);
         switch (enter) {
             case POP -> { double k = E.outBack(p); s.sx = s.sy = Math.max(0.01, k); s.alpha = clamp(p * 4); }
             case RISE -> { s.dy = inv * 38 * K; s.alpha = clamp(p * 2.2); }
@@ -470,7 +469,7 @@ final class JizuraNative {
         int px = (front.getWidth() - W) / 2, py = (front.getHeight() - H) / 2;   // room for effects to spill past the picture
         java.awt.Graphics2D gb = init(back), gf = init(front);
         try {
-            JizuraKit.forceKind = look.font();
+            LyricKit.forceKind = look.font();
             gb.translate(px, py);
             gf.translate(px, py);
             if (look.backdrop() > 0) backdrop(gb, ts);
@@ -479,7 +478,7 @@ final class JizuraNative {
                 if (ts < c.start || ts >= c.end) continue;
                 try {
                     Env env = new Env(gf, this, c, ts, step);
-                    BB bb = JizuraLayouts.ALL.get(c.layout).render().render(env);
+                    BB bb = LyricLayouts.ALL.get(c.layout).render().render(env);
                     gf.setComposite(AlphaComposite.SrcOver);
                     if (bb != null) c.box = new double[]{bb.x0() * SCALE, bb.y0() * SCALE, bb.x1() * SCALE, bb.y1() * SCALE};
                 } catch (RuntimeException ex) {

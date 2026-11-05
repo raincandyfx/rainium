@@ -123,7 +123,7 @@ Rainium can show the lyrics of the song playing on your computer as a plane in t
   - Lyrics saved from an earlier lookup.
   - **lrclib.net**, a free lyrics site, but only if you switch on **Find lyrics online**. Only the song's title, artist, album and length are sent.
 - **Looks:**
-  - **Music video:** the lyrics as a lyric video in the manner of [JIZURA](https://github.com/852wa/JIZURA): twelve styles with its colours, chromatic ghosting, HUD frame, rings, slashes, kinetic type (55 of JIZURA's layouts ported to Java; each line gets its own layout and its own way in and out), plus optional Japanese motifs and glitch effects. It's drawn by Rainium itself, so there's nothing else to install.
+  - **Music video:** the lyrics as a lyric video as a kinetic-type video: twelve styles with their own colours, chromatic ghosting, HUD frame, rings, slashes, kinetic type (55 layouts so far, written in Java; each line gets its own layout and its own way in and out), plus optional Japanese motifs and glitch effects. It's drawn by Rainium itself, so there's nothing else to install.
   - **Simple:** the line being sung, filling in word by word, with the next line under it.
 - **In the world:** each line is a plane fixed in the world, left and right of where you were looking when it started, a little in front of you. It stays there as you move and look around. If you turn away from it for a moment, or walk far from it, the next spot is in front of you again.
 - **Never in the way:**
@@ -191,13 +191,14 @@ In `.minecraft/config/rainium/`. **Open rainium folder** in the editor takes you
 **Can I translate it?**
 Yes, please! Copy [`en_us.json`](src/main/resources/assets/rainium/lang/en_us.json) to your language's code (for example `de_de.json` or `pt_br.json`), translate the text on the right of each line, and send it in an [issue](https://github.com/raincandyfx/rainium/issues). `%s` marks where a name or number goes.
 
-## Disclaimer
+## Credits and disclaimer
 
 Some of the sample models that come with the mod, and the models worn in the character recordings on the website, are based on designs from other works:
 
 - **Gold halo**, **Nocturne** (both forms) and **dark red wings** (Eyed wings): *Genshin Impact* (© Cognosphere PTE. LTD., HoYoverse)
 - **Floating pod**: *NieR:Automata* (Square Enix)
 - **Long red spear**: "[Lance of Longinus](https://skfb.ly/6Rxyq)" by Mr. The Rich, licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/). The weapon's original design is from *Neon Genesis Evangelion* (© khara)
+- **Lyric video look**: a re-creation in Java of [JIZURA](https://github.com/852wa/JIZURA) (MIT License, © 2026 hakoniwa). Its layouts are ported from its source, and its colour palettes and per-style motion preferences are taken from its style table (`assets/rainium/lyricvideo/styles.json`, included with its license). Rainium doesn't run JIZURA itself.
 - **Small doll**: a MySekai item from *HATSUNE MIKU: COLORFUL STAGE!* (© SEGA, © Colorful Palette Inc., © Crypton Future Media, Inc.)
 
 The characters in the recordings are animated with emotes by Milyan-SPEmotes, played with [Emotecraft](https://modrinth.com/mod/emotecraft); the animations aren't part of Rainium. One of them is based on the dance from the *HATSUNE MIKU: COLORFUL STAGE!* version of "Heat Abnormal" (song by Iyowa).
@@ -209,5 +210,3 @@ Not an official Minecraft product. Not approved by or associated with Mojang or 
 ## License
 
 Rainium is open source under the [MIT License](LICENSE).
-
-The lyric video look is a re-creation in Java of the style of [JIZURA](https://github.com/852wa/JIZURA) (MIT License, © 2026 hakoniwa); 31 of its layouts are ported from its source. Its colour palettes and which motion each style prefers are taken from JIZURA's style table (`assets/rainium/jizura/styles.json`), included with JIZURA's license. Rainium doesn't run JIZURA itself.

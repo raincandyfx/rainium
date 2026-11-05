@@ -11,14 +11,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Music video mode: the lyric video (JizuraNative) drawn on a background thread about twelve times a
+ * Music video mode: the lyric video (LyricEngine) drawn on a background thread about twelve times a
  * second and shown as a texture on planes in the world. Nothing else is needed: it's plain Java2D.
  * The picture is two layers side by side (decorations on the left half, the lyrics on the right).
  */
 final class LyricsVideo {
     static final Identifier TEXTURE = Identifier.fromNamespaceAndPath("rainium", "lyrics/video");
-    static final int W = JizuraNative.CW, H = JizuraNative.CH;   // one layer (the picture and room around it); the texture is twice as wide
-    static final double SCALE_X = (double) JizuraNative.CW / JizuraNative.W, SCALE_Y = (double) JizuraNative.CH / JizuraNative.H;
+    static final int W = LyricEngine.CW, H = LyricEngine.CH;   // one layer (the picture and room around it); the texture is twice as wide
+    static final double SCALE_X = (double) LyricEngine.CW / LyricEngine.W, SCALE_Y = (double) LyricEngine.CH / LyricEngine.H;
 
     private static final ExecutorService POOL = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "rainium-lyrics-video");
@@ -26,7 +26,7 @@ final class LyricsVideo {
         return t;
     });
 
-    private static volatile JizuraNative engine;
+    private static volatile LyricEngine engine;
     private static String songKey;
     private static volatile int[] frame;                  // a finished picture waiting to be uploaded
     private static long requested = Long.MIN_VALUE;
@@ -44,7 +44,7 @@ final class LyricsVideo {
     static boolean ready() { return true; }
 
     /** A new song (or a new look): the layout of every line is worked out on the drawing thread. */
-    static void song(String key, LyricsLrc lrc, String style, long seed, boolean motifs, boolean extra, String title, JizuraNative.Look look) {
+    static void song(String key, LyricsLrc lrc, String style, long seed, boolean motifs, boolean extra, String title, LyricEngine.Look look) {
         if (key.equals(songKey)) return;
         songKey = key;
         has = false;
@@ -53,7 +53,7 @@ final class LyricsVideo {
         engine = null;
         final String k = key;
         POOL.execute(() -> {
-            JizuraNative e = new JizuraNative(style, seed, motifs, extra, title, look);
+            LyricEngine e = new LyricEngine(style, seed, motifs, extra, title, look);
             e.song(lrc);
             if (k.equals(songKey)) engine = e;
         });
@@ -77,7 +77,7 @@ final class LyricsVideo {
 
     /** Called every frame from the render thread: asks for the next picture and uploads a finished one. False when there's nothing to show yet. */
     static boolean prepare() {
-        JizuraNative e = engine;
+        LyricEngine e = engine;
         if (e == null || songKey == null) return false;
         double t = now();
         long step = (long) Math.floor(t / e.stepSec + 1e-6);
@@ -98,7 +98,7 @@ final class LyricsVideo {
     }
 
     /** On the drawing thread: the two layers, packed side by side as ABGR pixels. */
-    private static int[] render(JizuraNative e, double t) {
+    private static int[] render(LyricEngine e, double t) {
         if (back == null) {
             back = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             front = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);

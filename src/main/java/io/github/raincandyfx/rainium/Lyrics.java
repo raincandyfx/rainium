@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Lyrics of whatever you're listening to, shown as a plane in the world.
- * Music video mode shows a JIZURA-style lyric video (JizuraNative, through LyricsVideo); Simple mode
+ * Music video mode shows a lyric video (LyricEngine, through LyricsVideo); Simple mode
  * shows the sung line (LyricsText). Each line gets a spot in the world and stays there while you move
  * and look around, like a sign in space. Either way the lyrics:
  *   - never cover an enemy: they sit to its left or right, with a buffer (LyricsPlacement),
@@ -51,6 +51,7 @@ final class Lyrics {
     private static boolean placedFollow;
     private static boolean anchorVideo;
     private static Vec3 anchorPos;
+    private static Vec3 lastEye;
     private static final Vector3f planeRight = new Vector3f(1, 0, 0), planeNormal = new Vector3f(0, 0, 1);
     private static double planeW, planeH;                  // blocks
     private static double shiftShown, scaleShown = 1, alphaShown;
@@ -159,6 +160,12 @@ final class Lyrics {
     private static double followSide = 1, followX = 0.5, followY = 0.42, followDepth = DISTANCE;
     private static double enemyDepth;
 
+    /** True while an effect (face / follow player) still runs: pct of the line (100 = the whole time), and/or secs seconds (0 = no limit). */
+    static boolean active(double since, double lineLen, double pct, double secs) {
+        if (secs > 0 && since >= secs) return false;
+        return pct >= 100 || since < Math.max(0, pct) / 100.0 * lineLen;
+    }
+
     /** Which side a Fixed line goes to: alternating, or always one. */
     private static int sideOf(LayerConfig.LyricsSettings s, int line) { return s.sideMode == 1 ? -1 : s.sideMode == 2 ? 1 : (line & 1) == 0 ? -1 : 1; }
 
@@ -189,7 +196,7 @@ final class Lyrics {
         lastFrameNanos = nowN;
         double sizeK = Math.max(1e-4, s.sizePct / 100.0);
         double widthN = LyricsPlacement.WIDTHS[1] * sizeK;   // on-screen width, 2 = the whole screen
-        double texAspect = video ? (double) JizuraNative.H / JizuraNative.W : (double) LyricsText.H / LyricsText.W;
+        double texAspect = video ? (double) LyricEngine.H / LyricEngine.W : (double) LyricsText.H / LyricsText.W;
         double limit = s.keepOnScreen ? 1 : 1e6;
         double k = 1 - Math.exp(-dt * 14);
         boolean follow = s.placement == 1;
@@ -285,6 +292,21 @@ final class Lyrics {
                 planeW *= sc; planeH *= sc;
                 spotAlpha = p.alpha() > 0 ? 1 : 0;
                 alphaShown = 0;
+            }
+            if (place) lastEye = eye;
+            // face player / follow player: each works for a share of the line and/or a number of seconds, then the panel stays as it is
+            LyricsLrc.Line ln = line >= 0 && line < lrc.lines.size() ? lrc.lines.get(line) : null;
+            double since = ln == null ? 0 : pos - ln.t(), lineLen = ln == null ? 3 : Math.max(0.2, ln.end() - ln.t());
+            if (s.followPlayer && active(since, lineLen, s.followPct, s.followSecs) && lastEye != null)
+                anchorPos = new Vec3(anchorPos.x + eye.x - lastEye.x, anchorPos.y + eye.y - lastEye.y, anchorPos.z + eye.z - lastEye.z);
+            lastEye = eye;
+            if (s.facePlayer && active(since, lineLen, s.facePct, s.faceSecs)) {
+                double hx = eye.x - anchorPos.x, hz = eye.z - anchorPos.z, hl = Math.sqrt(hx * hx + hz * hz);
+                if (hl > 1e-3) {
+                    hx /= hl; hz /= hl;   // from the panel towards you
+                    planeRight.set((float) hz, 0f, (float) -hx);
+                    planeNormal.set((float) hx, 0f, (float) hz);
+                }
             }
             double bob = Math.sin(nowN / 1.0e9 * 1.1) * 0.04 * s.floatPct / 100.0;   // it floats a little
             cxw = anchorPos.x - eye.x; cyw = anchorPos.y + bob - eye.y; czw = anchorPos.z - eye.z;

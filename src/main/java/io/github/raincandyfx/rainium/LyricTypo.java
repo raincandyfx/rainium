@@ -1,28 +1,28 @@
 package io.github.raincandyfx.rainium;
 
-import io.github.raincandyfx.rainium.JizuraKit.BB;
-import io.github.raincandyfx.rainium.JizuraKit.E;
-import io.github.raincandyfx.rainium.JizuraKit.Env;
-import io.github.raincandyfx.rainium.JizuraKit.GL;
-import io.github.raincandyfx.rainium.JizuraKit.Item;
-import io.github.raincandyfx.rainium.JizuraKit.Params;
+import io.github.raincandyfx.rainium.LyricKit.BB;
+import io.github.raincandyfx.rainium.LyricKit.E;
+import io.github.raincandyfx.rainium.LyricKit.Env;
+import io.github.raincandyfx.rainium.LyricKit.GL;
+import io.github.raincandyfx.rainium.LyricKit.Item;
+import io.github.raincandyfx.rainium.LyricKit.Params;
 
 import java.awt.Color;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.github.raincandyfx.rainium.JizuraCompose.*;
-import static io.github.raincandyfx.rainium.JizuraKit.clamp;
-import static io.github.raincandyfx.rainium.JizuraLayouts.def;
-import static io.github.raincandyfx.rainium.JizuraLayouts.fontPick;
+import static io.github.raincandyfx.rainium.LyricCompose.*;
+import static io.github.raincandyfx.rainium.LyricKit.clamp;
+import static io.github.raincandyfx.rainium.LyricLayouts.def;
+import static io.github.raincandyfx.rainium.LyricLayouts.fontPick;
 
 /**
- * Typography layouts from JIZURA's "typo" pack: key glyph between small text, cropped giant type, cross setting,
- * hidden-by-band text and ruled lines (https://github.com/852wa/JIZURA, MIT, (c) 2026 hakoniwa). Landscape only.
+ * Typography layouts from the reference "typo" pack: key glyph between small text, cropped giant type, cross setting,
+ * hidden-by-band text and ruled lines (see Credits). Landscape only.
  */
-final class JizuraTypo {
-    private JizuraTypo() {}
+final class LyricTypo {
+    private LyricTypo() {}
 
     private static final double W = Env.W, H = Env.H, U = Math.min(W, H);
 
@@ -36,10 +36,10 @@ final class JizuraTypo {
 
     private static double lsz() { return clamp(U * 0.018, 11, 22); }
 
-    private static Color accentOn(JizuraNative.Scheme sc) { return JizuraKit.contrast(sc.accent(), sc.bg()) >= 1.8 ? sc.accent() : sc.fg(); }
+    private static Color accentOn(LyricEngine.Scheme sc) { return LyricKit.contrast(sc.accent(), sc.bg()) >= 1.8 ? sc.accent() : sc.fg(); }
 
-    private static Color plate(JizuraNative.Scheme sc, Color... pref) {
-        for (Color c : pref) if (c != null && JizuraKit.contrast(c, sc.bg()) >= 1.6) return c;
+    private static Color plate(LyricEngine.Scheme sc, Color... pref) {
+        for (Color c : pref) if (c != null && LyricKit.contrast(c, sc.bg()) >= 1.6) return c;
         return sc.fg();
     }
 
@@ -56,9 +56,9 @@ final class JizuraTypo {
         }
         int best = -1, bl = 0;
         for (int i = 0; i < arr.size(); i++) {
-            if (!JizuraKit.isKanji(arr.get(i))) continue;
+            if (!LyricKit.isKanji(arr.get(i))) continue;
             int j = i;
-            while (j < arr.size() && JizuraKit.isKanji(arr.get(j))) j++;
+            while (j < arr.size() && LyricKit.isKanji(arr.get(j))) j++;
             if (j - i > bl) { bl = j - i; best = i; }
             i = j;
         }
@@ -85,22 +85,22 @@ final class JizuraTypo {
         def("tyKeySplit", "大字挟み", n -> n >= 2 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "serif")).with("fs", fontPick(rng, st, "serif", "body", "display"))
                 .with("mode", rng.pick("kanji", "kanji", "mid")).with("big", rng.pick("fill", "fill", "accent", "outline")).with("rule", rng.chance(0.75)),
-            JizuraTypo::keySplit);
+            LyricTypo::keySplit);
         def("tyCropGiant", "見切れ大文字", n -> n >= 1 && n <= 14,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("fm", fontPick(rng, st, "display", "serif")).with("edge", rng.pick("a", "b"))
                 .with("style", rng.pick("dim", "dim", "outline")).with("dir", rng.pick(1.0, -1.0)),
-            JizuraTypo::cropGiant);
+            LyricTypo::cropGiant);
         def("tyCross", "十字組", n -> n >= 3 && n <= 11,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "serif")).with("mode", rng.pick("kanji", "mid", "mid")).with("rules", rng.chance(0.8))
                 .with("key", rng.pick("accent", "accent", "fg")),
-            JizuraTypo::cross);
+            LyricTypo::cross);
         def("tyBandHide", "帯隠れ", n -> n >= 1 && n <= 14,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("band", rng.pick("ink", "accent", "fg")).with("pos", rng.pick("low", "low", "high"))
                 .with("speed", rng.range(40, 90)).with("dir", rng.pick(1.0, -1.0)).with("k", rng.range(0.3, 0.38)),
-            JizuraTypo::bandHide);
+            LyricTypo::bandHide);
         def("tyBaseline", "罫線組", n -> n >= 2 && n <= 18,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "serif", "display", "body")).with("nl", rng.pick(2.0, 3.0, 3.0)).with("key", rng.chance(0.8)).with("right", rng.chance(0.5)),
-            JizuraTypo::baseline);
+            LyricTypo::baseline);
     }
 
     // ------------------------------------------------------------------ tyKeySplit
@@ -119,7 +119,7 @@ final class JizuraTypo {
             after = String.join(" ", java.util.Arrays.copyOfRange(ws, wi + 1, ws.length));
         }
         double bigS = Math.min(H * 0.64, W * 0.34);
-        bigS = Math.min(bigS, JizuraKit.fitSize(key, font, W * 0.5, 1e6));
+        bigS = Math.min(bigS, LyricKit.fitSize(key, font, W * 0.5, 1e6));
         double bw = meas(key, font, bigS, 0, 1.2).w();
         double gap = bigS * 0.12;
         String bt = before.isEmpty() ? "" : brk(before, 5), at = after.isEmpty() ? "" : brk(after, 5);
@@ -138,11 +138,11 @@ final class JizuraTypo {
             double e = E.outCubic(clamp((lt - 0.2) / 0.6)) * out;
             if (e > 0 && itB != null) {
                 double y = itB.y + mB.h() / 2 + ss * 0.35, xa = itB.x - mB.w(), xb = bx + bw * 0.5;
-                env.line(new double[][]{{xa, y}, {JizuraKit.lerp(xa, xb, e), y}}, sc.sub(), lw, 0.7);
+                env.line(new double[][]{{xa, y}, {LyricKit.lerp(xa, xb, e), y}}, sc.sub(), lw, 0.7);
             }
             if (e > 0 && itA != null) {
                 double y = itA.y - mA.h() / 2 - ss * 0.35, xb = itA.x + mA.w(), xa = bx - bw * 0.5;
-                env.line(new double[][]{{xb, y}, {JizuraKit.lerp(xb, xa, e), y}}, sc.sub(), lw, 0.7);
+                env.line(new double[][]{{xb, y}, {LyricKit.lerp(xb, xa, e), y}}, sc.sub(), lw, 0.7);
             }
         }
         Item big = it(key, font, bigS, bx, by).color(p.s("big").equals("accent") ? accentOn(sc) : sc.fg()).mi(2);
@@ -167,7 +167,7 @@ final class JizuraTypo {
         Item gi = it(txt, p.s("font"), G, W / 2 + (0.5 - u) * W * 0.14 * dir,
             (low ? H + G * 0.03 : -G * 0.03) + (low ? 1 : -1) * ((1 - inG) + outG) * G * 0.45).noGhost();
         if (p.s("style").equals("outline")) gi.outline(Math.max(1.4, G * 0.006), sc.sub()).alpha(0.65);
-        else gi.color(JizuraKit.mix(sc.bg(), sc.fg(), 0.16));
+        else gi.color(LyricKit.mix(sc.bg(), sc.fg(), 0.16));
         env.draw(gi);
         String mt = mainLines(txt, 10);
         String fm = p.s("fm");
@@ -193,8 +193,8 @@ final class JizuraTypo {
         int ki = keyIndex(arr, p.s("mode"));
         double tr = 0.08;
         String A = join(arr, 0, ki), K = arr.get(ki), B = join(arr, ki + 1, arr.size());
-        java.util.function.Function<String, Double> w100 = s -> s.isEmpty() ? 0.0 : JizuraKit.measure(it(s, font, 100, 0, 0).track(tr)).w();
-        java.util.function.Function<String, Double> h100 = s -> s.isEmpty() ? 0.0 : JizuraKit.measure(it(s, font, 100, 0, 0).track(tr).vertical(true)).h();
+        java.util.function.Function<String, Double> w100 = s -> s.isEmpty() ? 0.0 : LyricKit.measure(it(s, font, 100, 0, 0).track(tr)).w();
+        java.util.function.Function<String, Double> h100 = s -> s.isEmpty() ? 0.0 : LyricKit.measure(it(s, font, 100, 0, 0).track(tr).vertical(true)).h();
         double kw = w100.apply(K), g100 = 100 * tr + 6;
         double Lx = (A.isEmpty() ? 0 : w100.apply(A) + g100) + kw / 2, Rx = (B.isEmpty() ? 0 : w100.apply(B) + g100) + kw / 2;
         double Ty = (A.isEmpty() ? 0 : h100.apply(A) + g100) + 50, By = (B.isEmpty() ? 0 : h100.apply(B) + g100) + 50;
@@ -252,7 +252,7 @@ final class JizuraTypo {
     }
 
     private static void Shape_clip(Env env, double x, double y, double w, double h, Runnable r) {
-        JizuraCompose2.clippedDo(env, new Rectangle2D.Double(x, y, w, h), r);
+        LyricCompose2.clippedDo(env, new Rectangle2D.Double(x, y, w, h), r);
     }
 
     // ------------------------------------------------------------------ tyBaseline
@@ -277,11 +277,11 @@ final class JizuraTypo {
         if (lines.size() > 6) lines = lines.subList(0, 6);
         int L = lines.size();
         double leadK = 1.62, size = Math.min(H * 0.7 / (L * leadK), H * 0.16);
-        for (String l : lines) size = Math.min(size, JizuraKit.fitSize(l, font, W * 0.74, 1e6, new Item(l, font, 100).track(0.04)));
+        for (String l : lines) size = Math.min(size, LyricKit.fitSize(l, font, W * 0.74, 1e6, new Item(l, font, 100).track(0.04)));
         double x0 = W * 0.14, mx = W * 0.06, out = tout(env), lw = hair(), ls = lsz();
         List<String> all = chars(String.join("", lines));
         int ki = keyIndex(all, "kanji"), kEnd = ki;
-        while (kEnd + 1 < all.size() && JizuraKit.isKanji(all.get(kEnd + 1)) && JizuraKit.isKanji(all.get(ki))) kEnd++;
+        while (kEnd + 1 < all.size() && LyricKit.isKanji(all.get(kEnd + 1)) && LyricKit.isKanji(all.get(ki))) kEnd++;
         int acc = 0;
         BB bb = null;
         for (int li = 0; li < L; li++) {
@@ -289,7 +289,7 @@ final class JizuraTypo {
             double y = H / 2 + (li - (L - 1) / 2.0) * size * leadK, yb = y + size * 0.6;
             double e = E.outExpo(clamp((lt - li * 0.1) / 0.6)) * out;
             if (e > 0) {
-                env.line(new double[][]{{mx, yb}, {JizuraKit.lerp(mx, W - mx, e), yb}}, sc.sub(), lw, 0.55);
+                env.line(new double[][]{{mx, yb}, {LyricKit.lerp(mx, W - mx, e), yb}}, sc.sub(), lw, 0.55);
                 label(env, two(li + 1), mx, y + size * 0.2, ls * 0.9, e, "left", sc.sub());
                 if (p.b("right")) label(env, String.valueOf(gcount(ln)), W - mx, y + size * 0.2, ls * 0.9, e * 0.8, "right", sc.sub());
             }
@@ -297,7 +297,7 @@ final class JizuraTypo {
             bb = BB.union(bb, env.mainDraw(item));
             int n = chars(ln).size();
             if (p.b("key") && ki >= acc && ki < acc + n && e > 0) {
-                GL[] gp = JizuraKit.layoutText(item).stream().filter(g -> !sp(g.ch)).toArray(GL[]::new);
+                GL[] gp = LyricKit.layoutText(item).stream().filter(g -> !sp(g.ch)).toArray(GL[]::new);
                 int i0 = 0;
                 List<String> lc = chars(ln);
                 for (int i = 0; i < ki - acc; i++) if (!sp(lc.get(i))) i0++;

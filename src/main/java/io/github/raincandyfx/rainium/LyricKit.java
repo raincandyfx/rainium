@@ -24,14 +24,14 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * The drawing kit the layouts are written against, shaped like the one JIZURA's layouts use, so each
+ * The drawing kit the layouts are written against, shaped like the one the reference layouts use, so each
  * layout can be ported close to line for line: text items laid out character by character, the
  * "main" drawing that applies a cut's way in, hold and way out, and plain shapes. Everything is in a
  * 1920×1080 design space; the caller scales the Graphics2D to the picture.
  * Pure Java2D, so the tests can run it.
  */
-final class JizuraKit {
-    private JizuraKit() {}
+final class LyricKit {
+    private LyricKit() {}
 
     // ------------------------------------------------------------------ numbers
     static double clamp(double v) { return v < 0 ? 0 : Math.min(1, v); }
@@ -41,7 +41,7 @@ final class JizuraKit {
     static double smooth(double a, double b, double x) { double t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); }
     static boolean isKanji(String ch) { return ch.matches("[㐀-鿿豈-﫿々〆ヶ]"); }
 
-    /** JIZURA's easing functions. */
+    /** The easing functions. */
     static final class E {
         static double outCubic(double x) { x = clamp(x); return 1 - Math.pow(1 - x, 3); }
         static double inCubic(double x) { x = clamp(x); return x * x * x; }
@@ -108,7 +108,7 @@ final class JizuraKit {
     }
 
     // ------------------------------------------------------------------ type faces
-    /** JIZURA's font keys (gothic_black, mincho, mono, ...) map to what a Java program can reliably draw: sans, serif or mono, bold or not. */
+    /** The font keys (gothic_black, mincho, mono, ...) map to what a Java program can reliably draw: sans, serif or mono, bold or not. */
     record Face(int kind, boolean bold) {}   // kind: 0 sans, 1 serif, 2 mono
 
     private static final Map<String, Face> FACES = new HashMap<>();
@@ -310,7 +310,7 @@ final class JizuraKit {
     static String splitLines(String text, int maxPer) {
         List<String> arr = chars(text);
         if (arr.size() <= maxPer) return text;
-        if (text.trim().contains(" ") && !JizuraNative.cjk(text)) {   // Latin text breaks between words only
+        if (text.trim().contains(" ") && !LyricEngine.cjk(text)) {   // Latin text breaks between words only
             String[] ws = text.trim().split("\\s+");
             int total = text.trim().length();
             int nLines = Math.min(ws.length, (int) Math.ceil(total / (double) maxPer));
@@ -326,7 +326,7 @@ final class JizuraKit {
             rows.add(cur.toString());
             return String.join("\n", rows);
         }
-        if (!JizuraNative.cjk(text)) return text;   // one long Latin word stays whole
+        if (!LyricEngine.cjk(text)) return text;   // one long Latin word stays whole
         int nLines = (int) Math.ceil(arr.size() / (double) maxPer);
         double per = arr.size() / (double) nLines;
         List<String> out = new ArrayList<>();
@@ -375,15 +375,15 @@ final class JizuraKit {
     static final class Env {
         static final double W = 1920, H = 1080;
         final java.awt.Graphics2D g;
-        final JizuraNative.Cut cut;
-        final JizuraNative.Style st;
-        final JizuraNative.Scheme sc;
-        final JizuraNative engine;
+        final LyricEngine.Cut cut;
+        final LyricEngine.Style st;
+        final LyricEngine.Scheme sc;
+        final LyricEngine engine;
         double lt, ltb, pIn, pOut, t;
         long step;
         double ghostK = 1;
 
-        Env(java.awt.Graphics2D g, JizuraNative engine, JizuraNative.Cut cut, double t, long step) {
+        Env(java.awt.Graphics2D g, LyricEngine engine, LyricEngine.Cut cut, double t, long step) {
             this.g = g; this.engine = engine; this.cut = cut; this.st = engine.style; this.sc = cut.sc;
             this.t = t; this.step = step;
             this.lt = t - cut.start; this.ltb = lt;
@@ -487,7 +487,7 @@ final class JizuraKit {
             double outStart = dur - cut.outDur;
             long seed = cut.seed * 31 + (long) it.mi + 1;
             final Item item = it;
-            JizuraNative.Enter enter = it.enter != null ? JizuraNative.Enter.valueOf(it.enter) : cut.enter;
+            LyricEngine.Enter enter = it.enter != null ? LyricEngine.Enter.valueOf(it.enter) : cut.enter;
             Function<GL, State> fn = gl -> engine.state(this, cut, enter, item, gl, ltI, lt, outStart, seed, step);
             return drawItem(it, fn);
         }

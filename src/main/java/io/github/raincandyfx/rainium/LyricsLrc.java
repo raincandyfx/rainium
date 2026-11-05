@@ -122,7 +122,7 @@ final class LyricsLrc {
         return ans;
     }
 
-    /** The lyrics back as plain LRC, one timed line each (what JIZURA reads). */
+    /** The lyrics back as plain LRC, one timed line each (what the video engine reads). */
     String toLrc() {
         StringBuilder b = new StringBuilder();
         for (Line l : lines) b.append(stamp(l.t)).append(l.text).append('\n');

@@ -2,12 +2,18 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.10 (dev build)
+
+- **Face me.** A placement option for the Fixed panel: it keeps turning to face you as you move. It runs for a share of each line (100 % is the whole time, 50 % the first half) and/or a number of seconds (1 s is one second from the start of the line); after that it stays at the angle it had. If both are set, whichever ends first wins.
+- **Move with me.** The same two inputs for another option: the panel is carried along with you as you walk, then stays where it is.
+- **Credits.** The lyric video's source and the other credits now sit only in the Credits and disclaimer sections (README and website); the licence notice stays bundled with the style table. Internal names changed to match.
+
 ## 0.9.9 (dev build)
 
 - **No more border on the panel.** The corner brackets and the labels were the "border"; both are off by default now (switches on the lyrics page).
 - **Lyrics are drawn behind entities.** The plane is drawn before the entity layer, so players and mobs appear over it even when it is physically in front of them.
 - **More settings:** font, text and accent colour, speed, backdrop, halo, panel roll, gap, frame, HUD, and per-way on/off lists for ways in and out.
-- **Sixteen more JIZURA layouts** (55 in all): split screen, mirror, sideways, edge frame, hanko, genkou, quote, ruler, search bar, chat, notification, and from its typography pack: key glyph between small text, cropped giant type, cross setting, text hidden by a band and ruled lines.
+- **Sixteen more layouts** (55 in all): split screen, mirror, sideways, edge frame, hanko, genkou, quote, ruler, search bar, chat, notification, and from its typography pack: key glyph between small text, cropped giant type, cross setting, text hidden by a band and ruled lines.
 - *Not yet tried in a real game.*
 
 ## 0.9.8 (dev build)
@@ -16,20 +22,20 @@ Rainium is in beta (0.x) until 1.0.0.
 - **Two placement modes.** *Fixed*: placed by the usual rules, then stays at that spot and shape. *Follow opponent*: same rules, but beside the opponent you are fighting, at the same size on screen, and it only changes side when the line is over.
 - **Size is a percentage you type** (100 is the old Medium, no upper or lower limit). Opacity, float, distance, height and sideways position are typed numbers too. An old Small/Medium/Large setting is carried over.
 - **Fewer boundaries.** Effects can spill past the edge of the picture. "Keep on screen" (shrinking to fit) and "Avoid enemies" are switches now, so large sizes really are large.
-- **Eight more JIZURA layouts** (39 in all): lower-third telop, diagonal corners, staircase, zigzag, rainbow arc, character grid, subtitle bar and news ticker.
+- **Eight more layouts** (39 in all): lower-third telop, diagonal corners, staircase, zigzag, rainbow arc, character grid, subtitle bar and news ticker.
 - *Not yet tried in a real game.* The picture is drawn on a larger canvas to allow spill, which costs a little more to update.
 
 ## 0.9.7 (dev build)
 
-- **JIZURA's layouts, ported.** The music video now uses 31 of JIZURA's own layouts, translated from its source into Java with the same plans and timing: its 17 core layouts (centred, mixed sizes, vertical columns, marquee bands, tiled rows, scattered, ring, wave, huge, labels, condensed, gloss, typewriter, diagonal band, circle, afterimage stack, pill) and its 14 kinetic layouts (slam stack, quarter turn, word swap, dive into a letter, flow and snap, seesaw, type then slam, word jump cuts, loop track, gears, head-on crash, tumbling boxes, vertical to line, drum pads). Each line picks one that suits its length, leaning on the style's taste and away from what was just shown. Long lines are cut into parts of a dozen or so characters, each timed to its words.
+- **The lyric video's layouts, ported.** The music video now uses 31 layouts, translated from the reference source into Java with the same plans and timing: its 17 core layouts (centred, mixed sizes, vertical columns, marquee bands, tiled rows, scattered, ring, wave, huge, labels, condensed, gloss, typewriter, diagonal band, circle, afterimage stack, pill) and its 14 kinetic layouts (slam stack, quarter turn, word swap, dive into a letter, flow and snap, seesaw, type then slam, word jump cuts, loop track, gears, head-on crash, tumbling boxes, vertical to line, drum pads). Each line picks one that suits its length, leaning on the style's taste and away from what was just shown. Long lines are cut into parts of a dozen or so characters, each timed to its words.
 - English lyrics keep their spaces in the layouts that run Japanese text together.
-- **Still short of JIZURA:** it has 184 layouts, 125 ways in and 109 ways out; Rainium has these 31 layouts, ten ways in and eight ways out. Fonts are the system's sans, serif and monospace (Noto, Yu or Meiryo where present), not JIZURA's web fonts. Portrait versions of layouts are left out because the picture is landscape.
+- **Still short of the reference:** it has 184 layouts, 125 ways in and 109 ways out; Rainium has these 31 layouts, ten ways in and eight ways out. Fonts are the system's sans, serif and monospace (Noto, Yu or Meiryo where present), not the reference's web fonts. Portrait versions of layouts are left out because the picture is landscape.
 - *Not yet tried in a real game.*
 
 ## 0.9.6 (dev build)
 
 - **Lyrics are a plane in the world now.** Each line is fixed in the world, to the left or right of where you were looking when it started, and it stays there as you walk and look around. If you turn away from it for a moment, or walk far from it, the next spot is in front of you again. It still slides aside rather than cover an enemy, still shrinks to fit the screen, and is still small by default.
-- **The music video look is drawn by Rainium itself.** No MCEF Modern or browser is needed any more. It's a re-creation in Java of JIZURA's look rather than JIZURA's own engine: its twelve styles' colours, chromatic ghosting, HUD frame, rings, slashes and kinetic type, in nine layouts (centred, stacked, zigzag, arc, orbit, scattered, one big word, typewriter, vertical for Japanese), ten ways in and eight ways out. It has fewer layouts and motions than JIZURA itself. **Japanese motifs** adds a red seal, a brush circle and a vertical katakana tag; **New effects** adds glitch tears.
+- **The music video look is drawn by Rainium itself.** No MCEF Modern or browser is needed any more. It's a re-creation in Java of the reference's look rather than the reference's own engine: its twelve styles' colours, chromatic ghosting, HUD frame, rings, slashes and kinetic type, in nine layouts (centred, stacked, zigzag, arc, orbit, scattered, one big word, typewriter, vertical for Japanese), ten ways in and eight ways out. It has fewer layouts and motions than the reference itself. **Japanese motifs** adds a red seal, a brush circle and a vertical katakana tag; **New effects** adds glitch tears.
 - The decorations sit a little behind the lyrics, so the picture has depth as you move.
 - *Not yet tried in a real game.*
 
@@ -44,7 +50,7 @@ Rainium is in beta (0.x) until 1.0.0.
     - Your own `.lrc` files (`config/rainium/lyrics/Artist - Title.lrc`).
     - Copies saved from earlier lookups.
     - **lrclib.net**, only if you switch on **Find lyrics online**. Only the title, artist, album and length are sent.
-  - **Music video look:** the lyrics as a lyric video by [JIZURA](https://github.com/852wa/JIZURA) (MIT), drawn exactly as JIZURA draws them, with a **Style**, **New variation**, **Japanese motifs** and **New effects**. JIZURA's background graphics stay off, so only the lyrics and their decorations appear. It needs the [MCEF Modern](https://modrinth.com/mod/mcef-modern) mod.
+  - **Music video look:** the lyrics as a lyric video , drawn exactly as the reference draws them, with a **Style**, **New variation**, **Japanese motifs** and **New effects**. the reference's background graphics stay off, so only the lyrics and their decorations appear. It needs the [MCEF Modern](https://modrinth.com/mod/mcef-modern) mod.
   - **Simple look:** the sung line fills in word by word. It's used while the music video isn't available.
   - **Never in the way:**
     - The lyrics never cover the one you're fighting, or the player or monster nearest your aim. They slide to its left or right with a buffer, and shrink if needed.
@@ -102,7 +108,7 @@ Everything from the 0.8.1 to 0.8.12 dev builds, plus:
 - **Sharp pictures** for every sample model, drawn as real textures.
 - **Spin:** any layer can turn around an upright axis (Edit > Behaviour > **Spin**, in degrees per second), and **Spin around** picks the centre: the middle of its own model, the player, a body part, or another layer. Nocturne uses it.
 - **Fixed:** adding a sample model now replaces an older copy of its files left by an earlier version, which could put a model far from you or make it orbit you.
-- **Credits:** the mod's credits (and the README and website) now say that some sample models are based on designs from *Genshin Impact* (Cognosphere / HoYoverse).
+- **Credits:** the mod's credits (and the README and website) now credit the works some sample models are based on.
 
 From the dev builds:
 

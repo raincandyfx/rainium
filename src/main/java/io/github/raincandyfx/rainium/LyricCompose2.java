@@ -1,10 +1,10 @@
 package io.github.raincandyfx.rainium;
 
-import io.github.raincandyfx.rainium.JizuraKit.BB;
-import io.github.raincandyfx.rainium.JizuraKit.E;
-import io.github.raincandyfx.rainium.JizuraKit.Env;
-import io.github.raincandyfx.rainium.JizuraKit.Item;
-import io.github.raincandyfx.rainium.JizuraKit.Params;
+import io.github.raincandyfx.rainium.LyricKit.BB;
+import io.github.raincandyfx.rainium.LyricKit.E;
+import io.github.raincandyfx.rainium.LyricKit.Env;
+import io.github.raincandyfx.rainium.LyricKit.Item;
+import io.github.raincandyfx.rainium.LyricKit.Params;
 
 import java.awt.Color;
 import java.awt.Shape;
@@ -15,19 +15,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static io.github.raincandyfx.rainium.JizuraCompose.*;
-import static io.github.raincandyfx.rainium.JizuraKit.DEG;
-import static io.github.raincandyfx.rainium.JizuraKit.clamp;
-import static io.github.raincandyfx.rainium.JizuraLayouts.def;
-import static io.github.raincandyfx.rainium.JizuraLayouts.fontPick;
+import static io.github.raincandyfx.rainium.LyricCompose.*;
+import static io.github.raincandyfx.rainium.LyricKit.DEG;
+import static io.github.raincandyfx.rainium.LyricKit.clamp;
+import static io.github.raincandyfx.rainium.LyricLayouts.def;
+import static io.github.raincandyfx.rainium.LyricLayouts.fontPick;
 
 /**
- * More compositional layouts from JIZURA's "layoutsA" pack: split screen, mirror, sideways type, edge text,
+ * More compositional layouts from the reference "layoutsA" pack: split screen, mirror, sideways type, edge text,
  * seal, manuscript paper, quotation marks, dimension lines, search bar, chat and notification
- * (https://github.com/852wa/JIZURA, MIT, (c) 2026 hakoniwa).
+ * (see Credits).
  */
-final class JizuraCompose2 {
-    private JizuraCompose2() {}
+final class LyricCompose2 {
+    private LyricCompose2() {}
 
     private static final double W = Env.W, H = Env.H, U = Math.min(W, H);
 
@@ -65,55 +65,55 @@ final class JizuraCompose2 {
         def("splitScreen", "二分割", n -> n <= 14,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display")).with("split", rng.pick("v", "diag", "v", "h")).with("plate", rng.pick("fg", "accent", "fg"))
                 .with("side", rng.pick(1.0, -1.0)).with("tilt", rng.range(12, 22)),
-            JizuraCompose2::splitScreen);
+            LyricCompose2::splitScreen);
         def("mirror", "鏡像", n -> n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "serif")).with("strength", rng.range(0.34, 0.5)).with("squash", rng.pick(1.0, 0.7, 0.85))
                 .with("ripple", rng.chance(0.5)).with("ticks", rng.chance(0.6)),
-            JizuraCompose2::mirror);
+            LyricCompose2::mirror);
         def("sideways", "縦倒し", n -> n >= 3 && n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "display", "serif")).with("side", rng.pick("left", "right")).with("copy", rng.pick("stack", "number")).with("rule", rng.chance(0.75)),
-            JizuraCompose2::sideways);
+            LyricCompose2::sideways);
         def("edgeFrame", "外周", n -> n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "serif")).with("edgeFont", rng.pick("body", "mono")).with("sep", rng.pick("　／　", "　・　", "　—　"))
                 .with("speed", rng.range(0.6, 1.2) * rng.pick(1.0, -1.0)).with("corner", rng.pick("square", "cross")).with("inner", rng.chance(0.6)),
-            JizuraCompose2::edgeFrame);
+            LyricCompose2::edgeFrame);
         def("hanko", "落款", n -> n >= 1 && n <= 10,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "serif")).with("sealFont", fontPick(rng, st, "serif", "display")).with("vert", rng.chance(0.6))
                 .with("seal", rng.pick("haku", "shu", "haku")).with("rot", rng.range(-7, 7)),
-            JizuraCompose2::hanko);
+            LyricCompose2::hanko);
         def("genkou", "原稿用紙", n -> n <= 22,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "serif")).with("lineC", rng.pick("accent", "sub")).with("indent", rng.chance(0.5)).with("pad", rng.integer(2, 4)),
-            JizuraCompose2::genkou);
+            LyricCompose2::genkou);
         def("quote", "引用", n -> n <= 20,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "serif", "display")).with("markFont", fontPick(rng, st, "serif"))
                 .with("marks", hasLatin(cut.text) ? "latin" : rng.pick("kagi", "double", "kagi")).with("markC", rng.pick("accent", "sub")).with("attrib", rng.chance(0.75)),
-            JizuraCompose2::quote);
+            LyricCompose2::quote);
         def("ruler", "寸法線", n -> n <= 16,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "display", "serif", "body")).with("dims", rng.pick("topRight", "bottomLeft")).with("ticks", rng.chance(0.7))
                 .with("guides", rng.chance(0.8)).with("unit", rng.pick("px", "pt", "px")),
-            JizuraCompose2::ruler);
+            LyricCompose2::ruler);
         def("searchBar", "検索窓", n -> n <= 18,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "body", "display")).with("shape", rng.pick("pill", "rect")).with("fill", rng.pick("outline", "filled"))
                 .with("sugg", rng.integer(3, 4)).with("pos", rng.pick("center", "upper")),
-            JizuraCompose2::searchBar);
+            LyricCompose2::searchBar);
         def("chat", "チャット", n -> n <= 22,
             (rng, cut, st) -> {
                 int n = gcount(cut.text), nw = Math.max(1, cut.words.size());
                 List<String> msgs = n <= 4 ? List.of(cut.text.trim()) : splitK(cut.text, (int) clamp(nw, 2, n > 12 ? 4 : 3));
                 return new Params().with("msgs", String.join("\u0001", msgs)).with("font", fontPick(rng, st, "body", "display")).with("side0", rng.pick(1.0, -1.0)).with("alt", rng.chance(0.6));
             },
-            JizuraCompose2::chat);
+            LyricCompose2::chat);
         def("notification", "通知", n -> n <= 24,
             (rng, cut, st) -> new Params().with("font", fontPick(rng, st, "body", "display")).with("pos", rng.pick("banner", "lock", "center")).with("stack", rng.chance(0.5)).with("app", rng.pick("MUSIC", "LYRICS", "MESSAGE")),
-            JizuraCompose2::notification);
+            LyricCompose2::notification);
     }
 
     // ================================================================== splitScreen
     private static BB splitScreen(Env env) {
         var sc = env.sc; Params p = env.P(); String font = p.s("font");
-        Color tOff = JizuraKit.contrast(sc.fg(), sc.bg()) > 2 ? sc.fg() : onCol(sc, sc.bg());
+        Color tOff = LyricKit.contrast(sc.fg(), sc.bg()) > 2 ? sc.fg() : onCol(sc, sc.bg());
         Color plateC = p.s("plate").equals("accent") ? sc.accent() : sc.fg();
-        if (onCol(sc, plateC).equals(tOff) || JizuraKit.contrast(plateC, sc.bg()) < 1.6) plateC = sc.fg();
+        if (onCol(sc, plateC).equals(tOff) || LyricKit.contrast(plateC, sc.bg()) < 1.6) plateC = sc.fg();
         Color tOn = onCol(sc, plateC);
         double e = tin(env, 0, 0.5) * (1 - E.inExpo(env.pOut)), sd = p.d("side") == 0 ? 1 : p.d("side");
         double[][] plate, other;
@@ -266,7 +266,7 @@ final class JizuraCompose2 {
     // ================================================================== hanko
     private static List<String> sealGlyphs(String text) {
         List<String> g = new ArrayList<>(), kan = new ArrayList<>();
-        for (String c : chars(strip(text))) if (!isPunct(c) && !isSmallKana(c)) { g.add(c); if (JizuraKit.isKanji(c)) kan.add(c); }
+        for (String c : chars(strip(text))) if (!isPunct(c) && !isSmallKana(c)) { g.add(c); if (LyricKit.isKanji(c)) kan.add(c); }
         if (kan.size() >= 2 || (kan.size() == 1 && g.size() > 4)) return kan.subList(0, Math.min(4, kan.size()));
         if (g.size() <= 4) return g.isEmpty() ? chars(strip(text)).subList(0, Math.min(1, chars(strip(text)).size())) : g;
         return g.subList(0, 2);
@@ -305,17 +305,17 @@ final class JizuraCompose2 {
         BB bb = env.mainDraw(item);
         double t0 = env.cut.inDur * 0.7 + 0.08, x = (env.lt - t0) / 0.2;
         if (x > 0 && out > 0) {
-            double sc2 = JizuraKit.lerp(1.55, 1, E.outBack(clamp(x), 1.4)), a = clamp(x * 3) * out;
-            double shake = x > 1 && x < 1.8 ? JizuraKit.rs(env.step, 91, 0) * S * 0.015 * (1.8 - x) : 0;
+            double sc2 = LyricKit.lerp(1.55, 1, E.outBack(clamp(x), 1.4)), a = clamp(x * 3) * out;
+            double shake = x > 1 && x < 1.8 ? LyricKit.rs(env.step, 91, 0) * S * 0.015 * (1.8 - x) : 0;
             AffineTransform keep = env.g.getTransform();
             env.g.translate(sx + shake, sy); env.g.rotate(p.d("rot") * DEG); env.g.scale(sc2, sc2);
             int M = 11;
             long seed = env.cut.seed;
             double[][] pts = new double[M * 4][];
-            for (int i = 0; i < M; i++) pts[i] = new double[]{-S / 2 + S * i / M, -S / 2 + JizuraKit.rs(seed, i, 1) * S * 0.014};
-            for (int i = 0; i < M; i++) pts[M + i] = new double[]{S / 2 + JizuraKit.rs(seed, i, 2) * S * 0.014, -S / 2 + S * i / M};
-            for (int i = 0; i < M; i++) pts[2 * M + i] = new double[]{S / 2 - S * i / M, S / 2 + JizuraKit.rs(seed, i, 3) * S * 0.014};
-            for (int i = 0; i < M; i++) pts[3 * M + i] = new double[]{-S / 2 + JizuraKit.rs(seed, i, 4) * S * 0.014, S / 2 - S * i / M};
+            for (int i = 0; i < M; i++) pts[i] = new double[]{-S / 2 + S * i / M, -S / 2 + LyricKit.rs(seed, i, 1) * S * 0.014};
+            for (int i = 0; i < M; i++) pts[M + i] = new double[]{S / 2 + LyricKit.rs(seed, i, 2) * S * 0.014, -S / 2 + S * i / M};
+            for (int i = 0; i < M; i++) pts[2 * M + i] = new double[]{S / 2 - S * i / M, S / 2 + LyricKit.rs(seed, i, 3) * S * 0.014};
+            for (int i = 0; i < M; i++) pts[3 * M + i] = new double[]{-S / 2 + LyricKit.rs(seed, i, 4) * S * 0.014, S / 2 - S * i / M};
             List<String> G = sealGlyphs(text);
             int gn = G.size(), cols = gn >= 3 ? 2 : 1, rows = (int) Math.ceil(gn / (double) cols);
             boolean haku = p.s("seal").equals("haku");
@@ -329,7 +329,7 @@ final class JizuraCompose2 {
                 env.draw(it(G.get(i), p.s("sealFont"), gs, gx, gy).sx(gs * gsx > cw ? cw / gs : gsx).color(gcol).alpha(a).noGhost());
             }
             if (haku) for (int i = 0; i < 12; i++)
-                env.circle(JizuraKit.rs(seed, i, 5) * S * 0.46, JizuraKit.rs(seed, i, 6) * S * 0.46, S * JizuraKit.rr(0.004, 0.012, seed, i, 7), sc.bg(), null, 0, a * 0.9);
+                env.circle(LyricKit.rs(seed, i, 5) * S * 0.46, LyricKit.rs(seed, i, 6) * S * 0.46, S * LyricKit.rr(0.004, 0.012, seed, i, 7), sc.bg(), null, 0, a * 0.9);
             env.g.setTransform(keep);
         }
         return bb != null ? bbox : null;
@@ -451,7 +451,7 @@ final class JizuraCompose2 {
             env.draw(it(Math.round(m.h() * e) + " " + p.s("unit"), mono(env), ls, dx + ex * ls * 1.1, cy).track(0.08).rot(top ? 90 : -90).color(sc.accent()).alpha(clamp(e * 2 - 0.3)).noGhost());
             if (p.b("ticks")) {
                 double ty = top ? y1 + size * 0.28 : y0 - size * 0.28, sg = top ? 1 : -1, a = clamp(e * 1.6 - 0.4);
-                var lay = JizuraKit.layoutText(new Item(text, font, size).track(0.04).lead(1.15));
+                var lay = LyricKit.layoutText(new Item(text, font, size).track(0.04).lead(1.15));
                 int li = top ? lay.get(lay.size() - 1).li : 0;
                 double lx0 = 1e9, lx1 = -1e9;
                 List<Double> xs = new ArrayList<>();

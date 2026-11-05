@@ -249,7 +249,7 @@ final class LayerConfig {
     /** Settings > Music and lyrics. Lyrics are off until switched on; looking lyrics up online is off until allowed. */
     static final class LyricsSettings {
         boolean enabled = false;
-        boolean video = true;            // Music video (a JIZURA-style lyric video, drawn in Java) or Simple
+        boolean video = true;            // Music video (a lyric video, drawn in Java) or Simple
         boolean demo = false;            // play the built-in demo song instead of the computer's player
         String player = "any";           // "any", "spotify" or a player's name
         boolean online = false;          // look lyrics up on lrclib.net
@@ -265,6 +265,10 @@ final class LayerConfig {
         int sideMode = 0;                // Fixed: 0 alternate left and right, 1 always left, 2 always right
         double gapPct = 0;               // Follow: extra space between the opponent and the panel, % of half the screen width
         double rollDeg = 0;              // tilt of the panel
+        boolean facePlayer = false;      // the panel keeps turning to face you...
+        double facePct = 100, faceSecs = 0;       // ...for this share of each line (100 = always) and/or this many seconds (0 = no limit)
+        boolean followPlayer = false;    // the panel is carried along with you...
+        double followPct = 100, followSecs = 0;   // ...for this share of each line and/or this many seconds
         boolean avoidEnemies = true;     // slide aside rather than cover the one you're fighting
         final java.util.Set<String> offLayouts = new java.util.TreeSet<>();   // layouts switched off
         boolean decor = true;            // rings, slashes, seal, brush circle...
@@ -283,15 +287,15 @@ final class LayerConfig {
         double fps = 12;                 // pictures per second
         boolean throughBlocks = true;    // never hidden behind blocks
         boolean chat = false;            // "Now playing" in your chat when the song changes
-        String style = "noir";           // JIZURA style
-        int seed = 1;                    // JIZURA variation (each song mixes in its own)
-        boolean motifs = true;           // JIZURA: Japanese motifs
-        boolean newEffects = false;      // JIZURA: the effects added after its first version
+        String style = "noir";           // style
+        int seed = 1;                    // variation (each song mixes in its own)
+        boolean motifs = true;           // Japanese motifs
+        boolean newEffects = false;      // the effects added after its first version
 
         /** The video's look from these settings. */
-        JizuraNative.Look look() {
+        LyricEngine.Look look() {
             int fk = switch (font) { case "sans" -> 0; case "serif" -> 1; case "mono" -> 2; default -> -1; };
-            return new JizuraNative.Look(java.util.Set.copyOf(offLayouts), java.util.Set.copyOf(offEnters), java.util.Set.copyOf(offExits), decor, frame, hud,
+            return new LyricEngine.Look(java.util.Set.copyOf(offLayouts), java.util.Set.copyOf(offEnters), java.util.Set.copyOf(offExits), decor, frame, hud,
                 ghostPct, grainPct, fps, speedPct, backdropPct, haloPct, fk, textColor, accentColor);
         }
     }
@@ -424,6 +428,12 @@ final class LayerConfig {
             if (lm.get("side_mode") instanceof String sm) ly.sideMode = sm.equalsIgnoreCase("left") ? 1 : sm.equalsIgnoreCase("right") ? 2 : 0;
             if (lm.get("gap_percent") instanceof Number n) ly.gapPct = n.doubleValue();
             if (lm.get("roll_degrees") instanceof Number n) ly.rollDeg = n.doubleValue();
+            if (lm.get("face_player") instanceof Boolean b) ly.facePlayer = b;
+            if (lm.get("face_percent") instanceof Number n) ly.facePct = n.doubleValue();
+            if (lm.get("face_seconds") instanceof Number n) ly.faceSecs = n.doubleValue();
+            if (lm.get("follow_player") instanceof Boolean b) ly.followPlayer = b;
+            if (lm.get("follow_percent") instanceof Number n) ly.followPct = n.doubleValue();
+            if (lm.get("follow_seconds") instanceof Number n) ly.followSecs = n.doubleValue();
             if (lm.get("frame") instanceof Boolean b) ly.frame = b;
             if (lm.get("speed_percent") instanceof Number n && n.doubleValue() > 0) ly.speedPct = n.doubleValue();
             if (lm.get("backdrop_percent") instanceof Number n) ly.backdropPct = n.doubleValue();
@@ -645,6 +655,12 @@ final class LayerConfig {
         ly.put("side_mode", lyrics.sideMode == 1 ? "left" : lyrics.sideMode == 2 ? "right" : "alternate");
         ly.put("gap_percent", lyrics.gapPct);
         ly.put("roll_degrees", lyrics.rollDeg);
+        ly.put("face_player", lyrics.facePlayer);
+        ly.put("face_percent", lyrics.facePct);
+        ly.put("face_seconds", lyrics.faceSecs);
+        ly.put("follow_player", lyrics.followPlayer);
+        ly.put("follow_percent", lyrics.followPct);
+        ly.put("follow_seconds", lyrics.followSecs);
         ly.put("frame", lyrics.frame);
         ly.put("speed_percent", lyrics.speedPct);
         ly.put("backdrop_percent", lyrics.backdropPct);

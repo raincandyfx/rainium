@@ -159,6 +159,16 @@ public final class LyricsScreen extends Screen {
             y = number(g, mx, my, x, y, w, "lyrics_height", ly.heightPct, " %", v -> { ly.heightPct = v; save(); });
             y = number(g, mx, my, x, y, w, "lyrics_side", ly.sidePct, " %", v -> { ly.sidePct = v; save(); });
             y = toggle(g, mx, my, x, y, w, "lyrics_avoid", ly.avoidEnemies, () -> { ly.avoidEnemies = !ly.avoidEnemies; save(); });
+            y = toggle(g, mx, my, x, y, w, "lyrics_face", ly.facePlayer, () -> { ly.facePlayer = !ly.facePlayer; save(); });
+            if (ly.facePlayer) {
+                y = number(g, mx, my, x, y, w, "lyrics_face_pct", ly.facePct, " %", v -> { ly.facePct = Math.max(0, v); save(); });
+                y = number(g, mx, my, x, y, w, "lyrics_face_secs", ly.faceSecs, " s", v -> { ly.faceSecs = Math.max(0, v); save(); });
+            }
+            y = toggle(g, mx, my, x, y, w, "lyrics_follow_me", ly.followPlayer, () -> { ly.followPlayer = !ly.followPlayer; save(); });
+            if (ly.followPlayer) {
+                y = number(g, mx, my, x, y, w, "lyrics_follow_pct", ly.followPct, " %", v -> { ly.followPct = Math.max(0, v); save(); });
+                y = number(g, mx, my, x, y, w, "lyrics_follow_secs", ly.followSecs, " s", v -> { ly.followSecs = Math.max(0, v); save(); });
+            }
         } else {
             y = number(g, mx, my, x, y, w, "lyrics_gap", ly.gapPct, " %", v -> { ly.gapPct = v; save(); });
         }
@@ -171,15 +181,15 @@ public final class LyricsScreen extends Screen {
         y = section(g, x, y, w, "section.lyrics_effects");
         if (!ly.video) return wrapped(g, x, y, w, Lang.t("lyrics.effects_simple"), FAINT);
         List<String[]> layouts = new ArrayList<>();
-        for (var e : JizuraLayouts.ALL.entrySet()) layouts.add(new String[]{e.getKey(), e.getValue().name()});
+        for (var e : LyricLayouts.ALL.entrySet()) layouts.add(new String[]{e.getKey(), e.getValue().name()});
         y = checks(g, mx, my, x, y, w, "lyrics.layouts_count", layouts, ly.offLayouts, false);
         y = section(g, x, y + 4, w, "section.lyrics_in");
         List<String[]> ins = new ArrayList<>();
-        for (JizuraNative.Enter e : JizuraNative.Enter.values()) if (e != JizuraNative.Enter.TYPE) ins.add(new String[]{e.name().toLowerCase(Locale.ROOT), Lang.t("value.lyrics_way." + e.name().toLowerCase(Locale.ROOT))});
+        for (LyricEngine.Enter e : LyricEngine.Enter.values()) if (e != LyricEngine.Enter.TYPE) ins.add(new String[]{e.name().toLowerCase(Locale.ROOT), Lang.t("value.lyrics_way." + e.name().toLowerCase(Locale.ROOT))});
         y = checks(g, mx, my, x, y, w, "lyrics.ways_count", ins, ly.offEnters, true);
         y = section(g, x, y + 4, w, "section.lyrics_out");
         List<String[]> outs = new ArrayList<>();
-        for (JizuraNative.Exit e : JizuraNative.Exit.values()) outs.add(new String[]{e.name().toLowerCase(Locale.ROOT), Lang.t("value.lyrics_way." + e.name().toLowerCase(Locale.ROOT))});
+        for (LyricEngine.Exit e : LyricEngine.Exit.values()) outs.add(new String[]{e.name().toLowerCase(Locale.ROOT), Lang.t("value.lyrics_way." + e.name().toLowerCase(Locale.ROOT))});
         return checks(g, mx, my, x, y, w, "lyrics.ways_count", outs, ly.offExits, true);
     }
 
@@ -264,7 +274,7 @@ public final class LyricsScreen extends Screen {
         int fw = 78, fx = x + w - fw;
         String id = "h:" + key;
         boolean editing = id.equals(editId), hov = in(mx, my, fx, y, fw, ROW);
-        Color sw = JizuraNative.Look.color(value);
+        Color sw = LyricEngine.Look.color(value);
         g.fill(fx, y, fx + fw, y + ROW, editing ? INK : hov ? FIELD_HOVER : FIELD);
         g.outline(fx, y, fw, ROW, editing ? CYAN : FIELD_EDGE);
         String shown = editing ? "#" + editBuf + ((System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "") : value.isBlank() ? Lang.t("value.lyrics_style_color") : "#" + value.replace("#", "");
@@ -274,7 +284,7 @@ public final class LyricsScreen extends Screen {
         hits.add(new Hit(fx, y, fw, ROW, () -> beginEdit(id, value.replace("#", ""), false, str -> {
             String t = str.trim().replace("#", "");
             if (t.isEmpty()) { set.accept(""); return; }
-            if (JizuraNative.Look.color(t) == null) { say(Lang.t("lyrics.not_a_colour"), WARN); return; }
+            if (LyricEngine.Look.color(t) == null) { say(Lang.t("lyrics.not_a_colour"), WARN); return; }
             set.accept("#" + t.toLowerCase(Locale.ROOT));
         }), null));
         return y + ROW + GAP;
