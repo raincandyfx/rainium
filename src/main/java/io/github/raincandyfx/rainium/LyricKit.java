@@ -45,6 +45,7 @@ final class LyricKit {
     static final class E {
         static double outCubic(double x) { x = clamp(x); return 1 - Math.pow(1 - x, 3); }
         static double inCubic(double x) { x = clamp(x); return x * x * x; }
+        static double outBounce(double x) { x = clamp(x); double n = 7.5625, d = 2.75; if (x < 1 / d) return n * x * x; if (x < 2 / d) { x -= 1.5 / d; return n * x * x + 0.75; } if (x < 2.5 / d) { x -= 2.25 / d; return n * x * x + 0.9375; } x -= 2.625 / d; return n * x * x + 0.984375; }
         static double outExpo(double x) { x = clamp(x); return x >= 1 ? 1 : 1 - Math.pow(2, -10 * x); }
         static double inExpo(double x) { x = clamp(x); return x <= 0 ? 0 : Math.pow(2, 10 * x - 10); }
         static double outBack(double x) { return outBack(x, 1.9); }
