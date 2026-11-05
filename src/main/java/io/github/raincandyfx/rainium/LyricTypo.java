@@ -28,25 +28,25 @@ final class LyricTypo {
 
     static void init() {}
 
-    private static boolean sp(String c) { return c.equals(" ") || c.equals("　"); }
+    static boolean sp(String c) { return c.equals(" ") || c.equals("　"); }
 
-    private static List<String> slots(String t) { return chars(t.trim().replaceAll("[\\s　]+", " ")); }
+    static List<String> slots(String t) { return chars(t.trim().replaceAll("[\\s　]+", " ")); }
 
-    private static double hair() { return Math.max(1, U * 0.0014); }
+    static double hair() { return Math.max(1, U * 0.0014); }
 
-    private static double lsz() { return clamp(U * 0.018, 11, 22); }
+    static double lsz() { return clamp(U * 0.018, 11, 22); }
 
-    private static Color accentOn(LyricEngine.Scheme sc) { return LyricKit.contrast(sc.accent(), sc.bg()) >= 1.8 ? sc.accent() : sc.fg(); }
+    static Color accentOn(LyricEngine.Scheme sc) { return LyricKit.contrast(sc.accent(), sc.bg()) >= 1.8 ? sc.accent() : sc.fg(); }
 
-    private static Color plate(LyricEngine.Scheme sc, Color... pref) {
+    static Color plate(LyricEngine.Scheme sc, Color... pref) {
         for (Color c : pref) if (c != null && LyricKit.contrast(c, sc.bg()) >= 1.6) return c;
         return sc.fg();
     }
 
-    private static boolean ok(String c) { return c != null && !sp(c) && !isBad(c); }
+    static boolean ok(String c) { return c != null && !sp(c) && !isBad(c); }
 
     /** Index of the key glyph: first kanji of the longest kanji run, else the first plain glyph. */
-    private static int keyIndex(List<String> arr, String mode) {
+    static int keyIndex(List<String> arr, String mode) {
         if (mode.equals("mid")) {
             int mid = (arr.size() - 1) / 2;
             for (int d = 0; d < arr.size(); d++) {
@@ -67,16 +67,16 @@ final class LyricTypo {
         return 0;
     }
 
-    private static String join(List<String> a, int from, int to) { return String.join("", a.subList(Math.max(0, from), Math.min(a.size(), to))).trim(); }
+    static String join(List<String> a, int from, int to) { return String.join("", a.subList(Math.max(0, from), Math.min(a.size(), to))).trim(); }
 
-    private static String mainLines(String text, int perL) {
+    static String mainLines(String text, int perL) {
         String t = text.trim();
         int n = gcount(t);
         if (n <= perL) return t;
         return brk(t, (int) Math.ceil(n / Math.ceil(n / (double) perL)));
     }
 
-    private static void label(Env env, String text, double x, double y, double size, double a, String align, Color c) {
+    static void label(Env env, String text, double x, double y, double size, double a, String align, Color c) {
         if (a <= 0.01) return;
         env.draw(it(text, mono(env), size, x, y).track(0.12).align(align).color(c).alpha(a).noGhost());
     }

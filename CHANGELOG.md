@@ -6,6 +6,7 @@ Rainium is in beta (0.x) until 1.0.0.
 
 - **Face me.** A placement option for the Fixed panel: it keeps turning to face you as you move. It runs for a share of each line (100 % is the whole time, 50 % the first half) and/or a number of seconds (1 s is one second from the start of the line); after that it stays at the angle it had. If both are set, whichever ends first wins.
 - **Move with me.** The same two inputs for another option: the panel is carried along with you as you walk, then stays where it is.
+- **Eleven more layouts** (66 in all) from the typography set: scale steps, justified lines, index table, split type, erosion, vertical ruler, full-width tracking, character count, margin, rotated block and square setting.
 - **Credits.** The lyric video's source and the other credits now sit only in the Credits and disclaimer sections (README and website); the licence notice stays bundled with the style table. Internal names changed to match.
 
 ## 0.9.9 (dev build)
