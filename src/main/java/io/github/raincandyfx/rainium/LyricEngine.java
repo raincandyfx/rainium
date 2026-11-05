@@ -137,8 +137,8 @@ final class LyricEngine {
                     Map<String, Object> bias = (Map<String, Object>) m.get("bias");
                     if (bias != null) {
                         fill(s.layoutBias, bias.get("layout"));
-                        fill(s.enterBias, bias.get("enter"));
-                        fill(s.exitBias, bias.get("exit"));
+                        fillNorm(s.enterBias, bias.get("enter"));
+                        fillNorm(s.exitBias, bias.get("exit"));
                     }
                     fill(s.decor, m.get("decor"));
                     if (m.get("fonts") instanceof Map<?, ?> fm)
@@ -168,13 +168,21 @@ final class LyricEngine {
         if (o instanceof Map<?, ?> m) for (var e : ((Map<String, Object>) m).entrySet()) into.put(e.getKey(), num(e.getValue()));
     }
 
+    /** Way-in and way-out names are matched without case or underscores (slide_left and slideLeft are the same). */
+    @SuppressWarnings("unchecked")
+    private static void fillNorm(Map<String, Double> into, Object o) {
+        if (o instanceof Map<?, ?> m) for (var e : ((Map<String, Object>) m).entrySet()) into.put(e.getKey().toLowerCase(Locale.ROOT).replace("_", ""), num(e.getValue()));
+    }
+
     private static double num(Object o) { return o instanceof Number n ? n.doubleValue() : 0; }
 
     // ------------------------------------------------------------------ cuts
     enum Enter { POP, RISE, SLICE, STRETCH, ASSEMBLE, SPIN, WIPE, SCRAMBLE, DROP, TYPE,
-        FLIP, ZOOM, SLIDE_LEFT, SLIDE_RIGHT, SWING, ELASTIC, WAVE, SPIRAL, SQUASH, BLINK, TUMBLE, SHUTTER, RUSH, HOP, FOCUS, UNFOLD, ZIP, FALL_IN, TILT, SPREAD }
+        FLIP, ZOOM, SLIDE_LEFT, SLIDE_RIGHT, SWING, ELASTIC, WAVE, SPIRAL, SQUASH, BLINK, TUMBLE, SHUTTER, RUSH, HOP, FOCUS, UNFOLD, ZIP, FALL_IN, TILT, SPREAD,
+        BLUR, FLICKER, RISE_MASK, DROP_MASK, FLIP_X, DOMINO, FOLD, UNROLL, STROKE_DRAW, OUTLINE_FILL, SPLIT_JOIN, V_SLICE, IRIS, DIAG_WIPE, BLINDS, CHECKER, RANDOM_ORDER, BOUNCE_BIG, SQUASH_DROP, RUBBER, GLITCH_IN, ECHO_IN, WHIP, SKEW_IN, TRACK_IN, TRACK_OUT, BLUR_STAGGER, FADE_STAGGER, INK_BLEED, NEON_ON, CURSOR_SWEEP, STAMP, SPRING_IN, PENDULUM, ROLL_IN, SLINGSHOT, ROCK_SETTLE, BOUNCE_BALL, SNAP_RAIL, FAN_OPEN, CYLINDER, SHUFFLE, STOP_MOTION, RIPPLE, STICKER_PEEL, CRUMPLE, TORN_JOIN, OVEREXPOSE, GLINT, LOUPE, FILM_FEED, BACKLIGHT, LIGHT_LEAK, HEAT_HAZE, CRT_ON, INTERLACE, DITHER, ODOMETER, QUARTERS, PRINT_REGISTER, LIQUID_FILL, WIND_BLOWN, SHADOW_FIRST, TOKOROTEN }
     enum Exit { FADE, DRIFT, FALL, EXPLODE, SLICE, SHRINK, GLITCH, SCATTER,
-        SLIDE_LEFT, SLIDE_RIGHT, RISE_UP, ZOOM_OUT, SPIN_OUT, FLIP_OUT, COLLAPSE, BLINK, MELT, SWING_OUT, WAVE_OUT, BLUR, TUMBLE, FLY, POP_OUT, ZIP, SQUEEZE, UNRAVEL }
+        SLIDE_LEFT, SLIDE_RIGHT, RISE_UP, ZOOM_OUT, SPIN_OUT, FLIP_OUT, COLLAPSE, BLINK, MELT, SWING_OUT, WAVE_OUT, BLUR, TUMBLE, FLY, POP_OUT, ZIP, SQUEEZE, UNRAVEL,
+        WIPE, STRETCH, SINK_MASK, RISE_OUT, FLIP_OUT_X, FLIP_OUT_Y, FOLD_OUT, SQUASH_OUT, TRACK_OUT_WIDE, ZOOM_THROUGH, ZOOM_FAR, TWIST, BLUR_OUT_STAGGER, UNDRAW, OUTLINE_OUT, IRIS_CLOSE, DIAG_WIPE_OUT, BLINDS_CLOSE, CHECKER_OUT, SPLIT_APART, V_SLICE_DROP, DISSOLVE, BACKSPACE, SCRAMBLE_OUT, GLITCH_DISSOLVE, ECHO_OUT, WHIP_OUT, GRAVITY, BURN, SWEEP_COVER, SHATTER_LITE, PEEL_OFF, CRUMPLE_OUT, TEAR_OUT, OVEREXPOSE_OUT, SCAN_OUT, STRIPES_OUT, HALFTONE_OUT, VACUUM_OUT, SAND_OUT, SHRED_OUT, DOMINO_OUT, HINGE_OUT, ROCKET_OFF, BOUNCE_OFF, BALLOON_OFF, DEFLATE_OUT, HAZE_OUT, CLAP_SHUT, LAMP_OFF, SLOT_OUT, CLOCK_OUT, TORNADO_OUT, ROLL_UP_OUT, FLUTTER_OUT, ROLL_OFF, SLASH_OUT, MOSAIC_OUT, SCRIBBLE_OUT, CANDLE_OUT }
 
     /** One shot of the video: a line (or a part of a long line) with its look decided. */
     static final class Cut {
@@ -354,14 +362,14 @@ final class LyricEngine {
     private double[] enterWeights() {
         Enter[] e = Enter.values();
         double[] w = new double[e.length];
-        for (int i = 0; i < e.length; i++) w[i] = look.offIn().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : e[i] == Enter.TYPE ? 0 : 1 + bias(style.enterBias, e[i].name().toLowerCase(Locale.ROOT));
+        for (int i = 0; i < e.length; i++) w[i] = look.offIn().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : e[i] == Enter.TYPE ? 0 : 1 + bias(style.enterBias, e[i].name().toLowerCase(Locale.ROOT).replace("_", ""));
         return anyOr(w);
     }
 
     private double[] exitWeights() {
         Exit[] e = Exit.values();
         double[] w = new double[e.length];
-        for (int i = 0; i < e.length; i++) w[i] = look.offOut().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : 1 + bias(style.exitBias, e[i].name().toLowerCase(Locale.ROOT));
+        for (int i = 0; i < e.length; i++) w[i] = look.offOut().contains(e[i].name().toLowerCase(Locale.ROOT)) ? 0 : 1 + bias(style.exitBias, e[i].name().toLowerCase(Locale.ROOT).replace("_", ""));
         return anyOr(w);
     }
 
@@ -417,7 +425,7 @@ final class LyricEngine {
     State state(Env env, Cut c, Enter enter, Item it, GL gl, double ltI, double lt, double outStart, long seed, long step) {
         State s = new State();
         s.ch = gl.ch;
-        double reveal = gl.i * (enter == Enter.TYPE ? 0.05 : 0.016);
+        double reveal = gl.i * (enter == Enter.TYPE ? 0.05 : enter == Enter.BLUR_STAGGER || enter == Enter.FADE_STAGGER || enter == Enter.RANDOM_ORDER ? 0.045 : 0.016);
         if (ltI < reveal) { s.alpha = 0; return s; }
         double p = clamp((ltI - reveal) / Math.max(0.05, c.inDur));
         double e = E.outCubic(p), inv = 1 - e;
@@ -454,8 +462,72 @@ final class LyricEngine {
             case FALL_IN -> { s.dy = -inv * inv * 260 * K; s.alpha = clamp(p * 6); }
             case TILT -> { s.rot = inv * 0.5 * ((word & 1) == 0 ? 1 : -1); s.dy = inv * 26 * K; s.alpha = clamp(p * 2.5); }
             case SPREAD -> { double c0 = (gl.i - 3) * 0.5; s.dx = c0 * inv * 40 * K; s.sx = s.sy = Math.max(0.01, 0.4 + 0.6 * e); s.alpha = clamp(p * 3); }
+            case BLUR -> { s.ghost = inv * 14; s.sx = s.sy = 1 + inv * 0.1; s.alpha = clamp(p * 2.5); }
+            case FLICKER -> s.alpha = p < 1 ? (hash(step, gl.i + 3) < 0.25 + 0.75 * p ? 1 : 0.15) : 1;
+            case RISE_MASK -> { s.dy = inv * inv * 44 * K; s.alpha = clamp(p * 3); }
+            case DROP_MASK -> { s.dy = -inv * inv * 44 * K; s.alpha = clamp(p * 3); }
+            case FLIP_X -> { s.sx = Math.max(0.04, Math.abs(Math.cos(inv * Math.PI))); s.alpha = clamp(p * 5); }
+            case DOMINO -> { s.rot = -inv * 1.3; s.dx = -inv * 26 * K; s.dy = inv * 10 * K; s.alpha = clamp(p * 3); }
+            case FOLD -> { s.sx = Math.max(0.03, e); s.rot = inv * 0.25; s.alpha = clamp(p * 4); }
+            case UNROLL -> { s.wipe = e; s.sy = 1; s.dy = -inv * 8 * K; }
+            case STROKE_DRAW -> { s.wipe = p; s.ghost = inv * 3; s.alpha = clamp(p * 3); }
+            case OUTLINE_FILL -> { s.ghost = inv * 6; s.alpha = clamp(p * 1.8); }
+            case SPLIT_JOIN -> { s.bands = 2; s.bandDx = inv * 80 * K * ((word & 1) == 0 ? 1 : -1); s.alpha = clamp(p * 4); }
+            case V_SLICE -> { s.bands = 6; s.bandDx = inv * 54 * K * (gl.i % 2 == 0 ? 1 : -1); s.alpha = clamp(p * 4); }
+            case IRIS -> { s.sx = s.sy = Math.max(0.01, E.outExpo(p)); s.alpha = clamp(p * 6); }
+            case DIAG_WIPE -> { s.wipe = p; s.dx = -inv * 24 * K; s.dy = inv * 14 * K; }
+            case BLINDS -> { s.bands = 8; s.bandDx = inv * 16 * K * (gl.i % 2 == 0 ? 1 : -1); s.alpha = clamp(p * 5); }
+            case CHECKER -> s.alpha = p < 1 ? (hash(step / 2, gl.i * 7 + word) < p * 1.1 ? 1 : 0) : 1;
+            case RANDOM_ORDER -> { double k = E.outBack(p); s.sx = s.sy = Math.max(0.01, k); s.alpha = clamp(p * 6); }
+            case BOUNCE_BIG -> { s.dy = -(1 - bounce(p)) * 190 * K; s.sx = s.sy = 1 + inv * 0.25; s.alpha = clamp(p * 5); }
+            case SQUASH_DROP -> { s.dy = -inv * inv * 200 * K; double l = clamp((p - 0.72) * 3.5); s.sy = 1 - 0.35 * Math.sin(l * Math.PI); s.sx = 1 + 0.3 * Math.sin(l * Math.PI); s.alpha = clamp(p * 6); }
+            case RUBBER -> { double k = 1 + Math.exp(-5 * p) * Math.sin(p * 18) * 0.7; s.sx = k; s.sy = 2 - k; s.alpha = clamp(p * 6); }
+            case GLITCH_IN -> { s.dx = (hash(step, gl.i) - 0.5) * 60 * K * inv; s.ghost = inv * 14; s.alpha = p < 1 && hash(step + 5, gl.i) > 0.2 + 0.8 * p ? 0.1 : 1; }
+            case ECHO_IN -> { s.ghost = inv * 16; s.sx = s.sy = 1 + inv * 0.18; s.alpha = clamp(p * 3); }
+            case WHIP -> { s.dx = -inv * inv * 600 * K; s.sx = 1 + inv * 2.2; s.ghost = inv * 14; s.alpha = clamp(p * 6); }
+            case SKEW_IN -> { s.rot = inv * 0.38; s.dx = inv * 60 * K; s.sx = 1 + inv * 0.5; s.alpha = clamp(p * 3); }
+            case TRACK_IN -> { s.dx = ((gl.i % 10) - 4.5) * inv * 26 * K; s.alpha = clamp(p * 2.5); }
+            case TRACK_OUT -> { s.dx = ((gl.i % 10) - 4.5) * -inv * 5 * K; s.sx = 1 + inv * 0.4; s.alpha = clamp(p * 3); }
+            case BLUR_STAGGER -> { s.ghost = inv * 18; s.alpha = clamp(p * 2); }
+            case FADE_STAGGER -> s.alpha = clamp(p * 1.6);
+            case INK_BLEED -> { s.ghost = inv * 9; s.sx = s.sy = 0.88 + 0.12 * e; s.alpha = clamp(p * 1.8); }
+            case NEON_ON -> { s.alpha = p < 1 ? (hash(step, gl.i + 9) < p ? 1 : 0.25 * p) : 1; s.ghost = (1 - p) * 4; }
+            case CURSOR_SWEEP -> { s.wipe = p; s.ghost = inv * 4; }
+            case STAMP -> { s.sx = s.sy = 1 + inv * inv * 2.6; s.rot = inv * 0.12; s.alpha = clamp(p * 9); s.ghost = p > 0.85 && p < 1 ? 6 : 0; }
+            case SPRING_IN -> { s.dy = -Math.exp(-5 * p) * Math.cos(p * 16) * 46 * K; s.alpha = clamp(p * 6); }
+            case PENDULUM -> { s.rot = Math.cos(p * 9) * (1 - p) * 0.9; s.dx = Math.sin(p * 9) * (1 - p) * 14 * K; s.alpha = clamp(p * 5); }
+            case ROLL_IN -> { s.dx = -inv * 340 * K; s.rot = -inv * 7; s.alpha = clamp(p * 5); }
+            case SLINGSHOT -> { s.dx = -inv * inv * 460 * K; s.dy = inv * 30 * K * Math.sin(p * 3); s.sx = 1 + inv * 0.8; s.alpha = clamp(p * 6); }
+            case ROCK_SETTLE -> { s.rot = Math.sin(p * 22) * (1 - p) * 0.3; s.dy = -inv * 30 * K; s.alpha = clamp(p * 6); }
+            case BOUNCE_BALL -> { s.dy = -Math.abs(Math.cos(p * Math.PI * 2.5)) * inv * 130 * K; s.alpha = clamp(p * 8); }
+            case SNAP_RAIL -> { s.dx = (r1 - 0.5) * inv * 240 * K; s.dy = (r2 - 0.5) * inv * 40 * K; s.alpha = clamp(p * 4); }
+            case FAN_OPEN -> { s.rot = -inv * 1.1; s.dx = -inv * 40 * K; s.dy = inv * 40 * K; s.alpha = clamp(p * 3); }
+            case CYLINDER -> { s.sx = Math.max(0.05, Math.abs(Math.cos(inv * 1.6))); s.alpha = clamp(p * 3); }
+            case SHUFFLE -> { s.dx = (r1 - 0.5) * inv * 300 * K; s.dy = (r2 - 0.5) * inv * 120 * K; s.rot = (r3 - 0.5) * inv * 1.6; s.alpha = clamp(p * 3); }
+            case STOP_MOTION -> { double q2 = Math.floor(p * 6) / 6.0; s.dx = (hash((long) (q2 * 6), gl.i) - 0.5) * (1 - q2) * 24 * K; s.dy = (hash((long) (q2 * 6) + 9, gl.i) - 0.5) * (1 - q2) * 24 * K; s.alpha = p < 1 ? 0.3 + 0.7 * q2 : 1; }
+            case RIPPLE -> { s.dy = Math.sin(p * 12 - gl.i * 0.9) * (1 - p) * 30 * K; s.sx = s.sy = 1 + Math.sin(p * 12 - gl.i * 0.9) * (1 - p) * 0.12; s.alpha = clamp(p * 4); }
+            case STICKER_PEEL -> { s.sy = Math.max(0.05, e); s.rot = inv * 0.18; s.dy = -inv * 10 * K; s.ghost = inv * 2; s.alpha = clamp(p * 5); }
+            case CRUMPLE -> { s.sx = 0.4 + 0.6 * e; s.sy = 0.4 + 0.6 * e; s.rot = Math.sin(p * 16) * (1 - p) * 0.5; s.alpha = clamp(p * 4); }
+            case TORN_JOIN -> { s.bands = 2; s.bandDx = inv * 60 * K * ((gl.i & 1) == 0 ? 1 : -1); s.rot = inv * 0.1 * ((gl.i & 1) == 0 ? 1 : -1); s.alpha = clamp(p * 4); }
+            case OVEREXPOSE -> { s.ghost = inv * 22; s.sx = s.sy = 1 + inv * 0.06; s.alpha = clamp(p * 2.2); }
+            case GLINT -> { s.alpha = clamp(p * 2.5); s.ghost = Math.max(0, 1 - Math.abs(p * 2 - gl.i * 0.15)) * 12; }
+            case LOUPE -> { s.sx = s.sy = 1 + inv * 1.6; s.ghost = inv * 6; s.alpha = clamp(p * 3); }
+            case FILM_FEED -> { s.dy = inv * 160 * K; s.sy = 1 + inv * 0.3; s.alpha = clamp(p * 4); }
+            case BACKLIGHT -> { s.ghost = inv * 20; s.alpha = clamp(p * 2.5); s.sx = s.sy = 1 - inv * 0.05; }
+            case LIGHT_LEAK -> { s.alpha = clamp(p * 2.5); s.ghost = Math.sin(p * Math.PI) * 16; }
+            case HEAT_HAZE -> { s.dx = Math.sin(p * 18 + gl.i) * inv * 10 * K; s.dy = Math.cos(p * 14 + gl.i * 0.7) * inv * 6 * K; s.ghost = inv * 7; s.alpha = clamp(p * 2.5); }
+            case CRT_ON -> { s.sy = Math.max(0.02, E.outExpo(clamp(p * 1.8) - 0.0) * (p < 0.4 ? 0.05 : 1)); s.sx = 1 + inv * 0.8; s.ghost = inv * 8; s.alpha = clamp(p * 6); }
+            case INTERLACE -> { s.bands = 10; s.bandDx = inv * 18 * K * (gl.i % 2 == 0 ? 1 : -1); s.alpha = clamp(p * 4); }
+            case DITHER -> s.alpha = p < 1 ? (hash(step / 2, gl.i * 13 + word) < p ? 1 : 0) : 1;
+            case ODOMETER -> { if (p < 1) s.ch = scramble(gl, step / 2); s.dy = inv * inv * 36 * K; s.alpha = clamp(p * 5); }
+            case QUARTERS -> { double qd = (gl.i % 4); s.dx = (qd < 2 ? -1 : 1) * inv * 120 * K; s.dy = (qd % 2 == 0 ? -1 : 1) * inv * 70 * K; s.alpha = clamp(p * 3); }
+            case PRINT_REGISTER -> { s.dx = inv * 18 * K; s.dy = -inv * 10 * K; s.ghost = inv * 16; s.alpha = clamp(p * 3); }
+            case LIQUID_FILL -> { s.dy = inv * 40 * K + Math.sin(p * 14 + gl.i * 0.5) * inv * 6 * K; s.alpha = clamp(p * 2.5); s.sy = 0.6 + 0.4 * e; }
+            case WIND_BLOWN -> { s.dx = -inv * inv * 380 * K * (0.6 + r1); s.dy = (r2 - 0.5) * inv * 60 * K; s.rot = -inv * 2.5 * r3; s.alpha = clamp(p * 3); }
+            case SHADOW_FIRST -> { s.ghost = (1 - clamp(p * 2)) * 0 + inv * 3; s.alpha = clamp(p * 1.6); s.dy = inv * 8 * K; }
+            case TOKOROTEN -> { s.wipe = p; s.sx = 1 + inv * 0.3; s.dx = -inv * 30 * K; }
         }
-        double q = c.outDur > 0 ? clamp((lt - outStart - gl.i * 0.01) / c.outDur) : 0;
+        double q = c.outDur > 0 ? clamp((lt - outStart - gl.i * (c.exit == Exit.BLUR_OUT_STAGGER || c.exit == Exit.DISSOLVE ? 0.04 : 0.01)) / c.outDur) : 0;
         if (q > 0) {
             double a = 1;
             switch (c.exit) {
@@ -485,6 +557,66 @@ final class LyricEngine {
                 case ZIP -> { s.wipe = 1 - q; s.dx += q * 60 * K; a = 1; }
                 case SQUEEZE -> { s.sx *= Math.max(0.02, 1 - q); s.sy *= 1 + q * 0.8; a = 1 - q * q; }
                 case UNRAVEL -> { s.rot += (r1 - 0.5) * q * 2.6; s.dx += (gl.i % 2 == 0 ? 1 : -1) * q * 90 * K; s.dy += q * q * 80 * K; a = 1 - q * q; }
+                case WIPE -> { s.wipe = 1 - q; a = 1; }
+                case STRETCH -> { s.sx *= 1 + q * 2.6; s.sy *= Math.max(0.02, 1 - q * 0.7); a = 1 - q * q; }
+                case SINK_MASK -> { s.dy += q * q * 36 * K; a = 1 - q * q * q; }
+                case RISE_OUT -> { s.dy -= q * 70 * K; a = 1 - q * q; }
+                case FLIP_OUT_X -> { s.sx *= Math.max(0.03, Math.cos(q * Math.PI / 2)); a = 1 - q * q; }
+                case FLIP_OUT_Y -> { s.sy *= Math.max(0.03, Math.cos(q * Math.PI / 2)); s.dy += q * 10 * K; a = 1 - q * q; }
+                case FOLD_OUT -> { s.sx *= Math.max(0.03, 1 - q); s.rot += q * 0.25; a = 1 - q * q; }
+                case SQUASH_OUT -> { s.sy *= Math.max(0.02, 1 - q); s.sx *= 1 + q * 0.7; s.dy += q * 14 * K; a = 1 - q * q; }
+                case TRACK_OUT_WIDE -> { s.dx += ((gl.i % 10) - 4.5) * q * 30 * K; a = 1 - q * q; }
+                case ZOOM_THROUGH -> { s.sx *= 1 + q * q * 5; s.sy *= 1 + q * q * 5; a = 1 - q * q; }
+                case ZOOM_FAR -> { double k = Math.max(0.02, 1 - q * 0.9); s.sx *= k; s.sy *= k; s.ghost += q * 6; a = 1 - q * q; }
+                case TWIST -> { s.rot += q * (gl.i % 2 == 0 ? 1 : -1) * 1.4; s.sx *= Math.max(0.1, 1 - q * 0.6); a = 1 - q * q; }
+                case BLUR_OUT_STAGGER -> { s.ghost += q * 20; a = 1 - q; }
+                case UNDRAW -> { s.wipe = 1 - q; s.ghost += q * 3; a = 1 - q * 0.4; }
+                case OUTLINE_OUT -> { s.ghost += q * 8; a = 1 - q * 0.9; }
+                case IRIS_CLOSE -> { double k = Math.max(0.01, 1 - E.inExpo(q)); s.sx *= k; s.sy *= k; a = 1 - q * q * q; }
+                case DIAG_WIPE_OUT -> { s.wipe = 1 - q; s.dx += q * 24 * K; s.dy -= q * 14 * K; }
+                case BLINDS_CLOSE -> { s.bands = 8; s.bandDx = q * 22 * K * (gl.i % 2 == 0 ? 1 : -1); a = 1 - q * q; }
+                case CHECKER_OUT -> a = hash(step / 2, gl.i * 7 + word) < 1 - q ? 1 : 0;
+                case SPLIT_APART -> { s.bands = 2; s.bandDx = q * 150 * K * ((word & 1) == 0 ? 1 : -1); a = 1 - q * q; }
+                case V_SLICE_DROP -> { s.bands = 6; s.bandDx = q * 30 * K * (gl.i % 2 == 0 ? 1 : -1); s.dy += q * q * 120 * K; a = 1 - q * q; }
+                case DISSOLVE -> { s.dy -= q * 14 * K; s.ghost += q * 10; a = 1 - q; }
+                case BACKSPACE -> a = q < 1 ? (hash(step, gl.i) > q * 1.2 ? 1 : 0) : 0;
+                case SCRAMBLE_OUT -> { if (q > 0.05 && q < 1) s.ch = scramble(gl, step); a = 1 - q * q; }
+                case GLITCH_DISSOLVE -> { s.dx += (hash(step, gl.i) - 0.5) * 50 * K * q; a = hash(step + 4, gl.i) < 1 - q ? 1 : 0; s.ghost += q * 8; }
+                case ECHO_OUT -> { s.ghost += q * 22; s.sx *= 1 + q * 0.2; s.sy *= 1 + q * 0.2; a = 1 - q; }
+                case WHIP_OUT -> { s.dx += q * q * 640 * K; s.sx *= 1 + q * 2.2; s.ghost += q * 14; a = 1 - q * q; }
+                case GRAVITY -> { s.dy += q * q * 280 * K; s.rot += (r1 - 0.5) * q * 2; a = 1 - q * q * q; }
+                case BURN -> { s.dy -= q * 18 * K; s.ghost += q * 12; s.sy *= 1 - q * 0.25; a = 1 - q * q; }
+                case SWEEP_COVER -> { s.wipe = 1 - q; a = 1; }
+                case SHATTER_LITE -> { s.bands = 4; s.bandDx = q * 90 * K * (gl.i % 2 == 0 ? 1 : -1); s.dy += q * q * 110 * K; s.rot += (r1 - 0.5) * q * 1.2; a = 1 - q * q; }
+                case PEEL_OFF -> { s.sy *= Math.max(0.05, 1 - q); s.rot += q * 0.3; s.dy -= q * 20 * K; a = 1 - q * q; }
+                case CRUMPLE_OUT -> { double k = Math.max(0.02, 1 - q); s.sx *= k; s.sy *= k; s.rot += Math.sin(q * 16) * 0.4; s.dy += q * q * 60 * K; a = 1 - q * q * q; }
+                case TEAR_OUT -> { s.bands = 2; s.bandDx = q * 110 * K * ((gl.i & 1) == 0 ? 1 : -1); s.rot += q * 0.2 * ((gl.i & 1) == 0 ? 1 : -1); a = 1 - q * q; }
+                case OVEREXPOSE_OUT -> { s.ghost += q * 24; s.sx *= 1 + q * 0.06; a = 1 - q; }
+                case SCAN_OUT -> { s.wipe = 1 - q; s.ghost += q * 6; }
+                case STRIPES_OUT -> { s.bands = 10; s.bandDx = q * 40 * K * (gl.i % 2 == 0 ? 1 : -1); a = 1 - q * q; }
+                case HALFTONE_OUT -> { s.ghost += q * 10; s.sx *= 1 - q * 0.3; s.sy *= 1 - q * 0.3; a = 1 - q * q; }
+                case VACUUM_OUT -> { s.dx -= ((gl.i % 10) - 4.5) * q * 20 * K; double k = Math.max(0.02, 1 - q); s.sx *= k; s.sy *= k; a = 1 - q * q; }
+                case SAND_OUT -> { s.dx += q * q * (120 + r1 * 260) * K; s.dy += (r2 - 0.5) * q * 80 * K; s.ghost += q * 8; a = 1 - q * q; }
+                case SHRED_OUT -> { s.bands = 8; s.bandDx = 0; s.dy += q * q * (60 + 100 * hash(step / 100, gl.i * 3)) * K; a = 1 - q * q; }
+                case DOMINO_OUT -> { s.rot += q * 1.3; s.dx += q * 26 * K; s.dy += q * q * 20 * K; a = 1 - q * q; }
+                case HINGE_OUT -> { s.rot += q * q * 2.2; s.dx += q * 12 * K; s.dy += q * q * 160 * K; a = 1 - q * q; }
+                case ROCKET_OFF -> { s.dy -= q * q * 460 * K; s.sy *= 1 + q * 1.4; s.ghost += q * 10; a = 1 - q * q; }
+                case BOUNCE_OFF -> { s.dy -= Math.abs(Math.sin(q * Math.PI * 2)) * 50 * K; s.dx += q * q * 380 * K; a = 1 - q * q; }
+                case BALLOON_OFF -> { s.dy -= q * q * 320 * K; s.dx += Math.sin(q * 6) * 20 * K; double k = 1 + q * 0.2; s.sx *= k; s.sy *= k; a = 1 - q * q; }
+                case DEFLATE_OUT -> { s.sx *= 1 + q * 0.25; s.sy *= Math.max(0.02, 1 - q * 0.9); s.dx += q * q * 200 * K; s.dy -= q * 40 * K; a = 1 - q * q; }
+                case HAZE_OUT -> { s.dx += Math.sin(q * 18 + gl.i) * q * 10 * K; s.dy -= q * 16 * K; s.ghost += q * 9; a = 1 - q; }
+                case CLAP_SHUT -> { s.dx += (gl.i % 2 == 0 ? -1 : 1) * q * q * 60 * K; s.sx *= Math.max(0.03, 1 - q); a = 1 - q * q; }
+                case LAMP_OFF -> { s.sy *= Math.max(0.02, 1 - E.inExpo(q)); s.sx *= 1 + q * 0.4; s.ghost += q * 8; a = q < 0.9 ? 1 : 1 - (q - 0.9) * 10; }
+                case SLOT_OUT -> { if (q > 0.05 && q < 1) s.ch = scramble(gl, step / 2); s.dy += q * q * 180 * K; a = 1 - q * q; }
+                case CLOCK_OUT -> { s.wipe = 1 - q; s.rot += q * 0.1; }
+                case TORNADO_OUT -> { double ang = q * 9 + gl.i; s.dx += Math.cos(ang) * q * 90 * K; s.dy += Math.sin(ang) * q * 50 * K - q * q * 120 * K; s.rot += q * 6; a = 1 - q * q; }
+                case ROLL_UP_OUT -> { s.sy *= Math.max(0.03, 1 - q); s.dy -= q * 14 * K; a = 1 - q * q * q; }
+                case FLUTTER_OUT -> { s.dy += q * 110 * K; s.dx += Math.sin(q * 9 + gl.i) * 26 * K * q; s.rot += Math.sin(q * 9 + gl.i) * 0.6; a = 1 - q * q; }
+                case ROLL_OFF -> { s.dx += q * q * 520 * K; s.rot += q * 8; a = 1 - q * q; }
+                case SLASH_OUT -> { s.bands = 2; s.bandDx = q * 90 * K * ((gl.i & 1) == 0 ? 1 : -1); s.dy += q * q * 40 * K * ((gl.i & 1) == 0 ? -1 : 1); s.rot += q * 0.18; a = 1 - q * q; }
+                case MOSAIC_OUT -> { double k = Math.max(0.1, 1 - q * 0.6); s.sx *= k; s.sy *= k; a = hash(step / 2, gl.i * 11 + word) < 1 - q ? 1 - q * 0.5 : 0; }
+                case SCRIBBLE_OUT -> { s.rot += Math.sin(q * 30 + gl.i) * 0.25 * q; s.dx += Math.sin(q * 25 + gl.i * 2) * 8 * K * q; a = 1 - q * q; }
+                case CANDLE_OUT -> { s.dx += Math.sin(q * 14) * q * 6 * K; s.sy *= 1 + q * 0.3; s.dy -= q * 24 * K; s.ghost += q * 5; a = 1 - q; }
             }
             s.alpha *= a;
         }
