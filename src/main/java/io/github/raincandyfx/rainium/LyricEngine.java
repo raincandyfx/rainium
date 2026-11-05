@@ -164,8 +164,10 @@ final class LyricEngine {
     private static double num(Object o) { return o instanceof Number n ? n.doubleValue() : 0; }
 
     // ------------------------------------------------------------------ cuts
-    enum Enter { POP, RISE, SLICE, STRETCH, ASSEMBLE, SPIN, WIPE, SCRAMBLE, DROP, TYPE }
-    enum Exit { FADE, DRIFT, FALL, EXPLODE, SLICE, SHRINK, GLITCH, SCATTER }
+    enum Enter { POP, RISE, SLICE, STRETCH, ASSEMBLE, SPIN, WIPE, SCRAMBLE, DROP, TYPE,
+        FLIP, ZOOM, SLIDE_LEFT, SLIDE_RIGHT, SWING, ELASTIC, WAVE, SPIRAL, SQUASH, BLINK, TUMBLE, SHUTTER, RUSH, HOP, FOCUS, UNFOLD, ZIP, FALL_IN, TILT, SPREAD }
+    enum Exit { FADE, DRIFT, FALL, EXPLODE, SLICE, SHRINK, GLITCH, SCATTER,
+        SLIDE_LEFT, SLIDE_RIGHT, RISE_UP, ZOOM_OUT, SPIN_OUT, FLIP_OUT, COLLAPSE, BLINK, MELT, SWING_OUT, WAVE_OUT, BLUR, TUMBLE, FLY, POP_OUT, ZIP, SQUEEZE, UNRAVEL }
 
     /** One shot of the video: a line (or a part of a long line) with its look decided. */
     static final class Cut {
@@ -424,6 +426,26 @@ final class LyricEngine {
             case SCRAMBLE -> { if (p < 1) s.ch = scramble(gl, step); s.alpha = clamp(p * 6); s.ghost = inv * 4; }
             case DROP -> { s.dy = -(1 - bounce(p)) * 120 * K; s.alpha = clamp(p * 5); }
             case TYPE -> s.alpha = 1;
+            case FLIP -> { s.sy = Math.max(0.02, Math.abs(Math.cos(inv * Math.PI * 1.5))); s.alpha = clamp(p * 4); }
+            case ZOOM -> { s.sx = s.sy = 1 + inv * 3.2; s.alpha = clamp(p * 3); s.ghost = inv * 8; }
+            case SLIDE_LEFT -> { s.dx = -inv * 260 * K; s.alpha = clamp(p * 3); }
+            case SLIDE_RIGHT -> { s.dx = inv * 260 * K; s.alpha = clamp(p * 3); }
+            case SWING -> { s.rot = Math.sin(p * 9) * (1 - p) * 0.9; s.dy = -inv * 20 * K; s.alpha = clamp(p * 4); }
+            case ELASTIC -> { double k = 1 - Math.exp(-6 * p) * Math.cos(p * 14); s.sx = s.sy = Math.max(0.01, k); s.alpha = clamp(p * 6); }
+            case WAVE -> { s.dy = Math.sin(p * 8 + gl.i * 0.7) * (1 - p) * 34 * K; s.alpha = clamp(p * 3); }
+            case SPIRAL -> { double ang = inv * 6, rad = inv * 110 * K; s.dx = Math.cos(ang) * rad; s.dy = Math.sin(ang) * rad; s.rot = inv * 3; s.sx = s.sy = Math.max(0.01, e); s.alpha = clamp(p * 3); }
+            case SQUASH -> { s.sx = 1 + inv * 0.9; s.sy = Math.max(0.02, 1 - inv * 0.9); s.dy = inv * 14 * K; s.alpha = clamp(p * 4); }
+            case BLINK -> { s.alpha = p < 1 ? (hash(step, gl.i + 7) < p ? 1 : 0.0) : 1; }
+            case TUMBLE -> { s.rot = -inv * Math.PI * 2.2 * (r1 < 0.5 ? 1 : -1); s.dy = -inv * 90 * K; s.dx = (r2 - 0.5) * 80 * K * inv; s.alpha = clamp(p * 4); }
+            case SHUTTER -> { s.bands = 5; s.bandDx = inv * 40 * K * ((word & 1) == 0 ? 1 : -1); s.sy = 1; s.alpha = clamp(p * 5); }
+            case RUSH -> { s.dx = -inv * inv * 520 * K; s.sx = 1 + inv * 1.8; s.alpha = clamp(p * 5); s.ghost = inv * 12; }
+            case HOP -> { s.dy = -Math.abs(Math.sin(p * Math.PI * 3)) * (1 - p) * 60 * K; s.alpha = clamp(p * 6); }
+            case FOCUS -> { s.ghost = inv * 18; s.alpha = clamp(p * 2); }
+            case UNFOLD -> { s.sy = Math.max(0.02, e); s.dy = -(1 - e) * 20 * K; s.alpha = clamp(p * 4); }
+            case ZIP -> { s.wipe = p; s.dx = inv * 90 * K; s.ghost = inv * 5; }
+            case FALL_IN -> { s.dy = -inv * inv * 260 * K; s.alpha = clamp(p * 6); }
+            case TILT -> { s.rot = inv * 0.5 * ((word & 1) == 0 ? 1 : -1); s.dy = inv * 26 * K; s.alpha = clamp(p * 2.5); }
+            case SPREAD -> { double c0 = (gl.i - 3) * 0.5; s.dx = c0 * inv * 40 * K; s.sx = s.sy = Math.max(0.01, 0.4 + 0.6 * e); s.alpha = clamp(p * 3); }
         }
         double q = c.outDur > 0 ? clamp((lt - outStart - gl.i * 0.01) / c.outDur) : 0;
         if (q > 0) {
@@ -437,6 +459,24 @@ final class LyricEngine {
                 case SHRINK -> { double k = 1 - q; s.sx *= k; s.sy *= k; a = 1 - q * q; }
                 case GLITCH -> { s.dx += (hash(step, gl.i) - 0.5) * 34 * K * q; s.ghost += 10 * q; a = hash(step + 3, gl.i) < 0.35 + 0.65 * (1 - q) ? 1 - q * 0.6 : 0; }
                 case SCATTER -> { s.dx += (r1 - 0.5) * q * 640 * K; s.dy += (r2 - 0.5) * q * 60 * K; a = 1 - q; }
+                case SLIDE_LEFT -> { s.dx -= q * q * 300 * K; a = 1 - q * q; }
+                case SLIDE_RIGHT -> { s.dx += q * q * 300 * K; a = 1 - q * q; }
+                case RISE_UP -> { s.dy -= q * q * 200 * K; a = 1 - q * q; }
+                case ZOOM_OUT -> { s.sx *= 1 + q * 2.6; s.sy *= 1 + q * 2.6; s.ghost += q * 8; a = 1 - q * q; }
+                case SPIN_OUT -> { s.rot += q * Math.PI * 1.5; double k = Math.max(0.01, 1 - q); s.sx *= k; s.sy *= k; a = 1 - q; }
+                case FLIP_OUT -> { s.sy *= Math.max(0.02, Math.abs(Math.cos(q * Math.PI * 1.5))); a = 1 - q * q; }
+                case COLLAPSE -> { s.sy *= Math.max(0.02, 1 - q); s.dy += q * 18 * K; a = 1 - q * q; }
+                case BLINK -> { a = hash(step, gl.i + 11) < 1 - q ? 1 : 0; }
+                case MELT -> { s.dy += q * q * 60 * K * (0.5 + r1); s.sy *= 1 + q * 0.8; a = 1 - q * q; }
+                case SWING_OUT -> { s.rot += Math.sin(q * 8) * q * 0.7; s.dy += q * q * 90 * K; a = 1 - q * q; }
+                case WAVE_OUT -> { s.dy += Math.sin(q * 8 + gl.i * 0.7) * q * 30 * K; a = 1 - q * q; }
+                case BLUR -> { s.ghost += q * 20; a = 1 - q; }
+                case TUMBLE -> { s.rot += q * Math.PI * 2 * (r1 < 0.5 ? 1 : -1); s.dy += q * q * 160 * K; s.dx += (r2 - 0.5) * q * 100 * K; a = 1 - q * q; }
+                case FLY -> { s.dx += q * q * 560 * K; s.sx *= 1 + q * 1.6; s.ghost += q * 12; a = 1 - q * q; }
+                case POP_OUT -> { double k = q < 0.4 ? 1 + q * 0.8 : Math.max(0.01, 1.32 * (1 - (q - 0.4) / 0.6)); s.sx *= k; s.sy *= k; a = q < 0.4 ? 1 : 1 - (q - 0.4) / 0.6; }
+                case ZIP -> { s.wipe = 1 - q; s.dx += q * 60 * K; a = 1; }
+                case SQUEEZE -> { s.sx *= Math.max(0.02, 1 - q); s.sy *= 1 + q * 0.8; a = 1 - q * q; }
+                case UNRAVEL -> { s.rot += (r1 - 0.5) * q * 2.6; s.dx += (gl.i % 2 == 0 ? 1 : -1) * q * 90 * K; s.dy += q * q * 80 * K; a = 1 - q * q; }
             }
             s.alpha *= a;
         }
