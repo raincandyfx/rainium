@@ -1540,9 +1540,12 @@ public final class RainiumScreen extends Screen {
 
     /** Settings > Music and lyrics: the switch and the way to the lyrics page. */
     private int lyricsSettings(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {
+        int top = y + 4;
         y = section(g, x, y + 4, w, "music_lyrics");
         y = toggle(g, mx, my, x, y, w, "lyrics_on", ly.enabled, () -> { ly.enabled = !ly.enabled; save(); });
-        return secondaryButton(g, mx, my, x, y, w, Lang.t("button.lyrics_open"), () -> Minecraft.getInstance().gui.setScreen(new LyricsScreen(this)));
+        y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.lyrics_open"), () -> Minecraft.getInstance().gui.setScreen(new LyricsScreen(this)));
+        mark("lyrics", x - 2, top, w + 4, y - top);
+        return y;
     }
 
     // =================================================================== preview

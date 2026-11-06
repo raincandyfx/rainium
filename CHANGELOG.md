@@ -21,7 +21,7 @@ A layer or a folder can react to what happens to the player wearing it. **Edit r
 - Reactions are saved with the layer and travel in exported zips; the editor can copy them as text, paste them, and save or load `.reactions.json` files. **Export layer (zip)** shares a single layer, not only whole folders.
 - **Only what's used is watched.** Each check runs only while a switched-on layer or folder has a graph that uses it; with no reactions anywhere, nothing is watched, and other players are only watched when a layer with reactions is shown on them.
 - **Nocturne ascended** has new default settings and ships with its reactions (6 nodes).
-- **The tutorial covers the reactions editor:** 13 steps, opening the editor for you and walking through the canvas, the add menu, logic gates, actions, trying it out and sharing.
+- **The tutorial covers reactions and lyrics:** 15 steps, including the lyrics switch and page (looks, effects, placement) and the reactions editor, which it opens for you to walk through the canvas, the add menu, logic gates, actions, trying it out and sharing.
 
 ### Lyrics in the world
 

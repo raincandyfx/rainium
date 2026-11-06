@@ -42,7 +42,7 @@ final class Tutorial {
     private record Step(int num, String id, String tab, String[] spots, String[] pins, String focus, String enter) {}
 
     /** The tour. Several entries can share a number: it shows as one step. */
-    private static final int TOTAL = 13;
+    private static final int TOTAL = 15;
     private static final Step[] STEPS = {
         new Step(1, "open", null, new String[]{"mods", "configure"}, new String[]{}, null, null),
         new Step(2, "tour", "edit", new String[]{"tabs", "layers", "panel"}, new String[]{"tabs:1", "layers:2", "preview:3", "panel:4"}, null, null),
@@ -53,13 +53,16 @@ final class Tutorial {
         new Step(6, "particles", "add", new String[]{"starters"}, new String[]{}, "starters", null),
         new Step(6, "hue", "edit", new String[]{"hue", "tint"}, new String[]{}, "hue", "ensureParticle"),
         new Step(7, "settings", "settings", new String[]{"panel"}, new String[]{}, null, null),
+        // lyrics: the switch and the page behind it, then what the page holds
+        new Step(8, "lyrics", "settings", new String[]{"lyrics"}, new String[]{}, "lyrics", null),
+        new Step(9, "lyrics_page", "settings", new String[]{"lyrics"}, new String[]{}, "lyrics", null),
         // the nodes screen: where it is, the canvas, the add menu, gates, actions, trying things
-        new Step(8, "react_open", "edit", new String[]{"reactions"}, new String[]{}, "reactions", "selectHalo"),
-        new Step(9, "react_canvas", null, new String[]{"canvas"}, new String[]{}, null, "reactExample"),
-        new Step(10, "react_menu", null, new String[]{"menu"}, new String[]{"menu_search:1", "menu_tabs:2", "menu_groups:3", "menu_info:4"}, null, "menuEvents"),
-        new Step(11, "react_gates", null, new String[]{"menu"}, new String[]{"menu_tabs:1", "menu_groups:2"}, null, "menuGates"),
-        new Step(12, "react_actions", null, new String[]{"inspector"}, new String[]{}, null, "selectAction"),
-        new Step(13, "react_try", null, new String[]{"examples", "file", "canvas_event"}, new String[]{"canvas_event:1", "examples:2", "file:3"}, null, "overview"),
+        new Step(10, "react_open", "edit", new String[]{"reactions"}, new String[]{}, "reactions", "selectHalo"),
+        new Step(11, "react_canvas", null, new String[]{"canvas"}, new String[]{}, null, "reactExample"),
+        new Step(12, "react_menu", null, new String[]{"menu"}, new String[]{"menu_search:1", "menu_tabs:2", "menu_groups:3", "menu_info:4"}, null, "menuEvents"),
+        new Step(13, "react_gates", null, new String[]{"menu"}, new String[]{"menu_tabs:1", "menu_groups:2"}, null, "menuGates"),
+        new Step(14, "react_actions", null, new String[]{"inspector"}, new String[]{}, null, "selectAction"),
+        new Step(15, "react_try", null, new String[]{"examples", "file", "canvas_event"}, new String[]{"canvas_event:1", "examples:2", "file:3"}, null, "overview"),
     };
 
     private static int indexOf(String id) {
