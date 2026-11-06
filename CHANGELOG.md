@@ -41,13 +41,12 @@ Settings > **Music and lyrics** (off until you switch it on) shows the lyrics of
 
 ### The lyric video
 
-The music video look is drawn by Rainium itself, in Java (no MCEF or browser needed): a re-creation of the reference lyric video (MIT, (c) 2026 hakoniwa, credited in the README and website). Everything below is a condensed re-creation: the same ideas and names, with simpler drawing than the original.
+The music video look is drawn by Rainium itself, in Java (no MCEF or browser needed).
 
 - **183 layouts**, each with its original usual weight: core and kinetic layouts, typography, print and paper objects (magazine spread, ransom note, newspaper, record, cassette, postcard, tanzaku, omikuji, hanging scroll...), playful and faux-3D ones (cube, flip cards, balloons, LED scroll, crossword, kaleidoscope, dominoes...), and twelve found-footage horror layouts. Each line picks one that suits its length, leaning on the style's taste and away from what was just shown.
 - **27 styles**, including Sakura, Deep Sea, Sunset Gradient, Forest Notebook, Vaporwave, Newsprint, Synth 80s, Kraft Paper, Candy, Acid, Ink and Vermilion, Gold Night, and three horror ones (Ruins, Late-Night Recording, Cursed Letter). Horror layouts, holds, effects and ways only come up in the horror styles. Plus **Japanese motifs** (a red seal, a brush circle, a vertical katakana tag), **New effects** (glitch tears) and **New variation**.
 - **144 ways in and 123 ways out**: masks, slides, flips, folds, staggers, stamps, springs, light and screen effects, print and paper (peel, crumple, tear, shred), kinetic and typographic sets; exits such as dissolve, burn, vacuum, sand, balloon, rocket, lights off, candle, glass break, matrix, snake, eraser and flood. Each can be switched off.
 - **52 holds**, **62 text looks** (outline, extrude, shadows, glow, neon, chrome, rainbow, halftone, marker, karaoke fill, ransom, sticker...), **66 backgrounds** (only when the backdrop setting is above zero), **36 camera moves**, **69 screen effects**, **27 transitions** and **130 decorations**, with five switches on the lyrics page (holds, text looks, camera moves, screen effects, transitions).
-- **Not included:** the ruby layout (it needs readings the mod does not have) and the title and interlude layouts. Fonts are the system's sans, serif and monospace (Noto, Yu or Meiryo where present), not the reference's web fonts. Portrait versions of layouts are left out because the picture is landscape.
 - **Lighter to run:** the picture is not drawn or uploaded while the panel can't be seen (behind you, out of view or faded out); only what changed is uploaded (a still hold sends nothing); the effects reuse their scratch pictures; and backgrounds that never change are drawn once and only faded.
 
 ## 0.9.13 (dev build)

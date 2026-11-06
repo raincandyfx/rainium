@@ -123,7 +123,7 @@ Rainium can show the lyrics of the song playing on your computer as a plane in t
   - Lyrics saved from an earlier lookup.
   - **lrclib.net**, a free lyrics site, but only if you switch on **Find lyrics online**. Only the song's title, artist, album and length are sent.
 - **Looks:**
-  - **Music video:** the lyrics as a lyric video as a kinetic-type video: 27 styles with their own colours, chromatic ghosting, HUD frame, rings, slashes, kinetic type (183 layouts, 144 ways in, 123 ways out, 52 holds, 62 text looks, 66 backgrounds, 36 camera moves, 69 screen effects, 27 transitions and 130 decorations, condensed re-creations written in Java; each line gets its own mix), plus optional Japanese motifs and glitch effects. It's drawn by Rainium itself, so there's nothing else to install.
+  - **Music video:** the lyrics as a lyric video as a kinetic-type video: 27 styles with their own colours, chromatic ghosting, HUD frame, rings, slashes, kinetic type (183 layouts, 144 ways in, 123 ways out, 52 holds, 62 text looks, 66 backgrounds, 36 camera moves, 69 screen effects, 27 transitions and 130 decorations; each line gets its own mix), plus optional Japanese motifs and glitch effects. It's drawn by Rainium itself, so there's nothing else to install.
   - **Simple:** the line being sung, filling in word by word, with the next line under it.
 - **In the world:** each line is a plane fixed in the world, left and right of where you were looking when it started, a little in front of you. It stays there as you move and look around. If you turn away from it for a moment, or walk far from it, the next spot is in front of you again.
 - **Never in the way:**
@@ -198,7 +198,7 @@ Some of the sample models that come with the mod, and the models worn in the cha
 - **Gold halo**, **Nocturne** (both forms) and **dark red wings** (Eyed wings): *Genshin Impact* (© Cognosphere PTE. LTD., HoYoverse)
 - **Floating pod**: *NieR:Automata* (Square Enix)
 - **Long red spear**: "[Lance of Longinus](https://skfb.ly/6Rxyq)" by Mr. The Rich, licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/). The weapon's original design is from *Neon Genesis Evangelion* (© khara)
-- **Lyric video look**: a re-creation in Java of [JIZURA](https://github.com/852wa/JIZURA) (MIT License, © 2026 hakoniwa). Its layouts are ported from its source, and its colour palettes and per-style motion preferences are taken from its style table (`assets/rainium/lyricvideo/styles.json`, included with its license). Rainium doesn't run JIZURA itself.
+- **Lyric video look**: a re-creation in Java of [JIZURA](https://github.com/852wa/JIZURA) (MIT License, © 2026 hakoniwa). Its layouts are ported from its source, and its colour palettes and per-style motion preferences are taken from its style table (`assets/rainium/lyricvideo/styles.json`, included with its license). Rainium doesn't run JIZURA itself. The effects are condensed re-creations with simpler drawing than the original; its ruby, title and interlude layouts are not included, and the text uses system fonts instead of its web fonts.
 - **Small doll**: a MySekai item from *HATSUNE MIKU: COLORFUL STAGE!* (© SEGA, © Colorful Palette Inc., © Crypton Future Media, Inc.)
 
 The characters in the recordings are animated with emotes by Milyan-SPEmotes, played with [Emotecraft](https://modrinth.com/mod/emotecraft); the animations aren't part of Rainium. One of them is based on the dance from the *HATSUNE MIKU: COLORFUL STAGE!* version of "Heat Abnormal" (song by Iyowa).
