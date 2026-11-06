@@ -13,6 +13,8 @@ Rainium is in beta (0.x) until 1.0.0.
   - **69 screen effects** (slice, block, invert, flash, mosaic, chroma, bloom, posterise, static, CRT off, ripple and more) and **27 transitions** into a line (wipes, iris, doors, blinds, checker, push, whip, spin, ink blob, pixelate...).
   - **130 decorations** (the weighted list the styles already name): marks, stamps, weather, interface bits, Japanese ornaments, paper and desk objects.
   - Five new switches on the lyrics page: holds, text looks, camera moves, screen effects, transitions. The horror versions of all of these only come up in the horror styles.
+- **Face me and follow-the-opponent now turn in three dimensions.** Before, the panel only swung left and right and always stood upright; now it tilts too, so its front points straight at your eye when you look from above or below (its top stays as upright as that allows). Face me turns on the spot where the panel is; in Follow the panel stays beside the opponent and keeps turning to face you.
+- **Follow never overlaps the opponent.** The fit-to-screen clamp could push the panel back over them. The clearance is now measured on the screen with the panel's real, turned shape and takes priority: it snaps clear rather than gliding through, and if there's no room on its side it goes to the other side.
 - Not yet tried in a real game. Some of the condensed ones are rough, and a few (such as the ruby ones) are not included.
 
 ## 0.9.10 (dev build)

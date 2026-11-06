@@ -52,7 +52,7 @@ final class Lyrics {
     private static boolean anchorVideo;
     private static Vec3 anchorPos;
     private static Vec3 lastEye;
-    private static final Vector3f planeRight = new Vector3f(1, 0, 0), planeNormal = new Vector3f(0, 0, 1);
+    private static final Vector3f planeRight = new Vector3f(1, 0, 0), planeNormal = new Vector3f(0, 0, 1), planeUp = new Vector3f(0, 1, 0);
     private static double planeW, planeH;                  // blocks
     private static double shiftShown, scaleShown = 1, alphaShown;
     private static long offViewNanos, lastFrameNanos;
@@ -203,7 +203,7 @@ final class Lyrics {
         List<LyricsPlacement.Rect> enemies = s.avoidEnemies || follow ? enemies(mc, eye, right, up, fwd, tanH, tanV) : List.of();
 
         double cxw, cyw, czw, hw, hh;
-        Vector3f faceRight = new Vector3f(), faceNormal = new Vector3f();
+        Vector3f faceRight = new Vector3f(), faceNormal = new Vector3f(), faceUp = new Vector3f(0, 1, 0);
         if (follow) {
             // beside the opponent, the same angular size whatever the distance; the side changes only when a new line begins
             double hn = widthN * texAspect * tanH / tanV;
@@ -231,17 +231,26 @@ final class Lyrics {
             if (fresh && anchorPos == null) { followX = tx; followY = ty; followDepth = td; }
             followX += (tx - followX) * k; followY += (ty - followY) * k; followDepth += (td - followDepth) * k;
             if (anchorPos == null) anchorPos = new Vec3(eye.x, eye.y, eye.z);   // only marks that a spot exists
-            double zc = followDepth;
-            cxw = fwd.x * zc + right.x * followX * tanH * zc + up.x * followY * tanV * zc;
-            cyw = fwd.y * zc + right.y * followX * tanH * zc + up.y * followY * tanV * zc;
-            czw = fwd.z * zc + right.z * followX * tanH * zc + up.z * followY * tanV * zc;
-            double hl = Math.sqrt(cxw * cxw + czw * czw);
-            double hx = hl < 1e-3 ? fwd.x : cxw / hl, hz = hl < 1e-3 ? fwd.z : czw / hl;
-            double hn2 = Math.max(1e-3, Math.sqrt(hx * hx + hz * hz));
-            hx /= hn2; hz /= hn2;
-            faceRight.set((float) -hz, 0f, (float) hx);
-            faceNormal.set((float) -hx, 0f, (float) -hz);
-            hw = widthN * tanH * zc / 2;
+            double roll0 = Math.toRadians(s.rollDeg);
+            Vector3f pc = new Vector3f(), pn = new Vector3f(), pr = new Vector3f(), pu = new Vector3f();
+            panelFrame(fwd, right, up, tanH, tanV, followX, followY, followDepth, pc, pn, pr, pu);
+            if (!enemies.isEmpty()) {
+                // never over the opponent: measured on the screen with the panel's real, turned shape, and it wins over the fit-to-screen clamp
+                LyricsPlacement.Rect g = LyricsPlacement.guard(enemies.get(0));
+                double gap = s.gapPct / 100.0, lo = -1 + LyricsPlacement.MARGIN, hi = 1 - LyricsPlacement.MARGIN;
+                LyricsPlacement.Rect foot = footprint(pc, pr, pu, widthN * tanH * followDepth / 2, widthN * tanH * followDepth / 2 * texAspect, roll0, fwd, right, up, tanH, tanV);
+                if (foot.overlaps(g)) {
+                    double[] pref = pushOut(g, followSide, gap, followX, followY, followDepth, widthN, texAspect, roll0, fwd, right, up, tanH, tanV);
+                    double[] alt = pushOut(g, -followSide, gap, followX, followY, followDepth, widthN, texAspect, roll0, fwd, right, up, tanH, tanV);
+                    boolean prefFits = !s.keepOnScreen || (pref[1] >= lo && pref[2] <= hi), altFits = !s.keepOnScreen || (alt[1] >= lo && alt[2] <= hi);
+                    if (!prefFits && altFits) { followSide = -followSide; followX = alt[0]; }
+                    else followX = pref[0];   // snapped, not glided: it must never pass through them
+                    panelFrame(fwd, right, up, tanH, tanV, followX, followY, followDepth, pc, pn, pr, pu);
+                }
+            }
+            cxw = pc.x; cyw = pc.y; czw = pc.z;
+            faceRight.set(pr); faceUp.set(pu); faceNormal.set(pn);
+            hw = widthN * tanH * followDepth / 2;
             hh = hw * texAspect;
         } else {
             // a spot in the world for each line, by the rules, and then it stays exactly there
@@ -271,6 +280,7 @@ final class Lyrics {
                 hx /= hl; hz /= hl;
                 planeRight.set((float) -hz, 0f, (float) hx);      // faces you, upright, and fixed from now on
                 planeNormal.set((float) -hx, 0f, (float) -hz);
+                planeUp.set(0f, 1f, 0f);
                 planeW = widthN * zc * tanH;
                 planeH = planeW * texAspect;
                 // the rules, applied once: fit the screen, slide clear of an enemy; the result is the spot and shape it keeps
@@ -301,16 +311,22 @@ final class Lyrics {
                 anchorPos = new Vec3(anchorPos.x + eye.x - lastEye.x, anchorPos.y + eye.y - lastEye.y, anchorPos.z + eye.z - lastEye.z);
             lastEye = eye;
             if (s.facePlayer && active(since, lineLen, s.facePct, s.faceSecs)) {
-                double hx = eye.x - anchorPos.x, hz = eye.z - anchorPos.z, hl = Math.sqrt(hx * hx + hz * hz);
-                if (hl > 1e-3) {
-                    hx /= hl; hz /= hl;   // from the panel towards you
-                    planeRight.set((float) hz, 0f, (float) -hx);
-                    planeNormal.set((float) hx, 0f, (float) hz);
+                // turns on the spot to face you in all three dimensions: its front towards your eye, its top as upright as that allows
+                Vector3f n = new Vector3f((float) (eye.x - anchorPos.x), (float) (eye.y - anchorPos.y), (float) (eye.z - anchorPos.z));
+                if (n.length() > 1e-3) {
+                    n.normalize();
+                    Vector3f r2 = new Vector3f(n.z, 0f, -n.x);
+                    if (r2.length() > 1e-3) {   // straight above or below it there is no "upright": keep the turn it had
+                        r2.normalize();
+                        planeRight.set(r2);
+                        planeNormal.set(n);
+                        planeUp.set(n).cross(r2).normalize();
+                    }
                 }
             }
             double bob = Math.sin(nowN / 1.0e9 * 1.1) * 0.04 * s.floatPct / 100.0;   // it floats a little
             cxw = anchorPos.x - eye.x; cyw = anchorPos.y + bob - eye.y; czw = anchorPos.z - eye.z;
-            faceRight.set(planeRight.x, planeRight.y, planeRight.z); faceNormal.set(planeNormal.x, planeNormal.y, planeNormal.z);
+            faceRight.set(planeRight); faceNormal.set(planeNormal); faceUp.set(planeUp);
             hw = planeW / 2; hh = planeH / 2;
         }
         if (follow) placedFollow = true;
@@ -325,14 +341,13 @@ final class Lyrics {
         float qw = (float) hw, qh = (float) hh;
         Vector3f c = new Vector3f((float) cxw, (float) cyw, (float) czw);
         Vector3f back = new Vector3f(c).sub(new Vector3f(faceNormal).mul(0.12f * (float) (hw / Math.max(1e-6, widthN * tanH * DISTANCE / 2))));
-        Vector3f upW = new Vector3f(0, 1, 0);
         int alpha = (int) Math.round(alphaShown * opacity * 255);
         int color = (alpha << 24) | 0xFFFFFF;
         RenderType type = s.throughBlocks ? RenderTypes.textSeeThrough(tex) : RenderTypes.text(tex);
         final boolean twoLayers = video;
         double roll = Math.toRadians(s.rollDeg), cr = Math.cos(roll), sr = Math.sin(roll);
-        final Vector3f r = new Vector3f(faceRight).mul((float) cr).add(new Vector3f(upW).mul((float) sr));   // tilted about the way it faces
-        final Vector3f uw = new Vector3f(upW).mul((float) cr).sub(new Vector3f(faceRight).mul((float) sr));
+        final Vector3f r = new Vector3f(faceRight).mul((float) cr).add(new Vector3f(faceUp).mul((float) sr));   // tilted about the way it faces
+        final Vector3f uw = new Vector3f(faceUp).mul((float) cr).sub(new Vector3f(faceRight).mul((float) sr));
         // the video's picture has room around it for effects to spill into: the quad is that much bigger
         final float vw = video ? (float) (qw * LyricsVideo.SCALE_X) : qw, vh = video ? (float) (qh * LyricsVideo.SCALE_Y) : qh;
         // an earlier order than the entities (order 0): they are drawn over the lyrics, however near the lyrics are
@@ -342,6 +357,51 @@ final class Lyrics {
                 quad(pose, vc, c, r, uw, vw, vh, 0.5f, 1f, color);
             } else quad(pose, vc, c, r, uw, qw, qh, 0f, 1f, color);
         });
+    }
+
+    /** The panel beside the opponent: at (fx, fy) on the screen and depth zc, turned to face the eye (all three ways), top as upright as that allows. */
+    private static void panelFrame(Vector3f fwd, Vector3f right, Vector3f up, double tanH, double tanV, double fx, double fy, double zc,
+                                   Vector3f c, Vector3f n, Vector3f pr, Vector3f pu) {
+        c.set(fwd).mul((float) zc).add(new Vector3f(right).mul((float) (fx * tanH * zc))).add(new Vector3f(up).mul((float) (fy * tanV * zc)));
+        n.set(c).negate();
+        if (n.length() < 1e-4) n.set(fwd).negate(); else n.normalize();
+        pr.set(n.z, 0f, -n.x);
+        if (pr.length() < 1e-3) pr.set(right); else pr.normalize();
+        pu.set(n).cross(pr).normalize();
+    }
+
+    /** Where the panel's corners land on the screen (x and y from -1 to 1), rolled like it is drawn. */
+    private static LyricsPlacement.Rect footprint(Vector3f c, Vector3f pr, Vector3f pu, double hw, double hh, double roll,
+                                                  Vector3f fwd, Vector3f right, Vector3f up, double tanH, double tanV) {
+        double cr = Math.cos(roll), sr = Math.sin(roll);
+        Vector3f r = new Vector3f(pr).mul((float) cr).add(new Vector3f(pu).mul((float) sr));
+        Vector3f u = new Vector3f(pu).mul((float) cr).sub(new Vector3f(pr).mul((float) sr));
+        double x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+        for (int i = 0; i < 4; i++) {
+            double a = (i & 1) == 0 ? -hw : hw, b = (i & 2) == 0 ? -hh : hh;
+            double px = c.x + r.x * a + u.x * b, py = c.y + r.y * a + u.y * b, pz = c.z + r.z * a + u.z * b;
+            double z = Math.max(0.05, px * fwd.x + py * fwd.y + pz * fwd.z);
+            double sx = (px * right.x + py * right.y + pz * right.z) / z / tanH, sy = (px * up.x + py * up.y + pz * up.z) / z / tanV;
+            x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+        }
+        return new LyricsPlacement.Rect(x0, y0, x1, y1);
+    }
+
+    /** Slides the panel sideways until it clears the guarded box on the given side (-1 left, 1 right); returns its new x and the screen extent it then covers. */
+    private static double[] pushOut(LyricsPlacement.Rect g, double side, double gap, double fx, double fy, double zc, double widthN, double texAspect, double roll,
+                                    Vector3f fwd, Vector3f right, Vector3f up, double tanH, double tanV) {
+        Vector3f c = new Vector3f(), n = new Vector3f(), pr = new Vector3f(), pu = new Vector3f();
+        double hw = widthN * tanH * zc / 2, hh = hw * texAspect;
+        LyricsPlacement.Rect foot = null;
+        for (int i = 0; i < 6; i++) {
+            panelFrame(fwd, right, up, tanH, tanV, fx, fy, zc, c, n, pr, pu);
+            foot = footprint(c, pr, pu, hw, hh, roll, fwd, right, up, tanH, tanV);
+            double d = side < 0 ? g.x0() - gap - foot.x1() : g.x1() + gap - foot.x0();
+            if (Math.abs(d) < 1e-4) break;
+            if (i > 0 && (side < 0 ? d > 0 : d < 0) && !foot.overlaps(g)) break;   // already clear; don't pull it back in
+            fx += d;
+        }
+        return new double[]{fx, foot.x0(), foot.x1()};
     }
 
     private static void quad(PoseStack.Pose pose, VertexConsumer vc, Vector3f c, Vector3f r, Vector3f u, float hw, float hh, float u0, float u1, int color) {
