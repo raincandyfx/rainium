@@ -24,6 +24,10 @@
 - **Pictures and recordings.** Save a transparent picture of your look, or record it as a smooth clip for videos.
 - **Group parts into folders.** A model made of several parts stays together: switch it on or off, resize it or move it in one go.
 - **Recolour with Hue and Tint.** Shift a texture's colours around the colour wheel, or tint the whole layer towards any colour, without editing the image.
+- **Drop in folders and zips.** A folder or a `.zip` of models put in the rainium folder shows up under **Add > Your models**; one click converts every model inside and gives each its texture.
+- **Reactions.** Layers and folders can react to what happens to you: flash when you're hurt, glow in combat, spin while you sprint, show when your opponent pops a totem. Wire it up in a node editor with events, states, logic gates and actions.
+- **Lyrics in the world.** The lyrics of the song playing on your computer, as a lyric video on a plane in the world: 183 layouts, 27 styles and a huge set of motion and screen effects, placed fixed, beside your opponent, or turning to face you.
+- **A tour to start.** A short tutorial on the main menu the first time you play (replay it any time in Settings), and a "what's new" popup after each main update.
 - **Share your look.** Export a folder as a zip, and a friend can add it from the editor.
 - **Just for you.** Rainium only changes what *you* see. It works on any server, and other players' setups never affect yours.
 - **Keeps itself up to date.** New versions for your Minecraft version are downloaded and installed when you close the game (you can turn this off).
@@ -60,6 +64,8 @@ Hover over any setting's name for a short explanation. Click any number to type 
 ## Models from other programs
 
 The in-game import reads **OBJ**, **glTF** and **GLB** files, which nearly every 3D program can export. Blender exports work with the default settings.
+
+You can also drop a whole **folder** or a **.zip** of models into the rainium folder: it appears under **Add > Your models**, and one click unpacks it, converts every `.obj`, `.gltf` and `.glb` inside and gives each its texture (from the OBJ's material file, a texture inside a glTF/GLB, or the closest matching file name). Zips are unpacked safely, with only model and image files and limits on size and file count.
 
 To convert without opening the game, there are two converters in [`tools/`](tools):
 - `obj-converter.html`: open it in your browser, drop in an OBJ and download the result. Your model never leaves your computer.
@@ -115,23 +121,45 @@ Reactions are saved with the layer, so **Export as zip** (and **Export layer**) 
 
 ## Lyrics
 
-Rainium can show the lyrics of the song playing on your computer as a plane in the world, in time with the music. Switch it on in **Settings > Music and lyrics**. Only you see the lyrics.
+Rainium can show the lyrics of the song playing on your computer as a plane in the world, in time with the music. Switch it on in **Settings > Music and lyrics**, then press **Open the lyrics page** for everything below. Only you see the lyrics.
 
-- **What's playing:** on Windows, any player that shows in the volume flyout (Spotify, browsers, Apple Music...). On macOS, Spotify or Apple Music (macOS asks once to let Minecraft read them). On Linux, any player through `playerctl`.
+- **What's playing:** on Windows, any player that shows in the volume flyout (Spotify, browsers, Apple Music...). On macOS, Spotify or Apple Music (macOS asks once to let Minecraft read them). On Linux, any player through `playerctl`. **Listen to** can be limited to Spotify.
 - **Where the lyrics come from:**
   - Your own `.lrc` files, named `Artist - Title.lrc`, in `config/rainium/lyrics`.
   - Lyrics saved from an earlier lookup.
   - **lrclib.net**, a free lyrics site, but only if you switch on **Find lyrics online**. Only the song's title, artist, album and length are sent.
-- **Looks:**
-  - **Music video:** the lyrics as a lyric video as a kinetic-type video: 27 styles with their own colours, chromatic ghosting, HUD frame, rings, slashes, kinetic type (183 layouts, 144 ways in, 123 ways out, 52 holds, 62 text looks, 66 backgrounds, 36 camera moves, 69 screen effects, 27 transitions and 130 decorations; each line gets its own mix), plus optional Japanese motifs and glitch effects. It's drawn by Rainium itself, so there's nothing else to install.
-  - **Simple:** the line being sung, filling in word by word, with the next line under it.
-- **In the world:** each line is a plane fixed in the world, left and right of where you were looking when it started, a little in front of you. It stays there as you move and look around. If you turn away from it for a moment, or walk far from it, the next spot is in front of you again.
-- **Never in the way:**
-  - The lyrics never cover the one you're fighting, or the player or monster you're aiming at. They move to its left or right, with room to spare, and shrink if they must.
-  - They're made to fit the screen, and they're small by default (Size is a percentage you type; Fixed or Follow-opponent placement, on the Lyrics page).
-  - They never move your view or change the world.
-  - **Through blocks** decides whether walls can hide them.
-- **Sync** moves the lyrics earlier or later. **Demo song** plays a short built-in song (lyrics only) so you can try the looks without music. **Song in chat** adds a line to your chat (only you see it) when the song changes.
+- **Sync** moves the lyrics earlier or later. **Demo song** plays a short built-in song (lyrics only) so you can try the looks without music. **Song in chat** adds a line to your chat (only you see it) when the song changes. **Open lyrics folder** and **Clear saved lyrics** are on the page too.
+
+### The two looks
+
+- **Music video:** the lyrics as a kinetic-type lyric video, drawn by Rainium itself, so there's nothing else to install.
+  - **27 styles**, each with its own colours and taste: Sakura, Deep Sea, Sunset Gradient, Forest Notebook, Vaporwave, Newsprint, Synth 80s, Kraft Paper, Candy, Acid, Ink and Vermilion, Gold Night and more, with three horror ones (Ruins, Late-Night Recording, Cursed Letter). **New variation** reshuffles a look, and each line picks what suits its length and what was just shown.
+  - **183 layouts:** centred, stacked, zigzag, arc, orbit, vertical, marquee, ring, typewriter and other core and kinetic ones; typography (scale steps, justified lines, index table, split type, vertical ruler...); print and paper objects (magazine spread, ransom note, newspaper, record, cassette, postcard, tanzaku, omikuji, hanging scroll...); playful and faux-3D ones (cube, flip cards, balloons, LED scroll, crossword, kaleidoscope, dominoes...); and twelve found-footage horror layouts, which only appear in the horror styles.
+  - **144 ways in and 123 ways out** for the lines, **52 holds** while a line is up, **62 text looks** (outline, extrude, shadows, glow, neon, chrome, rainbow, halftone, marker, karaoke fill, ransom, sticker...), **66 backgrounds**, **36 camera moves**, **69 screen effects**, **27 transitions** and **130 decorations**. Horror versions of all of these only come up in the horror styles.
+  - **Japanese motifs** (a red seal, a brush circle, a vertical katakana tag) and **New effects** (glitch tears) are optional.
+  - Every layout and every way in or out can be switched off on the lyrics page (with All / None), and holds, text looks, camera moves, screen effects and transitions each have a switch.
+- **Simple:** the line being sung, filling in word by word, with the next line under it. It's also shown while the music video is still getting ready.
+
+### Where the lyrics go
+
+Each line is a plane in the world. It stays where it is as you move and look around, is drawn behind players and mobs, and has no border by default (a frame and a HUD are optional). If you turn away from it for a moment, or walk far from it, the next spot is in front of you again. Choose how it's placed on the lyrics page:
+
+- **Fixed:** left or right of where you were looking when the line started, a little in front of you (alternating, or always one side), then it stays there.
+  - **Face me:** keeps turning to face you, in all three dimensions: its front points at your eye, so it tilts when you look from above or below, and its top stays as upright as that allows. It runs for a share of each line (100 % is the whole line, 50 % the first half) and/or a number of seconds, then stays at the angle it had. If both are set, whichever ends first wins.
+  - **Move with me:** the panel is carried along with you as you walk, for the same two inputs, then stays where it is.
+- **Follow opponent:** beside the opponent you're fighting, at the same size on screen, changing side only when the line is over. It also turns to face you in 3D, and it never overlaps them: it snaps clear, and goes to their other side if there's no room.
+
+Other settings, all typed numbers: **size** as a percentage (100 is the default; no upper or lower limit), opacity, float, distance, height, sideways position, gap and roll. Also font, text and accent colour, speed, backdrop (backgrounds only show when it's above zero), halo, colour fringe, grain, frame rate, frame and HUD.
+
+### Never in the way
+
+- The lyrics never cover the one you're fighting, or the player or monster you're aiming at. They move to its left or right, with room to spare, and shrink if they must. **Avoid enemies** and **Keep on screen** are switches.
+- Effects can spill past the edge of the picture.
+- They never move your view or change the world. **Through blocks** decides whether walls can hide them.
+
+### Running light
+
+The picture isn't drawn while the panel can't be seen (behind you, out of view or faded out), only what changed is uploaded each step, and backgrounds that never change are drawn once. You can lower the **frame rate** on the lyrics page.
 
 ## Pictures and recordings
 
