@@ -27,7 +27,7 @@
 - **Drop in folders and zips.** A folder or a `.zip` of models put in the rainium folder shows up under **Add > Your models**; one click converts every model inside and gives each its texture.
 - **Reactions.** Layers and folders can react to what happens to you: flash when you're hurt, glow in combat, spin while you sprint, show when your opponent pops a totem. Wire it up in a node editor with events, states, logic gates and actions.
 - **Lyrics in the world.** The lyrics of the song playing on your computer, as a lyric video on a plane in the world: 183 layouts, 27 styles and a huge set of motion and screen effects, placed fixed, beside your opponent, or turning to face you.
-- **A tour to start.** A short tutorial on the main menu the first time you play (replay it any time in Settings), and a "what's new" popup after each main update.
+- **A tour to start.** A short tutorial on the main menu (it covers the editor, lyrics and reactions) the first time you play (replay it any time in Settings), and a "what's new" popup after each main update.
 - **Share your look.** Export a folder as a zip, and a friend can add it from the editor.
 - **Just for you.** Rainium only changes what *you* see. It works on any server, and other players' setups never affect yours.
 - **Keeps itself up to date.** New versions for your Minecraft version are downloaded and installed when you close the game (you can turn this off).
