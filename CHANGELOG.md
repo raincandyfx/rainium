@@ -1,6 +1,54 @@
 # Changelog
 
-Rainium is in beta (0.x) until 1.0.0.
+## 1.0.0
+
+Rainium is out of beta. This release collects everything added since 0.9.0 (the 0.9.1 to 0.9.13 dev builds): reactions, lyrics in the world, and a much bigger lyric video.
+
+### Reactions
+
+A layer or a folder can react to what happens to the player wearing it. **Edit reactions** (in the layer's or folder's panel) opens a full-screen node editor: wire **events** and **states** through **logic** into **actions** on the layer. Actions fade in, hold after an event and fade out, each with its own curve (or a custom one with handles).
+
+- **Events and states:**
+  - Combat: hit, crit, hurt, healed, totem pop (yours and your opponent's), kill, death, respawn, shield block and break, swing, kill streak, assist, sweep attack, knocked back, armour broke.
+  - PvP: mace smash (with how far you fell), smashed by a mace, pearl thrown, pearl teleport, opponent pearled, chorus teleport, wind charge, launched, crystal hit, anchor blast, hit by a projectile, shot a player, disabled a shield, opponent's armour broke, golden apple, killed by a player, close call, double pop.
+  - World: jump, land, shoot, eat, level up, a timer, splashed, riptide, firework boost, into / out of water, changed dimension, effect gained / ended, block broken / placed, picked up, fishing catch, lightning, chat word.
+  - States: health, absorption, in combat, on fire, blocking, sneaking, sprinting, moving, gliding, swimming, water, lava, ground, air, riding, holding or using an item, effects, hunger, night, rain, thunder, dimension, biome, falling, opponent's health / near / holding / blocking / looking at you, sleeping, in a cobweb, low durability, few totems left, item cooling down, shield disabled, game mode.
+  - Hit and Hurt can be limited to a kind of damage (melee, projectile, explosion, mace, fall, fire, magic, other).
+- **Logic, sorted by what it joins:** state gates (and, or, not, nand, nor, xor, xnor); event gates (either, both, then, without, one of; the last four with a **Tolerance**); state + event (only while, unless); and hold, toggle, on/off, starts, stops and the filters (chance, cooldown, every Nth, combo, delay).
+- **Actions:** show, hide, tint, opacity, glow, rainbow, size, move, rotate, spin, shake, bob, particle bursts, and 13 more: blink, flicker, colour pulse, glow pulse, pulse, heartbeat, sway, orbit, drift, wobble, roll, shiver and glitch (sway, wobble and roll pick an axis).
+- **The add menu** has a search bar and groups (PvP, Combat, Damage, Movement, Items, World...), one line per node with its description behind an **i** icon. Typing searches every node by name and description.
+- **Try things without waiting for a fight:** fire an event on yourself, or pretend a state is on, and watch the live preview. 21 ready-made examples (red flash and shake when hurt, spin while sprinting, ghost fade when you sneak, heartbeat at low health, kill streak orbit, mace slam, pearl blink, a combo that grows...).
+- Reactions are saved with the layer and travel in exported zips; the editor can copy them as text, paste them, and save or load `.reactions.json` files. **Export layer (zip)** shares a single layer, not only whole folders.
+- **Only what's used is watched.** Each check runs only while a switched-on layer or folder has a graph that uses it; with no reactions anywhere, nothing is watched, and other players are only watched when a layer with reactions is shown on them.
+- **Nocturne ascended** has new default settings and ships with its reactions (6 nodes).
+- **The tutorial covers the reactions editor:** 13 steps, opening the editor for you and walking through the canvas, the add menu, logic gates, actions, trying it out and sharing.
+
+### Lyrics in the world
+
+Settings > **Music and lyrics** (off until you switch it on) shows the lyrics of the song playing on your computer in front of you, in time with the music. Only you see them. They have their own page (**Open the lyrics page**) with the song and sources, the look, which effects may appear and the placement.
+
+- **What's playing:** Windows (any player in the volume flyout), macOS (Spotify or Apple Music), Linux (any player through `playerctl`). **Listen to** can be limited to Spotify.
+- **Lyrics come from** your own `.lrc` files (`config/rainium/lyrics/Artist - Title.lrc`), copies saved from earlier lookups, and **lrclib.net** if you switch on **Find lyrics online** (only title, artist, album and length are sent). Also: **Sync**, **Demo song**, **Song in chat** (only you see it), **Open lyrics folder**, **Clear saved lyrics**.
+- **A plane in the world.** Each line is fixed in the world, to the left or right of where you were looking, and stays there as you walk and look around; if you turn away or walk far, the next spot is in front of you again. It is drawn behind entities, so players and mobs appear over it. There is no border by default.
+- **Placement:**
+  - **Fixed:** placed by the usual rules, then stays at that spot.
+  - **Follow opponent:** beside the opponent you are fighting, at the same size on screen, changing side only when the line is over. It never overlaps them: the clearance is measured on the screen with the panel's real turned shape, snaps clear instead of gliding through, and goes to the other side if there is no room.
+  - **Face me:** the Fixed panel keeps turning to face you, in all three dimensions (its front towards your eye, its top as upright as that allows), for a share of each line and/or a number of seconds, then stays at that angle. Follow also turns to face you in 3D.
+  - **Move with me:** the panel is carried along as you walk for the same two inputs, then stays put.
+- **Never in the way:** lyrics never cover the one you are fighting (or the player or monster nearest your aim) and slide aside with a buffer; "Keep on screen" and "Avoid enemies" are switches; effects can spill past the picture's edge; **Through blocks** decides whether walls hide them. They never move your view or change the world.
+- **Settings:** size as a percentage (100 is the old Medium, no upper or lower limit; old Small / Medium / Large carry over), opacity, float, distance, height and sideways position as typed numbers, font, text and accent colour, speed, backdrop, halo, panel roll, gap, frame, HUD, colour fringe %, grain %, frame rate, plus per-layout and per-way on/off lists.
+- **Simple look:** the sung line fills in word by word, used while the music video isn't available.
+
+### The lyric video
+
+The music video look is drawn by Rainium itself, in Java (no MCEF or browser needed): a re-creation of the reference lyric video (MIT, (c) 2026 hakoniwa, credited in the README and website). Everything below is a condensed re-creation: the same ideas and names, with simpler drawing than the original.
+
+- **183 layouts**, each with its original usual weight: core and kinetic layouts, typography, print and paper objects (magazine spread, ransom note, newspaper, record, cassette, postcard, tanzaku, omikuji, hanging scroll...), playful and faux-3D ones (cube, flip cards, balloons, LED scroll, crossword, kaleidoscope, dominoes...), and twelve found-footage horror layouts. Each line picks one that suits its length, leaning on the style's taste and away from what was just shown.
+- **27 styles**, including Sakura, Deep Sea, Sunset Gradient, Forest Notebook, Vaporwave, Newsprint, Synth 80s, Kraft Paper, Candy, Acid, Ink and Vermilion, Gold Night, and three horror ones (Ruins, Late-Night Recording, Cursed Letter). Horror layouts, holds, effects and ways only come up in the horror styles. Plus **Japanese motifs** (a red seal, a brush circle, a vertical katakana tag), **New effects** (glitch tears) and **New variation**.
+- **144 ways in and 123 ways out**: masks, slides, flips, folds, staggers, stamps, springs, light and screen effects, print and paper (peel, crumple, tear, shred), kinetic and typographic sets; exits such as dissolve, burn, vacuum, sand, balloon, rocket, lights off, candle, glass break, matrix, snake, eraser and flood. Each can be switched off.
+- **52 holds**, **62 text looks** (outline, extrude, shadows, glow, neon, chrome, rainbow, halftone, marker, karaoke fill, ransom, sticker...), **66 backgrounds** (only when the backdrop setting is above zero), **36 camera moves**, **69 screen effects**, **27 transitions** and **130 decorations**, with five switches on the lyrics page (holds, text looks, camera moves, screen effects, transitions).
+- **Not included:** the ruby layout (it needs readings the mod does not have) and the title and interlude layouts. Fonts are the system's sans, serif and monospace (Noto, Yu or Meiryo where present), not the reference's web fonts. Portrait versions of layouts are left out because the picture is landscape.
+- **Lighter to run:** the picture is not drawn or uploaded while the panel can't be seen (behind you, out of view or faded out); only what changed is uploaded (a still hold sends nothing); the effects reuse their scratch pictures; and backgrounds that never change are drawn once and only faded.
 
 ## 0.9.13 (dev build)
 

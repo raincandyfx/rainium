@@ -12,7 +12,7 @@
   <a href="https://github.com/raincandyfx/rainium/releases/latest"><b>Download the latest version</b></a>
 </p>
 
-> Rainium is in **beta** (0.x). Things may change between versions, and feedback is welcome in [Issues](https://github.com/raincandyfx/rainium/issues).
+> Feedback and bug reports are welcome in [Issues](https://github.com/raincandyfx/rainium/issues).
 
 ## What it does
 
