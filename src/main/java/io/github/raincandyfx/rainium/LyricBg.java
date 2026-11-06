@@ -2,7 +2,6 @@ package io.github.raincandyfx.rainium;
 
 import io.github.raincandyfx.rainium.LyricEngine.Scheme;
 
-import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.GradientPaint;
