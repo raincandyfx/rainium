@@ -231,6 +231,14 @@ Some of the sample models that come with the mod, and the models worn in the cha
 
 The characters in the recordings are animated with emotes by Milyan-SPEmotes, played with [Emotecraft](https://modrinth.com/mod/emotecraft); the animations aren't part of Rainium. One of them is based on the dance from the *HATSUNE MIKU: COLORFUL STAGE!* version of "Heat Abnormal" (song by Iyowa).
 
+Rainium also uses:
+
+- **Fonts:** [Archivo](https://github.com/Omnibus-Type/Archivo) (© The Archivo Project Authors) and [Inter](https://github.com/rsms/inter) (© The Inter Project Authors), both under the [SIL Open Font License 1.1](https://openfontlicense.org); the licence texts are included with the fonts.
+- **Icons:** [Lucide](https://lucide.dev) (ISC License, © Lucide Icons and Contributors).
+- **Lyrics lookup:** [lrclib.net](https://lrclib.net), only if you switch on **Find lyrics online**.
+
+On the website: water by [Paper Shaders](https://github.com/paper-design/shaders), and music: "Color Your Night" by Lotus Juice, played from SoundCloud (all rights belong to the artist and the uploader).
+
 Rainium is not affiliated with, endorsed by or connected to any of these companies or the original creators, and all rights to the original designs belong to them. They're shown only as examples of what the mod can display.
 
 Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
