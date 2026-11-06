@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,7 +29,7 @@ final class LyricsVideo {
 
     private static volatile LyricEngine engine;
     private static String songKey;
-    private static volatile int[] frame;                  // a finished picture waiting to be uploaded
+    private static volatile LyricDelta frame;                // a finished picture waiting to be uploaded
     private static long requested = Long.MIN_VALUE;
     private static final AtomicBoolean busy = new AtomicBoolean();
     private static double anchorT;
@@ -49,6 +50,7 @@ final class LyricsVideo {
         songKey = key;
         has = false;
         frame = null;
+        resetBaseline = true;
         requested = Long.MIN_VALUE;
         engine = null;
         final String k = key;
@@ -60,6 +62,7 @@ final class LyricsVideo {
     }
 
     static void clear() {
+        resetBaseline = true;
         songKey = null;
         engine = null;
         frame = null;
@@ -75,7 +78,13 @@ final class LyricsVideo {
 
     private static double now() { return anchorT + (playing ? (System.nanoTime() - anchorNanos) / 1e9 : 0); }
 
-    /** Called every frame from the render thread: asks for the next picture and uploads a finished one. False when there's nothing to show yet. */
+    /** Whether a picture has been uploaded yet (until then the simple line is shown). */
+    static boolean has() { return has; }
+
+    private static volatile boolean resetBaseline = true;
+    private static int[] last;                            // the picture as last handed over (ABGR), drawing thread only
+
+    /** Called from the render thread while the picture can be seen: asks for the next picture and uploads a finished one. False when there's nothing to show yet. */
     static boolean prepare() {
         LyricEngine e = engine;
         if (e == null || songKey == null) return false;
@@ -89,46 +98,41 @@ final class LyricsVideo {
                 finally { busy.set(false); }
             });
         }
-        int[] px = frame;
-        if (px != null) {
+        LyricDelta f = frame;
+        if (f != null) {
             frame = null;
-            upload(px);
+            upload(f);
         }
         return has;
     }
 
-    /** On the drawing thread: the two layers, packed side by side as ABGR pixels. */
-    private static int[] render(LyricEngine e, double t) {
+    /** On the drawing thread: the two layers, packed side by side as ABGR pixels; only what differs from the last picture is passed on. */
+    private static LyricDelta render(LyricEngine e, double t) {
         if (back == null) {
             back = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             front = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         }
         e.draw(t, back, front);
-        int[] out = new int[W * 2 * H];
-        int[] row = new int[W];
-        for (int layer = 0; layer < 2; layer++) {
-            BufferedImage img = layer == 0 ? back : front;
-            for (int y = 0; y < H; y++) {
-                img.getRGB(0, y, W, 1, row, 0, W);
-                int o = y * W * 2 + layer * W;
-                for (int x = 0; x < W; x++) {
-                    int p = row[x];   // ARGB → ABGR
-                    out[o + x] = (p & 0xFF00FF00) | ((p & 0xFF) << 16) | ((p >> 16) & 0xFF);
-                }
-            }
-        }
-        return out;
+        boolean full = resetBaseline || last == null || frame != null;   // a picture that was never uploaded is lost: send everything
+        resetBaseline = false;
+        if (last == null) last = new int[W * 2 * H];
+        return LyricDelta.diff(((DataBufferInt) back.getRaster().getDataBuffer()).getData(), ((DataBufferInt) front.getRaster().getDataBuffer()).getData(), W, H, last, full);
     }
 
-    private static void upload(int[] px) {
-        if (texture == null) {
+    private static void upload(LyricDelta f) {
+        boolean fresh = texture == null;
+        if (fresh) {
             texture = new DynamicTexture(() -> "rainium lyrics video", new NativeImage(W * 2, H, false));
             Minecraft.getInstance().getTextureManager().register(TEXTURE, texture);
         }
         NativeImage ni = texture.getPixels();
         if (ni == null) return;
-        for (int y = 0; y < H; y++)
-            for (int x = 0; x < W * 2; x++) ni.setPixelABGR(x, y, px[y * W * 2 + x]);
+        if (f.rows == 0 && !fresh) return;   // nothing moved: no upload at all
+        int n = 0;
+        for (int y = 0; y < H; y++) {
+            if (f.x0[y] < 0) continue;
+            for (int x = f.x0[y]; x < f.x1[y]; x++) ni.setPixelABGR(x, y, f.data[n++]);
+        }
         texture.upload();
         has = true;
     }

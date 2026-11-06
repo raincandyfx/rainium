@@ -24,8 +24,30 @@ final class LyricFx {
 
     private static double h(long a, int b) { double x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return x - Math.floor(x); }
 
+    /** Scratch pictures reused from frame to frame (one set per thread) instead of a new full-size picture for every copy. */
+    private static final class Arena { final java.util.ArrayList<BufferedImage> list = new java.util.ArrayList<>(); int cur; }
+
+    private static final ThreadLocal<Arena> ARENA = ThreadLocal.withInitial(Arena::new);
+
+    /** All scratch pictures are free again (called at the start of each effect). */
+    private static void release() { ARENA.get().cur = 0; }
+
+    private static BufferedImage take(int w, int hh) {
+        Arena a = ARENA.get();
+        if (a.cur < a.list.size()) {
+            BufferedImage o = a.list.get(a.cur);
+            if (o.getWidth() == w && o.getHeight() == hh) { a.cur++; return o; }
+            a.list.set(a.cur, new BufferedImage(w, hh, BufferedImage.TYPE_INT_ARGB));
+            return a.list.get(a.cur++);
+        }
+        BufferedImage o = new BufferedImage(w, hh, BufferedImage.TYPE_INT_ARGB);
+        a.list.add(o);
+        a.cur++;
+        return o;
+    }
+
     private static BufferedImage copy(BufferedImage s) {
-        BufferedImage o = new BufferedImage(s.getWidth(), s.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage o = take(s.getWidth(), s.getHeight());
         Graphics2D g = o.createGraphics();
         g.setComposite(AlphaComposite.Src);
         g.drawImage(s, 0, 0, null);
@@ -96,7 +118,7 @@ final class LyricFx {
         int n = r * 2 + 1;
         float[] k = new float[n * n];
         java.util.Arrays.fill(k, 1f / (n * n));
-        BufferedImage o = new ConvolveOp(new Kernel(n, n, k), ConvolveOp.EDGE_NO_OP, null).filter(copy(img), null);
+        BufferedImage o = new ConvolveOp(new Kernel(n, n, k), ConvolveOp.EDGE_NO_OP, null).filter(copy(img), take(img.getWidth(), img.getHeight()));
         clear(img);
         Graphics2D g = img.createGraphics();
         g.drawImage(o, 0, 0, null);
@@ -107,13 +129,9 @@ final class LyricFx {
 
     private static void pixels(BufferedImage img, Px f) {
         int w = img.getWidth(), hh = img.getHeight();
-        int[] row = new int[w];
-        for (int y = 0; y < hh; y++) {
-            img.getRGB(0, y, w, 1, row, 0, w);
-            boolean any = false;
-            for (int x = 0; x < w; x++) { int v = row[x]; if ((v >>> 24) != 0) { row[x] = f.f(v, x, y); any = true; } }
-            if (any) img.setRGB(0, y, w, 1, row, 0, w);
-        }
+        int[] d = ((java.awt.image.DataBufferInt) img.getRaster().getDataBuffer()).getData();   // straight at the pixels, no row copies
+        for (int y = 0, i = 0; y < hh; y++)
+            for (int x = 0; x < w; x++, i++) { int v = d[i]; if ((v >>> 24) != 0) d[i] = f.f(v, x, y); }
     }
 
     private static int rgb(int a, int r, int g, int b) { return (a << 24) | (Math.max(0, Math.min(255, r)) << 16) | (Math.max(0, Math.min(255, g)) << 8) | Math.max(0, Math.min(255, b)); }
@@ -148,7 +166,8 @@ final class LyricFx {
     private static void maskTo(BufferedImage img, Shape keep) {
         Graphics2D g = img.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        BufferedImage m = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage m = take(img.getWidth(), img.getHeight());
+        clear(m);
         Graphics2D mg = gfx(m);
         mg.setColor(Color.WHITE);
         mg.fill(keep);
@@ -159,7 +178,7 @@ final class LyricFx {
     }
 
     /** Redraws a layer through a transform. */
-    static void transform(BufferedImage img, AffineTransform t) { warp(img, t); }
+    static void transform(BufferedImage img, AffineTransform t) { release(); warp(img, t); }
 
     /** A screen effect on both layers. p runs 0..1 over the effect's short window. px, py: where the picture starts in the layer; w, hh: its size. */
     static void apply(String key, BufferedImage front, BufferedImage back, double p, long step, int px, int py, int w, int hh, Color a, Color b) {
@@ -167,6 +186,7 @@ final class LyricFx {
         double e = 1 - p, cx = px + w / 2.0, cy = py + hh / 2.0;
         long sd = step;
         for (BufferedImage img : new BufferedImage[]{front, back}) {
+            release();
             switch (key) {
                 case "slice", "sliceShift", "shatter", "tileShift", "splitSlide", "interlace" -> bands(img, py, py + hh, key.equals("interlace") ? 3 : Math.max(6, hh / 12), sd, w * 0.08 * e, key.equals("interlace") ? 0.5 : 0.7);
                 case "block", "macroBlock", "mosaic", "gridRepeat", "pixelDrift" -> pixelate(img, key.equals("mosaic") ? 10 : 6 + (int) (e * 12));
@@ -221,6 +241,7 @@ final class LyricFx {
     /** The transition into a cut: u runs 0..1 as the new cut is revealed (1 = fully there). Works by cutting away what's not revealed yet. */
     static void transition(String key, BufferedImage img, double u, long step, int px, int py, int w, int hh) {
         if (key == null || key.isEmpty() || u >= 1) return;
+        release();
         double cx = px + w / 2.0, cy = py + hh / 2.0, e = 1 - u;
         int W = img.getWidth(), H = img.getHeight();
         switch (key) {

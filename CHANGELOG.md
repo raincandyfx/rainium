@@ -2,6 +2,15 @@
 
 Rainium is in beta (0.x) until 1.0.0.
 
+## 0.9.13 (dev build)
+
+- **Lighter lyric video.**
+  - The picture is no longer drawn or uploaded while the panel can't be seen (behind you, out of the view or faded out). The first picture is still made right away.
+  - Only what changed is uploaded: a still hold sends nothing, and a moving line sends only the rows and spans that differ, instead of re-writing every pixel each step.
+  - The screen effects, camera moves and transitions reuse their scratch pictures instead of allocating full-size copies every frame, and read the pixels directly.
+  - Backgrounds that never change (seigaiha, asanoha, grids, stripes, split screens, skyline, mountains and others) are drawn once and then only faded.
+- Not yet tried in a real game.
+
 ## 0.9.12 (dev build)
 
 - **Face me and follow-the-opponent now turn in three dimensions.** Before, the panel only swung left and right and always stood upright; now it tilts too, so its front points straight at your eye when you look from above or below (its top stays as upright as that allows). Face me turns on the spot where the panel is; in Follow the panel stays beside the opponent and keeps turning to face you.

@@ -12,6 +12,8 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.awt.AlphaComposite;
 
 import static io.github.raincandyfx.rainium.LyricKit.clamp;
 
@@ -28,6 +30,40 @@ final class LyricBg {
     /** Draws background key over a W x H picture; a is the overall strength (already scaled by the backdrop setting and fades). */
     static void paint(String key, Graphics2D g, Scheme sc, double t, double lt, long step, double a, int W, int H, long seed) {
         if (key == null || key.isEmpty() || key.equals("none") || a <= 0.01) return;
+        if (STATIC.contains(key)) {   // the same every frame: drawn once, then only faded in and out
+            BufferedImage img = still(key, sc, W, H);
+            var old = g.getComposite();
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) clamp(a)));
+            g.drawImage(img, 0, 0, null);
+            g.setComposite(old);
+            return;
+        }
+        render(key, g, sc, t, lt, step, a, W, H, seed);
+    }
+
+    /** Backgrounds that don't move or change with time or the line. */
+    private static final java.util.Set<String> STATIC = java.util.Set.of("seigaiha", "asanoha", "houndstooth", "herringbone", "argyle", "tartan", "isoCubes", "hexGrid", "triTess",
+        "halftoneFade", "bigStripes", "splitV", "splitH", "splitDiag", "dotGrid", "polka", "borderFrame", "letterbox", "skyline", "mountains", "tornPaper", "paperCut", "hrMold", "hrDeadTrees");
+
+    private static final java.util.Map<String, BufferedImage> CACHE = new java.util.LinkedHashMap<>(16, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(java.util.Map.Entry<String, BufferedImage> e) { return size() > 12; }
+    };
+
+    private static synchronized BufferedImage still(String key, Scheme sc, int W, int H) {
+        String id = key + "|" + sc.accent().getRGB() + "|" + sc.accent2().getRGB() + "|" + sc.fg().getRGB() + "|" + sc.dim().getRGB() + "|" + sc.bg().getRGB() + "|" + W + "x" + H;
+        BufferedImage img = CACHE.get(id);
+        if (img == null) {
+            img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = img.createGraphics();
+            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            render(key, g, sc, 0, 0, 0, 1, W, H, 0);
+            g.dispose();
+            CACHE.put(id, img);
+        }
+        return img;
+    }
+
+    private static void render(String key, Graphics2D g, Scheme sc, double t, double lt, long step, double a, int W, int H, long seed) {
         Color A = sc.accent(), B = sc.accent2(), F = sc.fg(), D = sc.dim(), K = sc.bg();
         var old = g.getComposite();
         g.setStroke(new BasicStroke(1.4f));

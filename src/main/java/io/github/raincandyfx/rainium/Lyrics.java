@@ -174,7 +174,8 @@ final class Lyrics {
         if (!s.enabled || lrc == null || status != Status.SHOWING) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
-        boolean video = s.video && LyricsVideo.prepare();
+        if (s.video && !LyricsVideo.has()) LyricsVideo.prepare();   // the first picture is wanted whatever the view
+        boolean video = s.video && LyricsVideo.has();   // after that it is asked for further down, and only while it can be seen is asked for further down, and only while it can be seen
         if (!video && !LyricsText.ready()) return;
         Identifier tex = video ? LyricsVideo.TEXTURE : LyricsText.TEXTURE;
 
@@ -335,7 +336,14 @@ final class Lyrics {
         double opacity = Math.max(0, Math.min(1, s.opacityPct / 100.0));
         if (alphaShown * opacity < 0.02) return;
         if (follow) cyw += Math.sin(nowN / 1.0e9 * 1.1) * 0.04 * s.floatPct / 100.0;
-        if (cxw * fwd.x + cyw * fwd.y + czw * fwd.z < 0.1) return;   // behind you
+        double depthZ = cxw * fwd.x + cyw * fwd.y + czw * fwd.z;
+        if (depthZ < 0.1) return;   // behind you
+        {   // out of the view altogether: no picture is drawn or uploaded for it
+            double ext = Math.hypot(hw, hh) / depthZ;
+            double sxc = (cxw * right.x + cyw * right.y + czw * right.z) / depthZ / tanH, syc = (cxw * up.x + cyw * up.y + czw * up.z) / depthZ / tanV;
+            if (Math.abs(sxc) > 1 + ext / tanH || Math.abs(syc) > 1 + ext / tanV) return;
+        }
+        if (video) LyricsVideo.prepare();
 
         // the plane itself, in the world (the picture is two layers: decorations a little behind the lyrics)
         float qw = (float) hw, qh = (float) hh;
