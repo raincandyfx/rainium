@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="src/main/resources/assets/rainium/icon.png" width="128" alt="Rainium icon">
+  <img src="https://raw.githubusercontent.com/raincandyfx/rainium/main/docs/og.jpg" alt="Rainium: OBJ, glTF and GLB, Fabric, client side, free and open source">
 </p>
-
-<h1 align="center">Rainium</h1>
 
 <p align="center">
   Any 3D model- objs, gltf, glb- now in Minecraft as a cosmetic. Away with painful blockbench conversions and import anything, with textures, materials, glows, and particles. Completely client side and customizable, for Fabric on the latest version.
@@ -10,6 +8,10 @@
 
 <p align="center">
   <a href="https://github.com/raincandyfx/rainium/releases/latest"><b>Download the latest version</b></a>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/raincandyfx/rainium/main/docs/img/readme/characters.png" alt="Five players wearing Rainium cosmetics: a golden halo, dark red wings, a floating pod, a long red spear and a small doll">
 </p>
 
 > Feedback and bug reports are welcome in [Issues](https://github.com/raincandyfx/rainium/issues).
@@ -31,6 +33,17 @@
 - **Share your look.** Export a folder as a zip, and a friend can add it from the editor.
 - **Just for you.** Rainium only changes what *you* see. It works on any server, and other players' setups never affect yours.
 - **Keeps itself up to date.** New versions for your Minecraft version are downloaded and installed when you close the game (you can turn this off).
+
+<table>
+  <tr>
+    <td width="50%"><img src="https://raw.githubusercontent.com/raincandyfx/rainium/main/docs/img/textures.png" alt="One model's colour, normal and detail textures"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/raincandyfx/rainium/main/docs/img/glow.png" alt="A pink halo glowing above a player at night"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Any texture</b><br>Any PNG, with hue, tint and opacity.</td>
+    <td align="center"><b>Real glow</b><br>Glowing parts ignore world light.</td>
+  </tr>
+</table>
 
 ## Installing
 
@@ -74,6 +87,10 @@ To convert without opening the game, there are two converters in [`tools/`](tool
 Your `config/rainium` folder also has a `README.txt` with the full details: the coordinate system, the mesh file formats and every option in `layers.json`.
 
 ## Particles
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/raincandyfx/rainium/main/docs/img/readme/particles.gif" width="320" alt="Hearts trailing a player flying with an elytra">
+</p>
 
 Besides models, a layer can be a **particle emitter**. On the **Add** tab, start from **Sparkles**, **Embers**, **Hearts**, **Trail**, **Aura** or an **Empty emitter**, then fine-tune it on the Edit tab:
 
