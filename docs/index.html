@@ -113,6 +113,8 @@
   .sea::after { opacity: 0; background: var(--mood, none); }
   body[data-page="particles"] .sea::after { --mood: radial-gradient(80% 60% at 70% 15%, #3a1f9a 0%, rgba(58,31,154,0) 60%), linear-gradient(180deg, #0d1048 0%, #050826 100%); opacity: 1; }
   body[data-page="models"] .sea::after { --mood: radial-gradient(100% 80% at 20% 0%, #c6f8ff 0%, rgba(198,248,255,0) 55%), linear-gradient(170deg, #48e6ff 0%, #22b8f0 45%, #1a7ee6 100%); opacity: 1; }
+  body[data-page="reactions"] .sea::after { --mood: radial-gradient(85% 65% at 75% 10%, #b3123f 0%, rgba(179,18,63,0) 60%), linear-gradient(180deg, #2a0820 0%, #0c0414 100%); opacity: 1; }
+  body[data-page="lyrics"] .sea::after { --mood: radial-gradient(90% 70% at 25% 0%, #ff7ab8 0%, rgba(255,122,184,0) 55%), linear-gradient(175deg, #6a2bb8 0%, #2c0f6a 55%, #120638 100%); opacity: 1; }
   body[data-page="updates"] .sea::after { --mood: linear-gradient(175deg, #10237f 0%, #08144f 55%, #040a2e 100%); opacity: 1; }
   .caustics { position: fixed; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen;
     -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.1) 100%);
@@ -122,7 +124,7 @@
   .still-water { opacity: 0.18;
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1600'%3E%3Cfilter id='c' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.0042 0.0066' numOctaves='2' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 -3.4 0 0 0 1.05'/%3E%3C/filter%3E%3Crect width='1600' height='1600' filter='url(%23c)'/%3E%3C/svg%3E") center / cover no-repeat; }
   body.live-water .still-water { display: none; }
-  body[data-page="download"] .caustics, body[data-page="particles"] .caustics { opacity: 0.2; }
+  body[data-page="download"] .caustics, body[data-page="particles"] .caustics, body[data-page="reactions"] .caustics, body[data-page="lyrics"] .caustics { opacity: 0.2; }
 
   /* ============ Wipe between pages ============ */
   .wipe { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
@@ -274,7 +276,7 @@
   .menu { position: absolute; z-index: 5; left: 33vw; top: 51%; transform: translateY(-50%) rotate(-11deg); }
   .menu ol { list-style: none; margin: 0; padding: 0; }
   .menu li { margin-left: var(--x); margin-top: var(--y, 0); line-height: 0.8; }
-  .menu a { display: inline-block; text-decoration: none; color: var(--menu); font-size: clamp(3rem, 9.4vh, 6.2rem); letter-spacing: -0.02em;
+  .menu a { display: inline-block; text-decoration: none; color: var(--menu); font-size: clamp(2.35rem, 7.3vh, 4.85rem); letter-spacing: -0.02em;
     text-shadow: 0 2px 14px rgba(5,11,51,0.25); transition: transform 0.16s cubic-bezier(.2,.9,.3,1.4); transform-origin: left center;
     transform: rotate(var(--r, 0deg)) scale(var(--s, 1)); }
   .menu a.sel { transform: rotate(calc(var(--r, 0deg) - 3deg)) scale(calc(var(--s, 1) * 1.2)); }
@@ -398,6 +400,21 @@
   .knobs dt { font-style: italic; font-weight: 900; font-stretch: 75%; font-size: 1.5rem; line-height: 1; text-transform: uppercase; }
   .knobs dd { margin: 3px 0 0; color: #cfc8f5; }
   #pg-particles .ptitle { text-shadow: 0 0 30px rgba(255,79,154,0.6); }
+
+  /* ============ REACTIONS (crimson) and LYRICS (sunset) reuse the particles layout ============ */
+  #pg-reactions .ptitle { text-shadow: 0 0 30px rgba(255,40,90,0.7); }
+  #pg-reactions .presets li { color: #ffd1dc; text-shadow: 0 0 22px rgba(255,60,110,0.8); }
+  #pg-reactions .presets li:nth-child(odd) { color: #ff5c86; }
+  #pg-reactions .px .ph { box-shadow: 0 0 0 2px rgba(255,140,170,0.5), 0 0 60px rgba(255,40,90,0.35); outline-color: rgba(255,170,190,0.6);
+    background: repeating-linear-gradient(-50deg, rgba(255,140,170,0.08) 0 2px, transparent 2px 14px), rgba(60,8,30,0.6); }
+  #pg-reactions .knobs div { border-left-color: rgba(255,140,170,0.35); }
+  #pg-reactions .knobs dd { color: #f3cbd6; }
+  #pg-lyrics .ptitle { text-shadow: 0 0 30px rgba(255,122,184,0.7); }
+  #pg-lyrics .px .ph { --ar: 16 / 9; max-height: 52vh; box-shadow: 0 0 0 2px rgba(255,190,225,0.5), 0 0 60px rgba(255,122,184,0.35); outline-color: rgba(255,200,230,0.6);
+    background: repeating-linear-gradient(-50deg, rgba(255,190,225,0.08) 0 2px, transparent 2px 14px), rgba(50,14,90,0.6); }
+  #pg-lyrics .px { grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 4fr); }
+  #pg-lyrics .presets li { font-size: clamp(2rem, 7vh, 4.2rem); white-space: nowrap; }
+  #pg-lyrics .knobs dd { color: #f0d4f2; }
 
   /* ============ MODELS (bright cyan, ink type) ============ */
   #pg-models { color: var(--ink); }
@@ -588,8 +605,10 @@
         <li style="--x:1em;--y:-0.06em;--r:-3.5deg;--s:0.9"><a class="d pick" href="#guide">Guide</a></li>
         <li style="--x:0.3em;--y:-0.04em;--r:0.5deg;--s:1.08"><a class="d pick" href="#particles">Particles</a></li>
         <li style="--x:1.6em;--y:-0.08em;--r:2.5deg;--s:0.84"><a class="d pick" href="#models">Models</a></li>
+        <li style="--x:0.75em;--y:-0.04em;--r:-2.5deg;--s:1.02"><a class="d pick" href="#reactions">Reactions</a></li>
+        <li style="--x:1.4em;--y:-0.06em;--r:2deg;--s:0.9"><a class="d pick" href="#lyrics">Lyrics</a></li>
         <li style="--x:0.55em;--y:-0.03em;--r:-1.5deg;--s:1"><a class="d pick" href="#updates">Updates</a></li>
-        <li style="--x:1.15em;--y:-0.05em;--r:1deg;--s:0.95"><a class="d pick" href="#questions">Questions</a></li>
+        <li style="--x:0.6em;--y:-0.05em;--r:1deg;--s:0.95"><a class="d pick" href="#questions">Questions</a></li>
       </ol>
     </nav>
 
@@ -608,7 +627,7 @@
     <div class="feat">
       <div>
         <ul class="claims slam" aria-label="What Rainium does">
-          <li class="d">Any model</li><li class="d">Every material</li><li class="d">Particles</li><li class="d">Real glow</li><li class="d">Anyone you see</li>
+          <li class="d">Any model</li><li class="d">Every material</li><li class="d">Particles</li><li class="d">Reactions</li><li class="d">Lyrics</li>
         </ul>
         <p class="lede">Every part is yours to tune in an in-game editor, with a live preview. Wear it on your body, head, arms or legs.</p>
       </div>
@@ -616,7 +635,7 @@
         <div class="card tile-card"><figure class="ph" data-clips="halo,wings"><span>Two players, one with a halo and one with wings</span></figure>
           <h2 class="h">On anyone</h2><p>You, friends, everyone, armor stands.</p></div>
         <div class="card tile-card"><figure class="ph" data-img="img/textures.png"><span>One model, three textures</span><code>docs/img/textures.png</code></figure>
-          <h2 class="h">Any texture</h2><p>Any PNG, any hue, any opacity.</p></div>
+          <h2 class="h">Any texture</h2><p>Any PNG, hue, tint and opacity.</p></div>
         <div class="card tile-card"><figure class="ph" data-img="img/glow.png"><span>A pink halo glowing above a player at night</span><code>docs/img/glow.png</code></figure>
           <h2 class="h">Real glow</h2><p>Glowing parts ignore world light.</p></div>
         <div class="card tile-card"><figure class="ph" data-clips="pod"><span>A player with a floating robot pod</span></figure>
@@ -642,9 +661,9 @@
       </div>
       <div>
         <ol class="ribbons">
-          <li><b>Install Fabric</b><a href="https://fabricmc.net/use/">Fabric Loader</a> and <a href="https://modrinth.com/mod/fabric-api">Fabric API</a> for 26.3.</li>
+          <li><b>Install Fabric</b><a href="https://fabricmc.net/use/">Fabric Loader</a> and <a href="https://modrinth.com/mod/fabric-api">Fabric API</a> for 26.3, 26.2 or 1.21.11.</li>
           <li><b>Add Rainium</b>Drop the <code>.jar</code> into <code>.minecraft/mods</code>.</li>
-          <li><b>Press K</b>The editor opens in game.</li>
+          <li><b>Press K</b>The editor opens, with a short tour the first time.</li>
         </ol>
         <p class="after">After that, updates install themselves.</p>
       </div>
@@ -680,7 +699,7 @@
         <div><dt>Picture</dt><dd>Minecraft's particles or your own PNG</dd></div>
         <div><dt>When</dt><dd>Always, moving, standing still, or by speed</dd></div>
         <div><dt>Where</dt><dd>Point, ball, box or ring</dd></div>
-        <div><dt>Motion</dt><dd>Speed, gravity, drag, spin, fade</dd></div>
+        <div><dt>Motion</dt><dd>Speed, gravity, drag, spin, fade, start angle</dd></div>
         <div><dt>Trail</dt><dd>Follow you, or stay behind</dd></div>
       </dl>
     </div>
@@ -693,16 +712,52 @@
     <h1 class="sr" id="t-models" tabindex="-1">Models</h1>
     <div class="formats slam" aria-label="Formats Rainium imports"><span>OBJ</span><span>glTF</span><span>GLB</span><p>Blender's default export works as it is.</p></div>
     <div class="conveyor" aria-label="How a model becomes parts">
-      <div class="card"><h2 class="h">Your file</h2><p>Model and PNG textures in the rainium folder.</p></div>
+      <div class="card"><h2 class="h">Your file</h2><p>A model, a folder or a zip in the rainium folder.</p></div>
       <div class="arrow" aria-hidden="true"></div>
-      <div class="card"><h2 class="h">Split into parts</h2><p>One part per object and material.</p></div>
+      <div class="card"><h2 class="h">Split into parts</h2><p>One part per object and material, each matched to its texture.</p></div>
       <div class="arrow" aria-hidden="true"></div>
       <div class="card"><h2 class="h">Style each part</h2>
         <ul class="parts" aria-label="Example: a pair of wings">
           <li><span>Feathers</span><span>texture</span></li><li><span>Trim</span><span class="glow">glow</span></li><li><span>Veil</span><span>see-through</span></li>
         </ul></div>
     </div>
-    <p class="extras"><span><b>Convert</b>without the game using <a href="https://github.com/raincandyfx/rainium/tree/main/tools">the converters</a>.</span><span><b>Share</b>a look as a zip.</span></p>
+    <p class="extras"><span><b>Start</b>from the Gold halo, Glow halo or Nocturne.</span><span><b>Convert</b>without the game using <a href="https://github.com/raincandyfx/rainium/tree/main/tools">the converters</a>.</span><span><b>Share</b>a look, or one layer, as a zip.</span></p>
+  </div>
+</section>
+
+<!-- ================= REACTIONS ================= -->
+<section class="page" id="pg-reactions" data-page="reactions" aria-labelledby="t-reactions">
+  <div class="fit">
+    <h1 class="ptitle d pick sel slam" id="t-reactions" tabindex="-1">Reactions</h1>
+    <div class="px">
+      <ul class="presets" aria-label="Some of the actions"><li class="d">Blink</li><li class="d">Shake</li><li class="d">Spin</li><li class="d">Glow</li><li class="d">Glitch</li></ul>
+      <figure class="ph" data-img="img/reactions.png"><span>The reactions node editor</span><code>docs/img/reactions.png</code></figure>
+      <dl class="knobs">
+        <div><dt>Events</dt><dd>Hits, crits, totem pops, mace smashes, pearls, kills, jumps</dd></div>
+        <div><dt>States</dt><dd>Health, in combat, sprinting, gliding, your opponent's health</dd></div>
+        <div><dt>Logic</dt><dd>And, or, then, only while, cooldown, combo</dd></div>
+        <div><dt>Actions</dt><dd>Show, tint, glow, spin, shake, heartbeat, glitch and more</dd></div>
+        <div><dt>Try it</dt><dd>Fire any event on yourself, or start from 21 examples</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LYRICS ================= -->
+<section class="page" id="pg-lyrics" data-page="lyrics" aria-labelledby="t-lyrics">
+  <div class="fit">
+    <h1 class="ptitle d pick sel slam" id="t-lyrics" tabindex="-1">Lyrics</h1>
+    <div class="px">
+      <ul class="presets" aria-label="Some of the styles"><li class="d">Sakura</li><li class="d">Deep Sea</li><li class="d">Candy</li><li class="d">Synth 80s</li><li class="d">Acid</li></ul>
+      <figure class="ph" data-img="img/lyrics.png"><span>Lyrics as a lyric video in the world</span><code>docs/img/lyrics.png</code></figure>
+      <dl class="knobs">
+        <div><dt>Playing</dt><dd>Spotify, Apple Music or any player on your computer</dd></div>
+        <div><dt>Lyrics</dt><dd>Your own .lrc files, or lrclib.net if you allow it</dd></div>
+        <div><dt>Looks</dt><dd>183 layouts, 27 styles, hundreds of ways in and out</dd></div>
+        <div><dt>Placement</dt><dd>Fixed, beside your opponent, or turning to face you</dd></div>
+        <div><dt>Out of the way</dt><dd>Never covers who you're fighting. Only you see it.</dd></div>
+      </dl>
+    </div>
   </div>
 </section>
 
@@ -726,8 +781,9 @@
         <li><button class="pick" type="button" aria-pressed="true" data-a="No. Only you see your cosmetics. To share a look, send a friend an exported zip.">Can others see it?</button></li>
         <li><button class="pick" type="button" aria-pressed="false" data-a="Yes, any server. Nothing needs installing there.">Does it work on servers?</button></li>
         <li><button class="pick" type="button" aria-pressed="false" data-a="On your screen: you, everyone, named players or armor stands. Set it per layer.">Who can wear it?</button></li>
+        <li><button class="pick" type="button" aria-pressed="false" data-a="Minecraft 26.3, 26.2 and 1.21.11, with Fabric. Each release has a jar for each, and updates pick the right one.">Which versions?</button></li>
         <li><button class="pick" type="button" aria-pressed="false" data-a="Yes. Each material becomes its own part. Keep the PNG textures next to the model.">Do materials carry over?</button></li>
-        <li><button class="pick" type="button" aria-pressed="false" data-a="No. The only time it goes online is the update check, and you can switch that off in Settings.">Does it collect data?</button></li>
+        <li><button class="pick" type="button" aria-pressed="false" data-a="No. It only goes online for the update check and, if you switch on Find lyrics online, to look up the song's lyrics (just its title, artist, album and length). Both can be off.">Does it collect data?</button></li>
         <li><button class="pick" type="button" aria-pressed="false" data-a="In .minecraft/config/rainium. The editor's Open rainium folder button takes you there.">Where are my files?</button></li>
         <li><button class="pick" type="button" aria-pressed="false" data-a="Yes. Picture and ● Rec in the editor's preview save transparent PNGs that any video editor can use.">Can I record it?</button></li>
       </ul>
@@ -764,9 +820,9 @@ const store = {
 };
 
 /* ---------- Pages, the wipe, and the prompt bar ---------- */
-const PAGES = ["home", "features", "download", "guide", "particles", "models", "updates", "questions"];
+const PAGES = ["home", "features", "download", "guide", "particles", "models", "reactions", "lyrics", "updates", "questions"];
 const INNER = PAGES.slice(1);
-const NAMES = { features: "Features", download: "Download", guide: "Guide", particles: "Particles", models: "Models", updates: "Updates", questions: "Questions" };
+const NAMES = { features: "Features", download: "Download", guide: "Guide", particles: "Particles", models: "Models", reactions: "Reactions", lyrics: "Lyrics", updates: "Updates", questions: "Questions" };
 const keyOf = () => { const k = location.hash.slice(1); return PAGES.includes(k) ? k : "home"; };
 const menuLinks = [...document.querySelectorAll(".menu a")];
 const choices = [...document.querySelectorAll("#choices button")];
