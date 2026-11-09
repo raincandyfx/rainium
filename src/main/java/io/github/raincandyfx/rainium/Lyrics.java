@@ -78,13 +78,13 @@ final class Lyrics {
         NowPlaying.want(true);
         if (s.demo && !NowPlaying.demo) NowPlaying.startDemo();
         if (!s.demo && NowPlaying.demo) NowPlaying.stopDemo();
-        if (!s.video) LyricsVideo.clear();
+        if (!s.video || s.placement == 2) LyricsVideo.clear();
 
         NowPlaying.Track t = NowPlaying.now();
         track = t;
         if (t == null) {
             status = NowPlaying.problem != null ? Status.FAILED : Status.NOTHING_PLAYING;
-            if (trackKey != null) { trackKey = null; lrc = null; LyricsVideo.clear(); LyricsText.reset(); }
+            if (trackKey != null) { trackKey = null; lrc = null; LyricsVideo.clear(); LyricsText.reset(); LyricsScatter.reset(); }
             return;
         }
         String key = t.key();
@@ -94,6 +94,7 @@ final class Lyrics {
             anchorLine = -2;
             LyricsVideo.clear();
             LyricsText.reset();
+            LyricsScatter.reset();
             if (s.chat && !t.player().equals("demo")) say(mc, Component.translatable("rainium.lyrics.now_playing", t.title(), t.artist()));
             if (t.player().equals("demo")) {
                 lrc = LyricsLrc.parse(LyricsLrc.DEMO, LyricsLrc.DEMO_LENGTH);
@@ -122,7 +123,9 @@ final class Lyrics {
         }
         if (lrc == null) return;
         double now = t.positionNow() - s.offset;
-        if (s.video) {
+        if (s.placement == 2) {   // Scatter: words, not a picture
+            LyricsScatter.update(lrc, now, s);
+        } else if (s.video) {
             String look = s.style + "|" + s.seed + "|" + s.motifs + "|" + s.newEffects + "|" + s.look().key();
             long seed = (s.seed * 1_000_003L + key.hashCode()) & 0x3FFFFFFFL;
             LyricsVideo.song(key + "|" + look, lrc, s.style, seed, s.motifs, s.newEffects, t.title(), s.look());
@@ -139,6 +142,7 @@ final class Lyrics {
         NowPlaying.stopDemo();
         LyricsVideo.close();
         LyricsText.reset();
+        LyricsScatter.reset();
         trackKey = null; lrc = null; track = null; pending = null;
     }
 
@@ -174,6 +178,10 @@ final class Lyrics {
         if (!s.enabled || lrc == null || status != Status.SHOWING) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
+        if (s.placement == 2) {   // Scatter: each word on its own
+            LyricsScatter.submit(collector, s, lrc, track == null ? 0 : track.positionNow() - s.offset);
+            return;
+        }
         if (s.video && !LyricsVideo.has()) LyricsVideo.prepare();   // the first picture is wanted whatever the view
         boolean video = s.video && LyricsVideo.has();   // after that it is asked for further down, and only while it can be seen is asked for further down, and only while it can be seen
         if (!video && !LyricsText.ready()) return;
@@ -249,9 +257,16 @@ final class Lyrics {
                     panelFrame(fwd, right, up, tanH, tanV, followX, followY, followDepth, pc, pn, pr, pu);
                 }
             }
+            double wallK = 1;   // pulled in front of a wall along the same line of sight, so it keeps its size on the screen
+            if (s.wallSafe) {
+                double[] e0 = {eye.x, eye.y, eye.z}, want = {eye.x + pc.x, eye.y + pc.y, eye.z + pc.z};
+                double[] got = LyricsWorld.inFront(solidWorld(mc), e0, want);
+                wallK = Math.min(1.0, Math.sqrt(sq(got[0] - e0[0]) + sq(got[1] - e0[1]) + sq(got[2] - e0[2])) / Math.max(0.01, pc.length()));
+                pc.set((float) (got[0] - e0[0]), (float) (got[1] - e0[1]), (float) (got[2] - e0[2]));
+            }
             cxw = pc.x; cyw = pc.y; czw = pc.z;
             faceRight.set(pr); faceUp.set(pu); faceNormal.set(pn);
-            hw = widthN * tanH * followDepth / 2;
+            hw = widthN * tanH * followDepth / 2 * wallK;
             hh = hw * texAspect;
         } else {
             // a spot in the world for each line, by the rules, and then it stays exactly there
@@ -276,13 +291,21 @@ final class Lyrics {
                     eye.x + fwd.x * zc + right.x * px * tanH * zc + up.x * py * tanV * zc,
                     eye.y + fwd.y * zc + right.y * px * tanH * zc + up.y * py * tanV * zc,
                     eye.z + fwd.z * zc + right.z * px * tanH * zc + up.z * py * tanV * zc);
+                double wallK = 1;   // pulled in front of a wall or lifted out of the ground: smaller in step, to look the size it would have been
+                if (s.wallSafe) {
+                    LyricsWorld.Solid solid = solidWorld(mc);
+                    double[] e0 = {eye.x, eye.y, eye.z}, want = {at.x, at.y, at.z};
+                    double[] got = LyricsWorld.aboveFloor(solid, LyricsWorld.inFront(solid, e0, want));
+                    wallK = LyricsWorld.keptScale(e0, want, got);
+                    at = new Vec3(got[0], got[1], got[2]);
+                }
                 double hx = at.x - eye.x, hz = at.z - eye.z, hl = Math.sqrt(hx * hx + hz * hz);
                 if (hl < 1e-3) { hx = fwd.x; hz = fwd.z; hl = Math.max(1e-3, Math.sqrt(hx * hx + hz * hz)); }
                 hx /= hl; hz /= hl;
                 planeRight.set((float) -hz, 0f, (float) hx);      // faces you, upright, and fixed from now on
                 planeNormal.set((float) -hx, 0f, (float) -hz);
                 planeUp.set(0f, 1f, 0f);
-                planeW = widthN * zc * tanH;
+                planeW = widthN * zc * tanH * wallK;
                 planeH = planeW * texAspect;
                 // the rules, applied once: fit the screen, slide clear of an enemy; the result is the spot and shape it keeps
                 double ccx = at.x - eye.x, ccy = at.y - eye.y, ccz = at.z - eye.z;
@@ -365,6 +388,18 @@ final class Lyrics {
                 quad(pose, vc, c, r, uw, vw, vh, 0.5f, 1f, color);
             } else quad(pose, vc, c, r, uw, qw, qh, 0f, 1f, color);
         });
+    }
+
+    private static double sq(double v) { return v * v; }
+
+    /** The solidity of the loaded world, for LyricsWorld; nothing is solid when there is no world. */
+    static LyricsWorld.Solid solidWorld(Minecraft mc) {
+        if (mc.level == null) return (x, y, z) -> false;
+        var level = mc.level;
+        return (x, y, z) -> {
+            net.minecraft.core.BlockPos p = net.minecraft.core.BlockPos.containing(x, y, z);
+            return !level.getBlockState(p).getCollisionShape(level, p).isEmpty();
+        };
     }
 
     /** The panel beside the opponent: at (fx, fy) on the screen and depth zc, turned to face the eye (all three ways), top as upright as that allows. */

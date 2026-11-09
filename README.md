@@ -165,6 +165,8 @@ Each line is a plane in the world. It stays where it is as you move and look aro
   - **Face me:** keeps turning to face you, in all three dimensions: its front points at your eye, so it tilts when you look from above or below, and its top stays as upright as that allows. It runs for a share of each line (100 % is the whole line, 50 % the first half) and/or a number of seconds, then stays at the angle it had. If both are set, whichever ends first wins.
   - **Move with me:** the panel is carried along with you as you walk, for the same two inputs, then stays where it is.
 - **Follow opponent:** beside the opponent you're fighting, at the same size on screen, changing side only when the line is over. It also turns to face you in 3D, and it never overlaps them: it snaps clear, and goes to their other side if there's no room.
+- **Scatter:** no video; each word appears on its own as it is sung, near your crosshair and facing you with a slight tilt, and fades a moment later. Each word takes the roomiest of 28 tries in one of four columns across the view, so words don't pile up. Distance is how near they start (they go up to twice as far); Move with me works here too.
+- **Keep out of walls** (all modes, on by default): a spot behind a wall is pulled in front of it and shrunk to look the same size, and one buried in the ground is lifted out.
 
 Other settings, all typed numbers: **size** as a percentage (100 is the default; no upper or lower limit), opacity, float, distance, height, sideways position, gap and roll. Also font, text and accent colour, speed, backdrop (backgrounds only show when it's above zero), halo, colour fringe, grain, frame rate, frame and HUD.
 

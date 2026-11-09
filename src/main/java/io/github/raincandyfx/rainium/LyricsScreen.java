@@ -149,17 +149,22 @@ public final class LyricsScreen extends Screen {
         return y + 6;
     }
 
+    private static final String[] PLACEMENTS = {"fixed", "follow", "scatter"};
+
     private int placement(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {
         y = section(g, x, y, w, "section.lyrics_place");
-        y = cycle(g, mx, my, x, y, w, "lyrics_placement", Lang.t("value.lyrics_placement." + (ly.placement == 1 ? "follow" : "fixed")),
-            d -> { ly.placement = ly.placement == 1 ? 0 : 1; save(); });
-        y = wrapped(g, x, y, w, Lang.t("lyrics.placement_note." + (ly.placement == 1 ? "follow" : "fixed")), FAINT) + 2;
+        y = cycle(g, mx, my, x, y, w, "lyrics_placement", Lang.t("value.lyrics_placement." + PLACEMENTS[Math.floorMod(ly.placement, 3)]),
+            d -> { ly.placement = Math.floorMod(ly.placement + d, 3); save(); });
+        y = wrapped(g, x, y, w, Lang.t("lyrics.placement_note." + PLACEMENTS[Math.floorMod(ly.placement, 3)]), FAINT) + 2;
         y = number(g, mx, my, x, y, w, "lyrics_size", ly.sizePct, " %", v -> { ly.sizePct = Math.max(0.1, v); save(); });
         y = number(g, mx, my, x, y, w, "lyrics_opacity", ly.opacityPct, " %", v -> { ly.opacityPct = v; save(); });
         y = number(g, mx, my, x, y, w, "lyrics_float", ly.floatPct, " %", v -> { ly.floatPct = v; save(); });
-        y = number(g, mx, my, x, y, w, "lyrics_roll", ly.rollDeg, " °", v -> { ly.rollDeg = v; save(); });
-        y = cycle(g, mx, my, x, y, w, "lyrics_side_mode", Lang.t("value.lyrics_side_mode." + ly.sideMode), d -> { ly.sideMode = Math.floorMod(ly.sideMode + d, 3); save(); });
-        if (ly.placement == 0) {
+        if (ly.placement != 2) y = number(g, mx, my, x, y, w, "lyrics_roll", ly.rollDeg, " °", v -> { ly.rollDeg = v; save(); });
+        if (ly.placement != 2) y = cycle(g, mx, my, x, y, w, "lyrics_side_mode", Lang.t("value.lyrics_side_mode." + ly.sideMode), d -> { ly.sideMode = Math.floorMod(ly.sideMode + d, 3); save(); });
+        if (ly.placement == 2) {
+            y = number(g, mx, my, x, y, w, "lyrics_distance", ly.distance, " m", v -> { ly.distance = Math.max(0.1, v); save(); });
+            y = toggle(g, mx, my, x, y, w, "lyrics_follow_me", ly.followPlayer, () -> { ly.followPlayer = !ly.followPlayer; save(); });
+        } else if (ly.placement == 0) {
             y = number(g, mx, my, x, y, w, "lyrics_distance", ly.distance, " m", v -> { ly.distance = Math.max(0.1, v); save(); });
             y = number(g, mx, my, x, y, w, "lyrics_height", ly.heightPct, " %", v -> { ly.heightPct = v; save(); });
             y = number(g, mx, my, x, y, w, "lyrics_side", ly.sidePct, " %", v -> { ly.sidePct = v; save(); });
@@ -178,6 +183,7 @@ public final class LyricsScreen extends Screen {
             y = number(g, mx, my, x, y, w, "lyrics_gap", ly.gapPct, " %", v -> { ly.gapPct = v; save(); });
         }
         y = toggle(g, mx, my, x, y, w, "lyrics_keep", ly.keepOnScreen, () -> { ly.keepOnScreen = !ly.keepOnScreen; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_walls", ly.wallSafe, () -> { ly.wallSafe = !ly.wallSafe; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_through_blocks", ly.throughBlocks, () -> { ly.throughBlocks = !ly.throughBlocks; save(); });
         return y + 6;
     }

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Scatter placement for lyrics:** a third mode next to Fixed and Follow opponent. Each word of the song appears on its own, at the moment it is sung, near your crosshair and facing you with a slight random tilt, then fades a second or two later. Words go to four columns across the view (alternately a little above and below the middle), each at the best of 28 tries for the most clear space from the other words up at the same time, at a distance between **Distance** and twice that. There's no video in this mode, so it costs little. **Move with me** works in it.
+- **Keep out of walls** (on by default, all modes): a lyric spot behind a wall is pulled in front of it and made smaller so it looks the same size, one buried in the ground is lifted out, and in Follow opponent mode it stays on the same line of sight to the opponent.
+
 ## 1.0.0
 
 Rainium is out of beta. This release collects everything added since 0.9.0 (the 0.9.1 to 0.9.13 dev builds): reactions, lyrics in the world, and a much bigger lyric video.

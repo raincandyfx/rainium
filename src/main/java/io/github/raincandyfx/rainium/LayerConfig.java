@@ -255,13 +255,14 @@ final class LayerConfig {
         boolean online = false;          // look lyrics up on lrclib.net
         float offset = 0f;               // seconds; + shows lyrics later
         double sizePct = 100;            // size as a percentage; 100 is what "Medium" used to be. No upper or lower limit.
-        int placement = 0;               // 0 Fixed: placed by the rules, then stays put. 1 Follow: beside the opponent, same angular size.
+        int placement = 0;               // 0 Fixed: placed by the rules, then stays put. 1 Follow: beside the opponent, same angular size. 2 Scatter: each word on its own near the crosshair.
         double distance = 3.5;           // blocks in front of you where a line is placed (Fixed)
         double heightPct = 42;           // how high on the screen a line starts, % of half the screen height
         double sidePct = 50;             // how far to the left or right, % of half the screen width
         double opacityPct = 100;
         double floatPct = 100;           // how much it bobs; 0 holds still
         boolean keepOnScreen = true;     // shrink to fit the screen
+        boolean wallSafe = true;         // pulled in front of walls and lifted out of the ground, never inside the scenery
         int sideMode = 0;                // Fixed: 0 alternate left and right, 1 always left, 2 always right
         double gapPct = 0;               // Follow: extra space between the opponent and the panel, % of half the screen width
         double rollDeg = 0;              // tilt of the panel
@@ -420,13 +421,14 @@ final class LayerConfig {
             if (lm.get("offset") instanceof Number n) ly.offset = Math.max(-5f, Math.min(5f, n.floatValue()));
             if (lm.get("size") instanceof Number n && !(lm.get("size_percent") instanceof Number)) ly.sizePct = n.intValue() <= 0 ? 75 : n.intValue() == 1 ? 100 : 139;   // the old Small, Medium, Large
             if (lm.get("size_percent") instanceof Number n && n.doubleValue() > 0) ly.sizePct = n.doubleValue();
-            if (lm.get("placement") instanceof String s) ly.placement = s.equalsIgnoreCase("follow") ? 1 : 0;
+            if (lm.get("placement") instanceof String s) ly.placement = s.equalsIgnoreCase("follow") ? 1 : s.equalsIgnoreCase("scatter") ? 2 : 0;
             if (lm.get("distance") instanceof Number n && n.doubleValue() > 0) ly.distance = n.doubleValue();
             if (lm.get("height_percent") instanceof Number n) ly.heightPct = n.doubleValue();
             if (lm.get("side_percent") instanceof Number n) ly.sidePct = n.doubleValue();
             if (lm.get("opacity_percent") instanceof Number n) ly.opacityPct = n.doubleValue();
             if (lm.get("float_percent") instanceof Number n) ly.floatPct = n.doubleValue();
             if (lm.get("fit_to_screen") instanceof Boolean b) ly.keepOnScreen = b;
+            if (lm.get("keep_out_of_walls") instanceof Boolean b) ly.wallSafe = b;
             if (lm.get("side_mode") instanceof String sm) ly.sideMode = sm.equalsIgnoreCase("left") ? 1 : sm.equalsIgnoreCase("right") ? 2 : 0;
             if (lm.get("gap_percent") instanceof Number n) ly.gapPct = n.doubleValue();
             if (lm.get("roll_degrees") instanceof Number n) ly.rollDeg = n.doubleValue();
@@ -652,13 +654,14 @@ final class LayerConfig {
         ly.put("online", lyrics.online);
         ly.put("offset", lyrics.offset);
         ly.put("size_percent", lyrics.sizePct);
-        ly.put("placement", lyrics.placement == 1 ? "follow" : "fixed");
+        ly.put("placement", lyrics.placement == 1 ? "follow" : lyrics.placement == 2 ? "scatter" : "fixed");
         ly.put("distance", lyrics.distance);
         ly.put("height_percent", lyrics.heightPct);
         ly.put("side_percent", lyrics.sidePct);
         ly.put("opacity_percent", lyrics.opacityPct);
         ly.put("float_percent", lyrics.floatPct);
         ly.put("fit_to_screen", lyrics.keepOnScreen);
+        ly.put("keep_out_of_walls", lyrics.wallSafe);
         ly.put("side_mode", lyrics.sideMode == 1 ? "left" : lyrics.sideMode == 2 ? "right" : "alternate");
         ly.put("gap_percent", lyrics.gapPct);
         ly.put("roll_degrees", lyrics.rollDeg);
