@@ -1,9 +1,12 @@
 # Changelog
 
+## 1.0.2
+
+- **Scatter by whole line:** a switch in Scatter (**Whole lines**) that scatters a line at a time instead of a word at a time. Each line is the usual panel, with the video if it's on, put in a new spot near your crosshair (the roomiest of 28 tries, clear of the last line, up to 1.5 times **Distance** away), facing you with a slight tilt.
+
 ## 1.0.1
 
 - **Scatter placement for lyrics:** a third mode next to Fixed and Follow opponent. Each word of the song appears on its own, at the moment it is sung, near your crosshair and facing you with a slight random tilt, then fades a second or two later. Words go to four columns across the view (alternately a little above and below the middle), each at the best of 28 tries for the most clear space from the other words up at the same time, at a distance between **Distance** and twice that. There's no video in this mode, so it costs little. **Move with me** works in it.
-  - **Whole lines:** a switch in Scatter that scatters a line at a time instead of a word at a time. Each line is the usual panel, with the video if it's on, put in a new spot near your crosshair (the roomiest of 28 tries, clear of the last line, up to 1.5 times **Distance** away), facing you with a slight tilt.
 - **Keep out of walls** (on by default, all modes): a lyric spot behind a wall is pulled in front of it and made smaller so it looks the same size, one buried in the ground is lifted out, and in Follow opponent mode it stays on the same line of sight to the opponent.
 
 ## 1.0.0
