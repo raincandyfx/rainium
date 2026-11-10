@@ -162,6 +162,7 @@ public final class LyricsScreen extends Screen {
         if (ly.placement != 2) y = number(g, mx, my, x, y, w, "lyrics_roll", ly.rollDeg, " °", v -> { ly.rollDeg = v; save(); });
         if (ly.placement != 2) y = cycle(g, mx, my, x, y, w, "lyrics_side_mode", Lang.t("value.lyrics_side_mode." + ly.sideMode), d -> { ly.sideMode = Math.floorMod(ly.sideMode + d, 3); save(); });
         if (ly.placement == 2) {
+            y = toggle(g, mx, my, x, y, w, "lyrics_scatter_lines", ly.scatterLines, () -> { ly.scatterLines = !ly.scatterLines; save(); });
             y = number(g, mx, my, x, y, w, "lyrics_distance", ly.distance, " m", v -> { ly.distance = Math.max(0.1, v); save(); });
             y = toggle(g, mx, my, x, y, w, "lyrics_follow_me", ly.followPlayer, () -> { ly.followPlayer = !ly.followPlayer; save(); });
         } else if (ly.placement == 0) {

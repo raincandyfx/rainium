@@ -47,6 +47,8 @@ final class Lyrics {
     private static boolean wasOn;
     // where the lyrics are: a plane fixed in the world per line, and how it's nudged aside for an enemy (smoothed)
     private static int anchorLine = -2;
+    private static LyricsWords.Spot lastScatter;   // the last line's panel in Scatter by line, for the next to keep clear of
+    private static final java.util.Random SCATTER_RNG = new java.util.Random();
     private static double anchorSize = -1, spotAlpha = 1;
     private static boolean placedFollow;
     private static boolean anchorVideo;
@@ -78,13 +80,13 @@ final class Lyrics {
         NowPlaying.want(true);
         if (s.demo && !NowPlaying.demo) NowPlaying.startDemo();
         if (!s.demo && NowPlaying.demo) NowPlaying.stopDemo();
-        if (!s.video || s.placement == 2) LyricsVideo.clear();
+        if (!s.video || s.words()) LyricsVideo.clear();
 
         NowPlaying.Track t = NowPlaying.now();
         track = t;
         if (t == null) {
             status = NowPlaying.problem != null ? Status.FAILED : Status.NOTHING_PLAYING;
-            if (trackKey != null) { trackKey = null; lrc = null; LyricsVideo.clear(); LyricsText.reset(); LyricsScatter.reset(); }
+            if (trackKey != null) { trackKey = null; lrc = null; LyricsVideo.clear(); LyricsText.reset(); LyricsScatter.reset(); lastScatter = null; }
             return;
         }
         String key = t.key();
@@ -94,7 +96,7 @@ final class Lyrics {
             anchorLine = -2;
             LyricsVideo.clear();
             LyricsText.reset();
-            LyricsScatter.reset();
+            LyricsScatter.reset(); lastScatter = null;
             if (s.chat && !t.player().equals("demo")) say(mc, Component.translatable("rainium.lyrics.now_playing", t.title(), t.artist()));
             if (t.player().equals("demo")) {
                 lrc = LyricsLrc.parse(LyricsLrc.DEMO, LyricsLrc.DEMO_LENGTH);
@@ -123,7 +125,7 @@ final class Lyrics {
         }
         if (lrc == null) return;
         double now = t.positionNow() - s.offset;
-        if (s.placement == 2) {   // Scatter: words, not a picture
+        if (s.words()) {   // Scatter by word: words, not a picture
             LyricsScatter.update(lrc, now, s);
         } else if (s.video) {
             String look = s.style + "|" + s.seed + "|" + s.motifs + "|" + s.newEffects + "|" + s.look().key();
@@ -142,7 +144,7 @@ final class Lyrics {
         NowPlaying.stopDemo();
         LyricsVideo.close();
         LyricsText.reset();
-        LyricsScatter.reset();
+        LyricsScatter.reset(); lastScatter = null;
         trackKey = null; lrc = null; track = null; pending = null;
     }
 
@@ -178,7 +180,7 @@ final class Lyrics {
         if (!s.enabled || lrc == null || status != Status.SHOWING) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
-        if (s.placement == 2) {   // Scatter: each word on its own
+        if (s.words()) {   // Scatter by word: each word on its own
             LyricsScatter.submit(collector, s, lrc, track == null ? 0 : track.positionNow() - s.offset);
             return;
         }
@@ -209,6 +211,7 @@ final class Lyrics {
         double limit = s.keepOnScreen ? 1 : 1e6;
         double k = 1 - Math.exp(-dt * 14);
         boolean follow = s.placement == 1;
+        boolean scatter = s.placement == 2;   // by line here (by word returned above)
         List<LyricsPlacement.Rect> enemies = s.avoidEnemies || follow ? enemies(mc, eye, right, up, fwd, tanH, tanV) : List.of();
 
         double cxw, cyw, czw, hw, hh;
@@ -287,7 +290,32 @@ final class Lyrics {
                 anchorLine = line; anchorSize = sizeK; anchorVideo = video; offViewNanos = 0; placedFollow = false;
                 double px = sideOf(s, line) * s.sidePct / 100.0, py = s.heightPct / 100.0;
                 double zc = Math.max(0.3, s.distance);
-                Vec3 at = new Vec3(
+                Vec3 at;
+                if (scatter) {
+                    // a scattered spot for the line: the roomiest of 28 tries in its column, clear of the last line's panel
+                    double hFov = Math.toDegrees(2 * Math.atan(tanH)), vFov = Math.toDegrees(2 * Math.atan(tanV));
+                    double viewYaw = Math.toDegrees(Math.atan2(-fwd.x, fwd.z)), viewPitch = Math.toDegrees(-Math.asin(Math.max(-1, Math.min(1, fwd.y))));
+                    double spanH = Math.min(hFov * 0.12, 12.0), spanV = Math.min(vFov * 0.12, 8.0);
+                    double[] base = LyricsWords.column(Math.max(0, line), spanH, spanV);
+                    double near = Math.max(1.5, s.distance), far = near * 1.5;
+                    double halfWDeg = Math.toDegrees(Math.atan(widthN * tanH / 2)), halfHDeg = Math.toDegrees(Math.atan(widthN * tanH / 2 * texAspect));
+                    List<LyricsWords.Spot> before = lastScatter == null ? List.of() : List.of(lastScatter);
+                    LyricsLrc.Line sl = line >= 0 && line < lrc.lines.size() ? lrc.lines.get(line) : null;
+                    double from = sl == null ? pos : sl.t(), until = sl == null ? pos + 3 : sl.end();
+                    double best = Double.NEGATIVE_INFINITY, bYaw = viewYaw, bPitch = viewPitch, bDist = zc;
+                    for (int i = 0; i < 28; i++) {
+                        double spread = 2.0 + i * 0.4;
+                        double dh = Math.max(-spanH * 1.25, Math.min(spanH * 1.25, base[0] + SCATTER_RNG.nextGaussian() * spread));
+                        double dv = Math.max(-spanV * 1.25, Math.min(spanV * 1.25, base[1] + SCATTER_RNG.nextGaussian() * spread * 0.6));
+                        double gp = LyricsWords.gap(viewYaw + dh, viewPitch + dv, halfWDeg, halfHDeg, before, from, until + 1.0);
+                        double sc = LyricsWords.score(gp, dh, dv, base[0], base[1]);
+                        if (sc > best) { best = sc; bYaw = viewYaw + dh; bPitch = viewPitch + dv; bDist = near + SCATTER_RNG.nextDouble() * (far - near); }
+                    }
+                    double[] dir = LyricsWords.direction(bPitch, bYaw);
+                    zc = bDist;
+                    lastScatter = new LyricsWords.Spot(from, until + 0.5, bYaw, bPitch, halfWDeg, halfHDeg);
+                    at = new Vec3(eye.x + dir[0] * zc, eye.y + dir[1] * zc, eye.z + dir[2] * zc);
+                } else at = new Vec3(
                     eye.x + fwd.x * zc + right.x * px * tanH * zc + up.x * py * tanV * zc,
                     eye.y + fwd.y * zc + right.y * px * tanH * zc + up.y * py * tanV * zc,
                     eye.z + fwd.z * zc + right.z * px * tanH * zc + up.z * py * tanV * zc);
@@ -305,6 +333,12 @@ final class Lyrics {
                 planeRight.set((float) -hz, 0f, (float) hx);      // faces you, upright, and fixed from now on
                 planeNormal.set((float) -hx, 0f, (float) -hz);
                 planeUp.set(0f, 1f, 0f);
+                if (scatter) {   // a slight random tilt, so it does not look pasted on
+                    float tyaw = (float) Math.toRadians((SCATTER_RNG.nextDouble() - 0.5) * 50), troll = (float) Math.toRadians((SCATTER_RNG.nextDouble() - 0.5) * 16);
+                    planeRight.rotateY(tyaw); planeUp.rotateY(tyaw); planeNormal.rotateY(tyaw);
+                    planeRight.rotateAxis(troll, planeNormal.x, planeNormal.y, planeNormal.z);
+                    planeUp.rotateAxis(troll, planeNormal.x, planeNormal.y, planeNormal.z);
+                }
                 planeW = widthN * zc * tanH * wallK;
                 planeH = planeW * texAspect;
                 // the rules, applied once: fit the screen, slide clear of an enemy; the result is the spot and shape it keeps
@@ -334,7 +368,7 @@ final class Lyrics {
             if (s.followPlayer && active(since, lineLen, s.followPct, s.followSecs) && lastEye != null)
                 anchorPos = new Vec3(anchorPos.x + eye.x - lastEye.x, anchorPos.y + eye.y - lastEye.y, anchorPos.z + eye.z - lastEye.z);
             lastEye = eye;
-            if (s.facePlayer && active(since, lineLen, s.facePct, s.faceSecs)) {
+            if (!scatter && s.facePlayer && active(since, lineLen, s.facePct, s.faceSecs)) {
                 // turns on the spot to face you in all three dimensions: its front towards your eye, its top as upright as that allows
                 Vector3f n = new Vector3f((float) (eye.x - anchorPos.x), (float) (eye.y - anchorPos.y), (float) (eye.z - anchorPos.z));
                 if (n.length() > 1e-3) {

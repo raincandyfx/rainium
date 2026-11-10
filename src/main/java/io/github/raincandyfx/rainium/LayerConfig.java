@@ -248,6 +248,9 @@ final class LayerConfig {
 
     /** Settings > Music and lyrics. Lyrics are off until switched on; looking lyrics up online is off until allowed. */
     static final class LyricsSettings {
+        /** Scatter by word: each word on its own, no video. (Scatter by line is the ordinary panel, put in a scattered spot.) */
+        boolean words() { return placement == 2 && !scatterLines; }
+
         boolean enabled = false;
         boolean video = true;            // Music video (a lyric video, drawn in Java) or Simple
         boolean demo = false;            // play the built-in demo song instead of the computer's player
@@ -262,6 +265,7 @@ final class LayerConfig {
         double opacityPct = 100;
         double floatPct = 100;           // how much it bobs; 0 holds still
         boolean keepOnScreen = true;     // shrink to fit the screen
+        boolean scatterLines = false;    // Scatter by whole lines (the picture or plain text) instead of by word
         boolean wallSafe = true;         // pulled in front of walls and lifted out of the ground, never inside the scenery
         int sideMode = 0;                // Fixed: 0 alternate left and right, 1 always left, 2 always right
         double gapPct = 0;               // Follow: extra space between the opponent and the panel, % of half the screen width
@@ -429,6 +433,7 @@ final class LayerConfig {
             if (lm.get("float_percent") instanceof Number n) ly.floatPct = n.doubleValue();
             if (lm.get("fit_to_screen") instanceof Boolean b) ly.keepOnScreen = b;
             if (lm.get("keep_out_of_walls") instanceof Boolean b) ly.wallSafe = b;
+            if (lm.get("scatter_lines") instanceof Boolean b) ly.scatterLines = b;
             if (lm.get("side_mode") instanceof String sm) ly.sideMode = sm.equalsIgnoreCase("left") ? 1 : sm.equalsIgnoreCase("right") ? 2 : 0;
             if (lm.get("gap_percent") instanceof Number n) ly.gapPct = n.doubleValue();
             if (lm.get("roll_degrees") instanceof Number n) ly.rollDeg = n.doubleValue();
@@ -662,6 +667,7 @@ final class LayerConfig {
         ly.put("float_percent", lyrics.floatPct);
         ly.put("fit_to_screen", lyrics.keepOnScreen);
         ly.put("keep_out_of_walls", lyrics.wallSafe);
+        ly.put("scatter_lines", lyrics.scatterLines);
         ly.put("side_mode", lyrics.sideMode == 1 ? "left" : lyrics.sideMode == 2 ? "right" : "alternate");
         ly.put("gap_percent", lyrics.gapPct);
         ly.put("roll_degrees", lyrics.rollDeg);
