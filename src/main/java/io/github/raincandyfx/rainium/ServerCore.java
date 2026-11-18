@@ -91,6 +91,7 @@ public final class ServerCore {
         String ownHash = "";
         int ownSize;
         boolean ownReady, waitingUpload, toldNoUpload, toldTooBig;
+        String welcomed = "";           // the mode and upload right the client was last told
         final ArrayDeque<byte[]> out = new ArrayDeque<>();
         long queuedBytes;
         final Set<String> queuedBlobs = new HashSet<>();
@@ -239,12 +240,19 @@ public final class ServerCore {
         Session s = sessions.computeIfAbsent(u, Session::new);
         if (s.rainium) return;
         s.rainium = true;
-        queue(s, NetProtocol.welcome(new NetProtocol.Welcome(NetProtocol.VERSION, config.ownOutfits ? NetProtocol.MODE_OWN : NetProtocol.MODE_SERVER_ONLY,
-            config.ownOutfits && canUpload(u), config.maxOutfitKb << 10, p.serverName())));
+        welcome(s);
         for (Session o : sessions.values()) {
             if (o.worn.isEmpty() && o != s) continue;
             queue(s, NetProtocol.wearing(new NetProtocol.Wearing(o.id, o.worn)));
         }
+    }
+
+    /** Tells the client the mode and whether it may share its own cosmetics (again, when either changed). */
+    private void welcome(Session s) {
+        boolean up = config.ownOutfits && canUpload(s.id);
+        s.welcomed = config.ownOutfits + "/" + up;
+        queue(s, NetProtocol.welcome(new NetProtocol.Welcome(NetProtocol.VERSION, config.ownOutfits ? NetProtocol.MODE_OWN : NetProtocol.MODE_SERVER_ONLY,
+            up, config.maxOutfitKb << 10, p.serverName())));
     }
 
     public void playerLeft(UUID u) {
@@ -384,7 +392,14 @@ public final class ServerCore {
         broadcast(NetProtocol.wearing(new NetProtocol.Wearing(u, now)));
     }
 
-    private void refreshAll() { for (UUID u : new ArrayList<>(sessions.keySet())) refresh(u, false); }
+    private void refreshAll() {
+        for (Session s : sessions.values()) {
+            if (!s.rainium) continue;
+            boolean up = config.ownOutfits && canUpload(s.id);
+            if (!s.welcomed.equals(config.ownOutfits + "/" + up)) welcome(s);   // the mode or their upload permission changed
+        }
+        for (UUID u : new ArrayList<>(sessions.keySet())) refresh(u, false);
+    }
 
     // ------------------------------------------------------------------ sending
 
@@ -584,8 +599,8 @@ public final class ServerCore {
         ========================
         Each .zip here is a cosmetic the server can give to players. Its name (without .zip) is its id.
 
-        Make one in the game: build it in the Rainium editor (K), put it in a folder, and use the
-        folder's Share button; the zip lands in config/rainium/exports/. Copy it here and run
+        Make one in the game: build it in the Rainium editor (K), put it in a folder, and click the
+        folder's Export as zip; the zip lands in config/rainium/exports/. Copy it here and run
         /rainiumserver reload. Or wear it yourself on this server and run
         /rainiumserver install <id> <your name>.
 

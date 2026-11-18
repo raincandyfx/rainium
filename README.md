@@ -31,7 +31,7 @@
 - **Lyrics in the world.** The lyrics of the song playing on your computer, as a lyric video on a plane in the world: 183 layouts, 27 styles and a huge set of motion and screen effects, placed fixed, beside your opponent, or turning to face you.
 - **A tour to start.** A short tutorial on the main menu (it covers the editor, lyrics and reactions) the first time you play (replay it any time in Settings), and a "what's new" popup after each main update.
 - **Share your look.** Export a folder as a zip, and a friend can add it from the editor.
-- **Just for you.** Rainium only changes what *you* see. It works on any server, and other players' setups never affect yours.
+- **Just for you, or for everyone.** On any server, Rainium only changes what *you* see, and other players' setups never affect yours. When the server runs Rainium too (Fabric mod or Paper plugin), players with Rainium see each other's cosmetics, and the server can give out its own (with LuckPerms permissions).
 - **Keeps itself up to date.** New versions for your Minecraft version are downloaded and installed when you close the game (you can turn this off).
 
 <table>
@@ -200,6 +200,35 @@ ffmpeg -framerate 120 -i frame_%05d.png -c:v libvpx-vp9 -pix_fmt yuva420p clip.w
 
 Open a folder in the layer list and click **Export as zip**. The zip lands in `config/rainium/exports`, with the models and textures it uses. Send it to a friend; they put it in their `config/rainium` folder and add it from **Add > Shared sets**. Your **Shown on** choices (and any names in them) stay with you, not in the zip.
 
+## Multiplayer: Rainium on a server
+
+Put Rainium on the server too and players with Rainium see each other's cosmetics. Players without it see nothing different, and on servers without it Rainium works as before.
+
+- **Fabric servers:** put the same `rainium-<version>+<minecraft>.jar` (and Fabric API) in the server's `mods` folder.
+- **Paper or Spigot servers:** put `rainium-paper-<version>.jar` from the release in the `plugins` folder.
+
+**What each player sees.** On these servers every player wears only what's *attached to them*: the layers they show on themselves, plus the cosmetics the server gave them. Layers you set to show on other people don't draw on them there (they're your own view, not theirs). Your layers are sent to the server once and then to other players when they meet you; an unchanged look isn't sent again.
+
+**Two modes**, set by the server:
+- `own` (the default): each player's own cosmetics, plus the server's.
+- `server`: only the server's cosmetics. Players' own layers stay on their own screen.
+
+**Server cosmetics.** A cosmetic is a Rainium zip (a folder's **Export as zip**) in the server's `cosmetics/` folder; its file name is its id. Or wear something yourself and run `/rainiumserver install <id> <your name>` to save it as one. Give it with `/rainiumserver give <player> <id>`, or with a permission.
+
+**Permissions (LuckPerms or any permissions plugin).** Unset nodes use the defaults in brackets.
+
+| Node | What it allows |
+|---|---|
+| `rainium.admin` | `/rainiumserver` (operators) |
+| `rainium.upload` | sharing your own cosmetics in `own` mode (everyone; `uploads_by_default` in `config.json`) |
+| `rainium.cosmetic.<id>` | wearing the server cosmetic `<id>`, e.g. for a rank (no one; `rainium.cosmetic.*` for all) |
+
+Permission changes show within about ten seconds. On Fabric, LuckPerms is used through the permissions API it ships with.
+
+**Commands:** `/rainiumserver mode own|server`, `list`, `give <player> <id>`, `take <player> <id|all>`, `install <id> <player>`, `remove <id>`, `wearing <player>`, `reload`.
+
+**Files** (in `config/rainium-server/` on Fabric, `plugins/Rainium/` on Paper): `config.json` (mode, `uploads_by_default`, `max_outfit_kb` = 2048, `send_kb_per_tick`, `upload_cache_mb`), `grants.json` (who was given what), `cosmetics/` and `uploads/` (players' outfits, by hash; the oldest are removed past the cache size).
+
 ## Updates
 
 Once per launch, Rainium checks this page's releases for a newer version made for your Minecraft version. If there is one, it downloads it, checks it, and installs it when you close the game. Your layers and settings are kept.
@@ -211,6 +240,8 @@ Only main releases (versions ending in **.0**, like 0.7.0) are installed automat
 ## Privacy
 
 Rainium doesn't collect or send anything about you. Its only network requests are the optional update check above and, if you switch on **Find lyrics online**, looking up the song you're playing on lrclib.net (title, artist, album and length only).
+
+On a server that runs Rainium in `own` mode, the layers you show on yourself (their settings, names, reactions, models and textures) are sent to that server and to the players there, so they can see them. Who else your layers show on, and any names in those lists, are never sent. Nothing is sent on servers without Rainium.
 
 When the editor shows a folder path, it replaces your computer's account name with your in-game name, so it's safe to share screenshots. You can choose a different name, or hide it entirely, in **Settings > Privacy**.
 

@@ -39,8 +39,8 @@ final class ServerLink {
 
     static void register() {
         ClientPlayNetworking.registerGlobalReceiver(RainiumPayload.TYPE, (payload, ctx) -> received(payload.data()));
-        ClientPlayConnectionEvents.JOIN.register((listener, sender, mc) -> reset());
-        ClientPlayConnectionEvents.DISCONNECT.register((listener, mc) -> reset());
+        ClientPlayConnectionEvents.JOIN.register((listener, sender, mc) -> mc.execute(ServerLink::reset));
+        ClientPlayConnectionEvents.DISCONNECT.register((listener, mc) -> mc.execute(ServerLink::reset));   // textures are freed on the render thread
     }
 
     /** Whether this server runs Rainium (then others are drawn with what they wear, and only that). */
@@ -85,7 +85,9 @@ final class ServerLink {
                     canUpload = w.canUpload();
                     maxOutfit = w.maxOutfitBytes();
                     send(NetProtocol.hello(new NetProtocol.Hello(NetProtocol.VERSION, version())));
-                    lastState = null;   // build and announce my outfit
+                    lastState = null;   // build and announce my outfit (again, if the mode or my upload right changed)
+                    myHash = "";
+                    myBlob = null;
                     dirtySince = 0;
                     if (!told) {
                         told = true;

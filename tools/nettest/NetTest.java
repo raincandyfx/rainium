@@ -128,11 +128,15 @@ public class NetTest {
         for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(alice) && x.worn().size() == 2) aliceTwo = true; }
         check(aliceTwo, "permission node grants a cosmetic (picked up by the periodic check)");
         // upload permission removed -> own outfit no longer shown
+        f.take(alice);
         f.perms.put(alice + " rainium.upload", false);
         for (int i = 0; i < 200; i++) core.tick();
         boolean ownGone = false;
         for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(alice) && x.worn().size() == 1 && x.worn().get(0).kind() == NetProtocol.KIND_SERVER) ownGone = true; }
         check(ownGone, "without rainium.upload the own outfit stops showing");
+        boolean rewelcomed = false;
+        for (byte[] m : f.take(alice)) if (NetProtocol.type(m) == NetProtocol.S_WELCOME && !NetProtocol.readWelcome(m).canUpload()) rewelcomed = true;
+        check(rewelcomed, "a player whose upload right changed is told again");
         // server-only mode
         f.perms.remove(alice + " rainium.upload");
         core.command(null, new String[]{"mode", "server"});

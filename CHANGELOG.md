@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.3
+
+- **Multiplayer through a server install.** Put Rainium on the server too (the same jar on a Fabric server, or the new `rainium-paper` plugin on Paper and Spigot), and players with Rainium see each other's cosmetics. Servers without it are unchanged.
+  - Each player wears only what's attached to them: the layers they show on themselves, plus cosmetics the server gave them. Layers set to show on other people don't draw on them on these servers.
+  - The server picks the mode: `own` (players' own cosmetics and the server's) or `server` (only the server's).
+  - **Server cosmetics:** Rainium zips in the server's `cosmetics/` folder, or saved from what a player wears with `/rainiumserver install`. Given with `/rainiumserver give`, or with the permission `rainium.cosmetic.<id>`.
+  - **LuckPerms:** `rainium.admin`, `rainium.upload` and `rainium.cosmetic.<id>` (works on Fabric through LuckPerms' permissions API, and on Paper through Bukkit permissions). Changes show within about ten seconds.
+  - Outfits are sent once, by hash, in small parts with size limits on both sides, and kept in a cache so an unchanged look isn't sent again.
+
 ## 1.0.2
 
 - **Scatter by whole line:** a switch in Scatter (**Whole lines**) that scatters a line at a time instead of a word at a time. Each line is the usual panel, with the video if it's on, put in a new spot near your crosshair (the roomiest of 28 tries, clear of the last line, up to 1.5 times **Distance** away), facing you with a slight tilt.
