@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.4
+
+- **Server tab (admin panel)** in the editor for server admins (`rainium.admin` or operators): the mode, players' own cosmetics on or off, sharing by default, the largest outfit, send rate and upload cache, reloading, removing installed cosmetics, and per player: their own cosmetics on or off, give or take each cosmetic (ones from a permission are marked), and save their look as a new server cosmetic.
+- **Server cosmetics in their own red part of the layer list** ("From this server"), under your own layers. They can't be edited there.
+- **Servers can turn players' own cosmetics off** while they're on it, for everyone (`client_cosmetics` in config.json, or the panel) or one player (`/rainiumserver lock <player>`). They then don't show at all, even on the player's own screen, and the editor shows them locked with a red padlock. The server can't see, change or delete them; they show again on other servers.
+- New commands: `/rainiumserver lock|unlock <player>` and `/rainiumserver set <setting> <value>`.
+- The protocol changed: 1.0.4 clients and servers (and the Paper plugin) need to match.
+
 ## 1.0.3
 
 - **Multiplayer through a server install.** Put Rainium on the server too (the same jar on a Fabric server, or the new `rainium-paper` plugin on Paper and Spigot), and players with Rainium see each other's cosmetics. Servers without it are unchanged.

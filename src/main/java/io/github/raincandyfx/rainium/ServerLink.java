@@ -24,7 +24,9 @@ final class ServerLink {
 
     private static boolean active, told;
     private static byte mode = NetProtocol.MODE_OWN;
-    private static boolean canUpload;
+    private static boolean canUpload, ownAllowed = true, admin, toldLocked;
+    private static java.util.Map<String, Object> adminState;   // the admin panel's contents, from the server
+    private static long adminAsked;
     private static int maxOutfit;
     private static final Map<UUID, List<NetProtocol.Worn>> wearing = new HashMap<>();
     private static final ArrayDeque<byte[]> outbox = new ArrayDeque<>();
@@ -46,6 +48,40 @@ final class ServerLink {
     /** Whether this server runs Rainium (then others are drawn with what they wear, and only that). */
     static boolean active() { return active; }
 
+    /** False when this server turned your own (client-side) cosmetics off here: they're kept, just not drawn. */
+    static boolean ownAllowed() { return !active || ownAllowed; }
+
+    /** Whether you may manage this server's Rainium (the Server tab). */
+    static boolean admin() { return active && admin; }
+
+    /** The cosmetics this server gives you, by name (shown in red in the layer list). */
+    static List<NetProtocol.Worn> myServerCosmetics() {
+        Minecraft mc = Minecraft.getInstance();
+        if (!active || mc.player == null) return List.of();
+        List<NetProtocol.Worn> out = new ArrayList<>();
+        for (NetProtocol.Worn w : wornBy(mc.player.getUUID())) if (w.kind() == NetProtocol.KIND_SERVER) out.add(w);
+        return out;
+    }
+
+    /** The admin panel's latest contents (null until the server answered). */
+    static java.util.Map<String, Object> adminState() { return adminState; }
+
+    /** Asks for the admin panel's contents (at most every two seconds while the panel is open). */
+    static void requestAdmin(boolean now) {
+        if (!admin()) return;
+        long t = System.currentTimeMillis();
+        if (!now && t - adminAsked < 2000) return;
+        adminAsked = t;
+        send(NetProtocol.adminOpen());
+    }
+
+    /** Runs an admin action: the words of a /rainiumserver command. The server answers with the panel's new contents. */
+    static void runAdmin(String... args) {
+        if (!admin()) return;
+        adminAsked = System.currentTimeMillis();
+        send(NetProtocol.adminRun(List.of(args)));
+    }
+
     /** What a player wears according to the server (empty if nothing). */
     static List<NetProtocol.Worn> wornBy(UUID player) { return wearing.getOrDefault(player, List.of()); }
 
@@ -59,6 +95,10 @@ final class ServerLink {
     private static void reset() {
         active = false;
         told = false;
+        toldLocked = false;
+        ownAllowed = true;
+        admin = false;
+        adminState = null;
         wearing.clear();
         outbox.clear();
         downloads.clear();
@@ -84,6 +124,12 @@ final class ServerLink {
                     mode = w.mode();
                     canUpload = w.canUpload();
                     maxOutfit = w.maxOutfitBytes();
+                    admin = w.admin();
+                    if (!w.ownAllowed() && !toldLocked) say(Component.translatable("rainium.server.own_off"));
+                    if (w.ownAllowed() && toldLocked) say(Component.translatable("rainium.server.own_on"));
+                    toldLocked = !w.ownAllowed();
+                    ownAllowed = w.ownAllowed();
+                    if (admin) requestAdmin(true);
                     send(NetProtocol.hello(new NetProtocol.Hello(NetProtocol.VERSION, version())));
                     lastState = null;   // build and announce my outfit (again, if the mode or my upload right changed)
                     myHash = "";
@@ -110,6 +156,13 @@ final class ServerLink {
                     if (h.equals(myHash) && myBlob != null) outbox.addAll(NetProtocol.split(NetProtocol.C_PART, h, myBlob));
                 }
                 case NetProtocol.S_NOTICE -> say(Component.literal(NetProtocol.readNotice(msg).text()));
+                case NetProtocol.S_ADMIN -> {
+                    Object o = Json.parse(NetProtocol.readAdmin(msg));
+                    if (o instanceof java.util.Map<?, ?> m) {
+                        @SuppressWarnings("unchecked") java.util.Map<String, Object> mm = (java.util.Map<String, Object>) m;
+                        adminState = mm;
+                    }
+                }
                 default -> { }
             }
         } catch (Exception e) {
@@ -136,7 +189,7 @@ final class ServerLink {
         if (st != lastState) { lastState = st; dirtySince = System.currentTimeMillis(); }
         if (dirtySince != 0 && !building && System.currentTimeMillis() - dirtySince > 1000) {
             dirtySince = 0;
-            if (mode == NetProtocol.MODE_OWN && canUpload) {
+            if (mode == NetProtocol.MODE_OWN && canUpload && ownAllowed) {
                 building = true;
                 String name = mc.player.getName().getString();
                 CompletableFuture.supplyAsync(() -> {

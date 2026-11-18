@@ -57,7 +57,7 @@ public final class RainiumScreen extends Screen {
     private static final float[] HUE_STEPS = {5, 15, 45};
     private static final String[] STEP_NAMES = {"fine", "normal", "coarse"};
 
-    private enum Tab { EDIT, ADD, SETTINGS }
+    private enum Tab { EDIT, ADD, SETTINGS, SERVER }   // SERVER: the admin panel, only on a Rainium server you manage
 
     private record Hit(int x, int y, int w, int h, Runnable click, IntConsumer scroll) {}
 
@@ -381,13 +381,15 @@ public final class RainiumScreen extends Screen {
         // the tabs, as the site's menu: the open one gets the triangle
         int x = 8 + strongWidth(title) + 14;
         final int tabsX = x - 3;
+        if (tab == Tab.SERVER && !ServerLink.admin()) tab = Tab.SETTINGS;
         for (Tab t : Tab.values()) {
+            if (t == Tab.SERVER && !ServerLink.admin()) continue;
             String n = Lang.t("tab." + t.name().toLowerCase(Locale.ROOT)).toUpperCase(Locale.ROOT);
             int tw = strongWidth(n);
             boolean on = tab == t, hov = !on && in(mx, my, x - 3, 4, tw + 6, 18);
             if (on) selection(g, "tab", t, n, x, 10);
             else g.text(font, styled(n, true, true), x, 10, hov ? PAPER : MENU, false);
-            hits.add(new Hit(x - 3, 4, tw + 6, 18, () -> { tab = t; rightScroll = 0; if (t == Tab.ADD) refreshFiles(true); }, null));
+            hits.add(new Hit(x - 3, 4, tw + 6, 18, () -> { tab = t; rightScroll = 0; if (t == Tab.ADD) refreshFiles(true); if (t == Tab.SERVER) ServerLink.requestAdmin(true); }, null));
             x += tw + 14;
         }
         mark("tabs", tabsX, 4, x - 14 - tabsX + 3, 18);
@@ -462,6 +464,8 @@ public final class RainiumScreen extends Screen {
         g.enableScissor(x, listTop, x + w, listBottom);
         int ry = listTop - leftScroll, startY = ry;
         int rx = x, rwid = w - 4;
+        lockedOut = !ServerLink.ownAllowed();
+        if (lockedOut && !layers.isEmpty()) ry = noticeRow(g, mx, my, rx, ry, rwid, Lang.t("layers.locked_out"), Lang.t("msg.locked_out"));
         for (LayerConfig.Entry e : cfg.entries()) {
             if (e.isFolder()) {
                 ry = folderRow(g, mx, my, rx, ry, rwid, e);
@@ -476,6 +480,7 @@ public final class RainiumScreen extends Screen {
                 ry = layerRow(g, mx, my, rx, ry, rwid, l, layers.indexOf(l), true);
             }
         }
+        ry = serverRows(g, mx, my, rx, ry + (layers.isEmpty() ? 34 : 4), rwid);
         g.disableScissor();
         markClip = null;
         int contentH = ry - startY;
@@ -532,7 +537,7 @@ public final class RainiumScreen extends Screen {
         else triangle(g, ax - 3.5f, ay - 2f, ax + 3.5f, ay - 2f, ax, ay + 2.5f, ah ? PAPER : CYAN);
         markFirst("fold", rx + 2, ry, 12, rh - 2);
         hits.add(new Hit(rx + 2, ry, 12, rh - 2, () -> { f.collapsed = !f.collapsed; save(); }, null));
-        rowName(g, "layer", "folder:" + e.folder(), e.folder(), rx + 16, ry + 4, rwid - 38, sel, f.enabled, hov);
+        rowName(g, "layer", "folder:" + e.folder(), e.folder(), rx + 16, ry + 4, rwid - 38, sel, f.enabled && !lockedOut, hov);
         visibilityBox(g, mx, my, rx + rwid - 18, ry + 4, f.enabled, () -> {
             f.enabled = !f.enabled;
             save();
@@ -544,7 +549,7 @@ public final class RainiumScreen extends Screen {
 
     private int layerRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, LayerConfig.Layer l, int idx, boolean parentOn) {
         int rh = 18;
-        boolean on = l.enabled && parentOn;
+        boolean on = l.enabled && parentOn && !lockedOut;
         boolean sel = selectedFolder == null && idx == selected, hov = in(mx, my, rx, ry, rwid, rh - 2);
         ribbon(g, rx, ry, rwid, rh - 2, sel, hov);
         g.fill(rx + 6, ry + 3, rx + 10, ry + 13, on ? (l.color | 0xFF000000) : FAINT);
@@ -557,7 +562,7 @@ public final class RainiumScreen extends Screen {
     /** Compact one-line row for a part inside a folder. */
     private int partRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, LayerConfig.Layer l, int idx, boolean parentOn) {
         int rh = 16;
-        boolean on = l.enabled && parentOn;
+        boolean on = l.enabled && parentOn && !lockedOut;
         boolean sel = selectedFolder == null && idx == selected, hov = in(mx, my, rx, ry, rwid, rh - 2);
         ribbon(g, rx, ry, rwid, rh - 2, sel, hov);
         g.fill(rx + 6, ry + 3, rx + 9, ry + 11, on ? (l.color | 0xFF000000) : FAINT);
@@ -571,9 +576,177 @@ public final class RainiumScreen extends Screen {
     private void visibilityBox(GuiGraphicsExtractor g, int mx, int my, int ex, int ey, boolean on, Runnable flip) {
         boolean eh = in(mx, my, ex - 3, ey - 3, 14, 14);
         markFirst("eye", ex - 3, ey - 3, 14, 14);
+        if (lockedOut) {   // this server turned your own cosmetics off: they're kept as they are, and can't be switched on here
+            lockIcon(g, ex, ey - 1, eh ? PAPER : DANGER);
+            hits.add(new Hit(ex - 3, ey - 3, 14, 14, () -> say(Lang.t("msg.locked_out"), DANGER), null));
+            return;
+        }
         ring(g, ex + 4f, ey + 4f, 4.5f, 1.2f, eh ? PAPER : on ? CYAN : FAINT);
         if (on) disc(g, ex + 4f, ey + 4f, 2.2f, eh ? PAPER : CYAN);
         hits.add(new Hit(ex - 3, ey - 3, 14, 14, flip, null));
+    }
+
+    private boolean lockedOut;   // this frame: the server turned your own cosmetics off
+    private String confirmRemove;   // the server cosmetic whose Remove was clicked once
+    private String adminPlayer;     // the player picked in the Server tab (UUID)
+
+    private static final int RED_RIBBON = 0xD8A3122E, RED_RIBBON_HOVER = 0xE8D21E40, RED_LIGHT = 0xFFFF9AAE;
+
+    /** A small padlock: a ring for the shackle over a filled body. */
+    private void lockIcon(GuiGraphicsExtractor g, int x, int y, int col) {
+        ring(g, x + 4f, y + 3.6f, 2.6f, 1.1f, col);
+        g.fill(x, y + 4, x + 8, y + 10, col);
+        g.fill(x + 3, y + 6, x + 5, y + 8, INK);
+    }
+
+    /** A red ribbon with a padlock and a line of text; clicking explains (detail). */
+    private int noticeRow(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid, String text, String detail) {
+        int rh = 18;
+        boolean hov = in(mx, my, rx, ry, rwid, rh - 2);
+        slant(g, rx, ry, rwid, rh - 2, 4, hov ? RED_RIBBON_HOVER : RED_RIBBON);
+        lockIcon(g, rx + 5, ry + 3, PAPER);
+        g.text(font, styled(fitStrong(text.toUpperCase(Locale.ROOT), rwid - 22), true, true), rx + 17, ry + 4, PAPER, false);
+        hits.add(new Hit(rx, ry, rwid, rh - 2, () -> say(detail, DANGER), null));
+        return ry + rh;
+    }
+
+    /**
+     * The cosmetics this server gives you, in their own red part of the list under your layers: they're
+     * the server's, so they can't be changed or switched off here (an admin does that in the Server tab).
+     */
+    private int serverRows(GuiGraphicsExtractor g, int mx, int my, int rx, int ry, int rwid) {
+        List<NetProtocol.Worn> mine = ServerLink.myServerCosmetics();
+        if (mine.isEmpty()) return ry;
+        // a red folder-like header
+        int rh = 18;
+        slant(g, rx, ry, rwid, rh - 2, 4, RED_RIBBON);
+        g.fill(rx, ry, rx + rwid - 1, ry + 1, 0x66FFFFFF);
+        float ax = rx + 8f, ay = ry + 8f;
+        triangle(g, ax - 3.5f, ay - 2f, ax + 3.5f, ay - 2f, ax, ay + 2.5f, RED_LIGHT);
+        g.text(font, styled(fitStrong(Lang.t("layers.from_server").toUpperCase(Locale.ROOT), rwid - 40), true, true), rx + 16, ry + 4, PAPER, false);
+        String n = String.valueOf(mine.size());
+        int cw = font.width(body(n)) + 8;
+        capsule(g, rx + rwid - cw - 4, ry + 4, cw, 9, PAPER);
+        g.text(font, body(n), rx + rwid - cw, ry + 5, RED, false);
+        ry += rh;
+        int top = ry;
+        for (NetProtocol.Worn wn : mine) {
+            int ph = 16;
+            boolean hov = in(mx, my, rx + 9, ry, rwid - 9, ph - 2);
+            slant(g, rx + 9, ry, rwid - 9, ph - 2, 4, hov ? RED_RIBBON_HOVER : RED_RIBBON);
+            g.fill(rx + 15, ry + 3, rx + 18, ry + 11, RED_LIGHT);
+            boolean loaded = RemoteOutfits.state(wn.hash()) != null;
+            String name = wn.name().isBlank() ? Lang.t("layers.server_cosmetic") : wn.name();
+            g.text(font, styled(fitStrong(name, rwid - 42), true, true), rx + 23, ry + 3, loaded ? PAPER : RED_LIGHT, false);
+            lockIcon(g, rx + rwid - 14, ry + 2, hov ? PAPER : RED_LIGHT);
+            final String nm = name;
+            hits.add(new Hit(rx + 9, ry, rwid - 9, ph - 2, () -> say(Lang.t(loaded ? "msg.server_cosmetic" : "msg.server_cosmetic_loading", nm), MUTED), null));
+            ry += ph;
+        }
+        g.fill(rx + 4, top - 2, rx + 5, ry - 3, 0x70FF9AAE);   // guide line, as for a folder
+        return ry;
+    }
+
+    /** A switch row whose label is plain text (not a lang key). */
+    private int toggleText(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, String label, boolean on, Runnable flip) {
+        boolean band = rowBand(g, mx, my, x, y, w);
+        rowLabel(g, mx, my, null, label, x, y, w - 54, w, band);
+        drawSwitch(g, x + w - 48, y + 1, on);
+        hits.add(new Hit(x, y, w, ROW, flip, null));
+        return y + ROW + GAP;
+    }
+
+    private static Object at(Object m, String key) { return m instanceof java.util.Map<?, ?> mm ? mm.get(key) : null; }
+    private static boolean flag(Object m, String key) { return Boolean.TRUE.equals(at(m, key)); }
+    private static int num(Object m, String key) { return at(m, key) instanceof Number n ? n.intValue() : 0; }
+    private static String str(Object m, String key) { return at(m, key) instanceof String s ? s : ""; }
+    private static List<?> list(Object m, String key) { return at(m, key) instanceof List<?> l ? l : List.of(); }
+
+    // =================================================================== the Server tab: the admin panel
+    /**
+     * Manages the Rainium server you're on, for players with rainium.admin (or operators). Every change
+     * runs the matching /rainiumserver command on the server, which answers with the panel's new contents.
+     */
+    private int serverTab(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w) {
+        ServerLink.requestAdmin(false);   // keeps it fresh while it's open
+        java.util.Map<String, Object> st = ServerLink.adminState();
+        if (st == null) return wrapped(g, x, y + 2, w, Lang.t("server.loading"), MUTED);
+        Object cfg = st.get("config");
+
+        y = section(g, x, y, w, "server_rules");
+        boolean own = !"server".equals(str(cfg, "mode"));
+        List<String> modes = List.of(Lang.t("value.server_mode.own"), Lang.t("value.server_mode.server"));
+        y = cycle(g, mx, my, x, y, w, "server_mode", modes.get(own ? 0 : 1), modes, own ? 0 : 1, d -> ServerLink.runAdmin("mode", own ? "server" : "own"));
+        boolean client = flag(cfg, "client_cosmetics");
+        y = toggle(g, mx, my, x, y, w, "server_client_cosmetics", client, () -> ServerLink.runAdmin("set", "client_cosmetics", String.valueOf(!client)));
+        boolean ups = flag(cfg, "uploads_by_default");
+        y = toggle(g, mx, my, x, y, w, "server_uploads_default", ups, () -> ServerLink.runAdmin("set", "uploads_by_default", String.valueOf(!ups)));
+        int maxKb = num(cfg, "max_outfit_kb"), rate = num(cfg, "send_kb_per_tick"), cache = num(cfg, "upload_cache_mb");
+        exact(v -> ServerLink.runAdmin("set", "max_outfit_kb", String.valueOf((int) Math.round(v))));
+        y = stepper(g, mx, my, x, y, w, "server_max_outfit", maxKb + " KB", d -> ServerLink.runAdmin("set", "max_outfit_kb", String.valueOf(Math.max(16, maxKb + d * 256))));
+        exact(v -> ServerLink.runAdmin("set", "send_kb_per_tick", String.valueOf((int) Math.round(v))));
+        y = stepper(g, mx, my, x, y, w, "server_send_rate", rate + " KB", d -> ServerLink.runAdmin("set", "send_kb_per_tick", String.valueOf(Math.max(8, rate + d * 16))));
+        exact(v -> ServerLink.runAdmin("set", "upload_cache_mb", String.valueOf((int) Math.round(v))));
+        y = stepper(g, mx, my, x, y, w, "server_upload_cache", cache + " MB", d -> ServerLink.runAdmin("set", "upload_cache_mb", String.valueOf(Math.max(16, cache + d * 64))));
+        y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.server_reload"), () -> ServerLink.runAdmin("reload"));
+
+        // the installed cosmetics
+        y = section(g, x, y + 4, w, "server_cosmetics");
+        List<?> cosmetics = list(st, "cosmetics");
+        if (cosmetics.isEmpty()) y = wrapped(g, x, y, w, Lang.t("server.no_cosmetics"), FAINT) + 4;
+        for (Object c : cosmetics) {
+            String id = str(c, "id");
+            boolean armed = id.equals(confirmRemove);
+            int bw = 54;
+            g.text(font, styled(fitStrong(id, w - bw - 8), true, true), x, y + 1, RED_LIGHT, false);
+            g.text(font, body(fit(Lang.t("server.cosmetic_line", num(c, "kb"), num(c, "given")), w - bw - 8)), x, y + 11, FAINT, false);
+            iconButton(g, mx, my, x + w - bw, y + 2, bw, Lang.t(armed ? "button.server_remove_sure" : "button.server_remove"), true, () -> {
+                if (armed) { confirmRemove = null; ServerLink.runAdmin("remove", id); }
+                else confirmRemove = id;
+            });
+            y += 24;
+        }
+
+        // the players online
+        y = section(g, x, y + 4, w, "server_players");
+        List<?> players = list(st, "players");
+        if (players.isEmpty()) return wrapped(g, x, y, w, Lang.t("server.no_players"), FAINT);
+        int cur = 0;
+        for (int i = 0; i < players.size(); i++) if (str(players.get(i), "uuid").equals(adminPlayer)) cur = i;
+        Object pl = players.get(cur);
+        adminPlayer = str(pl, "uuid");
+        List<String> names = new ArrayList<>();
+        for (Object o : players) names.add(str(o, "name") + (flag(o, "rainium") ? "" : " " + Lang.t("server.no_mod_mark")));
+        final int curF = cur;
+        y = cycle(g, mx, my, x, y, w, "server_player", names.get(cur), names, cur, d -> adminPlayer = str(players.get(Math.floorMod(curF + d, players.size())), "uuid"));
+        String name = str(pl, "name");
+        y = wrapped(g, x, y, w, Lang.t("server.own." + str(pl, "own")), MUTED) + 3;
+        boolean locked = flag(pl, "locked");
+        y = toggle(g, mx, my, x, y, w, "server_player_own", !locked, () -> ServerLink.runAdmin(locked ? "unlock" : "lock", name));
+        List<?> given = list(pl, "given"), byPerm = list(pl, "by_permission");
+        for (Object c : cosmetics) {
+            String id = str(c, "id");
+            boolean g1 = given.contains(id), p1 = byPerm.contains(id);
+            String label = Lang.t(p1 && !g1 ? "label.server_wears_perm" : "label.server_wears", id);
+            y = toggleText(g, mx, my, x, y, w, label, g1 || p1, () -> {
+                if (g1) ServerLink.runAdmin("take", name, id);
+                else if (p1) say(Lang.t("msg.server_by_permission", id), WARN);
+                else ServerLink.runAdmin("give", name, id);
+            });
+        }
+        if ("shared".equals(str(pl, "own")))
+            y = textRow(g, mx, my, x, y, w, "server_install_as", "", Lang.t("server.install_placeholder"), v -> {
+                String id = v.trim();
+                if (!id.isEmpty()) ServerLink.runAdmin("install", id, name);
+            });
+
+        // what the last change said
+        List<?> said = list(st, "said");
+        if (!said.isEmpty()) {
+            y += 4;
+            for (Object line : said) y = wrapped(g, x, y, w, String.valueOf(line), MUTED) + 1;
+        }
+        return y;
     }
 
     private void selectLayer(int idx) {
@@ -627,6 +800,7 @@ public final class RainiumScreen extends Screen {
             case EDIT -> editTab(g, mx, my, cx, cy, cw);
             case ADD -> impFile != null ? importView(g, mx, my, cx, cy, cw) : addTab(g, mx, my, cx, cy, cw);
             case SETTINGS -> settingsTab(g, mx, my, cx, cy, cw);
+            case SERVER -> serverTab(g, mx, my, cx, cy, cw);
         };
         hits.addAll(lateHits);   // info buttons sit on top of their row's own buttons
         lateHits.clear();

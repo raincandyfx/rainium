@@ -27,16 +27,16 @@ public final class NetProtocol {
     private NetProtocol() {}
 
     public static final String CHANNEL = "rainium:net";
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     /** Bytes of blob in one part. */
     public static final int PART = 28 * 1024;
     /** A blob is never bigger than this, whatever a server allows. */
     public static final int HARD_MAX_BLOB = 32 << 20;
 
     // server -> client
-    public static final byte S_WELCOME = 1, S_WEARING = 2, S_PART = 3, S_NEED = 4, S_NOTICE = 5;
+    public static final byte S_WELCOME = 1, S_WEARING = 2, S_PART = 3, S_NEED = 4, S_NOTICE = 5, S_ADMIN = 6;
     // client -> server
-    public static final byte C_HELLO = 1, C_OUTFIT = 2, C_PART = 3, C_FETCH = 4;
+    public static final byte C_HELLO = 1, C_OUTFIT = 2, C_PART = 3, C_FETCH = 4, C_ADMIN_OPEN = 5, C_ADMIN_RUN = 6;
 
     /** Where a worn blob comes from: the player's own outfit, or a cosmetic the server installed. */
     public static final byte KIND_OWN = 0, KIND_SERVER = 1;
@@ -45,7 +45,8 @@ public final class NetProtocol {
 
     // ------------------------------------------------------------------ the messages
 
-    public record Welcome(int version, byte mode, boolean canUpload, int maxOutfitBytes, String server) {}
+    /** ownAllowed: whether your own (client-side) cosmetics may show at all on this server; admin: whether you may manage it. */
+    public record Welcome(int version, byte mode, boolean canUpload, int maxOutfitBytes, String server, boolean ownAllowed, boolean admin) {}
     public record Worn(byte kind, String hash, int size, String name) {}
     public record Wearing(UUID player, List<Worn> worn) {}
     public record Part(String hash, int index, int count, int size, byte[] data) {}
@@ -56,6 +57,7 @@ public final class NetProtocol {
     public static byte[] welcome(Welcome w) {
         return frame(S_WELCOME, o -> {
             o.writeInt(w.version()); o.writeByte(w.mode()); o.writeBoolean(w.canUpload()); o.writeInt(w.maxOutfitBytes()); o.writeUTF(clip(w.server(), 100));
+            o.writeBoolean(w.ownAllowed()); o.writeBoolean(w.admin());
         });
     }
 
@@ -79,13 +81,43 @@ public final class NetProtocol {
     public static byte[] hello(Hello h) { return frame(C_HELLO, o -> { o.writeInt(h.version()); o.writeUTF(clip(h.modVersion(), 40)); }); }
     public static byte[] outfit(Outfit f) { return frame(C_OUTFIT, o -> { o.writeUTF(f.hash()); o.writeInt(f.size()); }); }
     public static byte[] fetch(String hash) { return frame(C_FETCH, o -> o.writeUTF(hash)); }
+    public static byte[] adminOpen() { return frame(C_ADMIN_OPEN, o -> { }); }
+
+    /** An admin panel action: the words of a /rainiumserver command. */
+    public static byte[] adminRun(List<String> args) {
+        return frame(C_ADMIN_RUN, o -> { o.writeShort(Math.min(args.size(), 16)); for (int i = 0; i < Math.min(args.size(), 16); i++) o.writeUTF(clip(args.get(i), 200)); });
+    }
+
+    /** The admin panel's contents, as JSON text (it can be longer than writeUTF allows). */
+    public static byte[] admin(String json) {
+        byte[] b = utf8(json);
+        return frame(S_ADMIN, o -> { o.writeInt(b.length); o.write(b); });
+    }
+
+    public static List<String> readAdminRun(byte[] m) throws IOException {
+        DataInputStream in = body(m);
+        int n = Math.min(16, in.readUnsignedShort());
+        List<String> out = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) out.add(in.readUTF());
+        return out;
+    }
+
+    public static String readAdmin(byte[] m) throws IOException {
+        DataInputStream in = body(m);
+        int len = in.readInt();
+        if (len < 0 || len > (4 << 20)) throw new IOException("admin state too big");
+        byte[] b = in.readNBytes(len);
+        return new String(b, StandardCharsets.UTF_8);
+    }
 
     /** The type byte of a message, or -1 for an empty one. */
     public static byte type(byte[] msg) { return msg == null || msg.length == 0 ? -1 : msg[0]; }
 
     public static Welcome readWelcome(byte[] m) throws IOException {
         DataInputStream in = body(m);
-        return new Welcome(in.readInt(), in.readByte(), in.readBoolean(), in.readInt(), in.readUTF());
+        int version = in.readInt();
+        if (version != VERSION) return new Welcome(version, MODE_OWN, false, 0, "", true, false);   // a different protocol: only the version is read
+        return new Welcome(version, in.readByte(), in.readBoolean(), in.readInt(), in.readUTF(), in.readBoolean(), in.readBoolean());
     }
 
     public static Wearing readWearing(byte[] m) throws IOException {

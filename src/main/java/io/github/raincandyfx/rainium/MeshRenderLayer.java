@@ -51,6 +51,10 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
             drawWorn(ps, collector, light, state, worn, true, null);
             return;
         }
+        if (shared && !ServerLink.ownAllowed()) {   // this server turned your own cosmetics off: only what it gives you shows
+            if (!worn.isEmpty()) drawWorn(ps, collector, light, state, worn, false, null);
+            return;
+        }
         if (st == null) return;
         java.util.List<Assets.Resolved> layers = st.config().enabled ? st.layers() : java.util.List.<Assets.Resolved>of();
         if (preview != null) { layers = new java.util.ArrayList<>(layers); layers.add(preview); }   // the list is only copied when there's something to add

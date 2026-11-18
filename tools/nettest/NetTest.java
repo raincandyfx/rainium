@@ -63,7 +63,7 @@ public class NetTest {
         // messages round trip
         var w = new NetProtocol.Wearing(UUID.randomUUID(), List.of(new NetProtocol.Worn(NetProtocol.KIND_SERVER, h, 5, "halo")));
         check(NetProtocol.readWearing(NetProtocol.wearing(w)).equals(w), "wearing round trip");
-        var wl = new NetProtocol.Welcome(1, NetProtocol.MODE_OWN, true, 2048 << 10, "srv");
+        var wl = new NetProtocol.Welcome(NetProtocol.VERSION, NetProtocol.MODE_OWN, true, 2048 << 10, "srv", false, true);
         check(NetProtocol.readWelcome(NetProtocol.welcome(wl)).equals(wl), "welcome round trip");
 
         // ---- server core
@@ -149,6 +149,40 @@ public class NetTest {
         core.tick();
         out = core.command(null, new String[]{"install", "alices_wings", "Alice"});
         check(out.get(0).startsWith("Installed") && Files.exists(dir.resolve("cosmetics/alices_wings.zip")), "install from a player: " + out);
+        // locking a player's own cosmetics: they stop showing, and the client is told
+        f.take(alice); f.take(bob);
+        out = core.command(null, new String[]{"lock", "Alice"});
+        core.tick();
+        boolean lockedGone = false, lockedTold = false;
+        for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(alice) && x.worn().stream().noneMatch(wn -> wn.kind() == NetProtocol.KIND_OWN)) lockedGone = true; }
+        for (byte[] m : f.take(alice)) if (NetProtocol.type(m) == NetProtocol.S_WELCOME) { var x = NetProtocol.readWelcome(m); if (!x.ownAllowed() && !x.canUpload()) lockedTold = true; }
+        check(out.get(0).startsWith("Turned off") && lockedGone && lockedTold, "lock: own cosmetics off and the player is told");
+        check(Files.readString(dir.resolve("grants.json")).contains("\"locked\""), "lock saved");
+        core.command(null, new String[]{"unlock", "Alice"});
+        core.tick();
+        boolean unlockedTold = false;
+        for (byte[] m : f.take(alice)) if (NetProtocol.type(m) == NetProtocol.S_WELCOME && NetProtocol.readWelcome(m).ownAllowed()) unlockedTold = true;
+        check(unlockedTold, "unlock tells the player again");
+        // the server-wide switch
+        core.command(null, new String[]{"set", "client_cosmetics", "false"});
+        core.tick();
+        boolean allOff = true;
+        for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WELCOME && NetProtocol.readWelcome(m).ownAllowed()) allOff = false;
+        check(allOff && !core.ownAllowed(bob) && Files.readString(dir.resolve("config.json")).contains("\"client_cosmetics\": false"), "client_cosmetics off for everyone, saved");
+        core.command(null, new String[]{"set", "client_cosmetics", "true"});
+        check(core.command(null, new String[]{"set", "max_outfit_kb", "999999999"}).get(0).contains("32768"), "numbers are clamped");
+        // the admin panel: only for admins, runs commands and answers with the state
+        f.take(alice); f.take(bob);
+        core.received(alice, NetProtocol.adminOpen());
+        core.tick();
+        check(f.take(alice).stream().noneMatch(m -> NetProtocol.type(m) == NetProtocol.S_ADMIN), "no admin panel for a non-admin");
+        core.received(bob, NetProtocol.adminRun(List.of("give", "Alice", "gold_halo")));
+        core.tick();
+        String st = null;
+        for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_ADMIN) st = NetProtocol.readAdmin(m);
+        check(st != null && st.contains("Gave gold_halo to Alice") && st.contains("\"cosmetics\"") && st.contains("\"Alice\""), "admin action answered with the new state");
+        Object parsed = Json.parse(st);
+        check(parsed instanceof Map<?, ?> pm && pm.get("players") instanceof List<?> pl && pl.size() == 3, "admin state lists the players");
         // leaving clears
         core.playerLeft(alice); core.tick();
         boolean cleared = false;

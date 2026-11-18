@@ -213,6 +213,12 @@ Put Rainium on the server too and players with Rainium see each other's cosmetic
 - `own` (the default): each player's own cosmetics, plus the server's.
 - `server`: only the server's cosmetics. Players' own layers stay on their own screen.
 
+**Turning players' own cosmetics off.** A server can also turn players' own (client-side) cosmetics off entirely while they're on it, for everyone (`client_cosmetics` off) or for one player (`/rainiumserver lock <player>`). They then don't show at all, not even on the player's own screen; the editor shows them locked with a red padlock. The server can't see, change or delete them, and they show again on other servers.
+
+**In the editor.** Cosmetics the server gives you appear under your layers in their own red **From this server** part of the list. They're the server's, so they can't be edited there.
+
+**The admin panel.** Admins get a **Server** tab in the editor (<kbd>K</kbd>) with everything the commands do: the mode, players' own cosmetics on or off, sharing by default, the largest outfit, send rate and upload cache, reloading, removing installed cosmetics, and for each player online: turning their own cosmetics off, giving or taking each cosmetic, and saving their look as a new server cosmetic.
+
 **Server cosmetics.** A cosmetic is a Rainium zip (a folder's **Export as zip**) in the server's `cosmetics/` folder; its file name is its id. Or wear something yourself and run `/rainiumserver install <id> <your name>` to save it as one. Give it with `/rainiumserver give <player> <id>`, or with a permission.
 
 **Permissions (LuckPerms or any permissions plugin).** Unset nodes use the defaults in brackets.
@@ -225,9 +231,9 @@ Put Rainium on the server too and players with Rainium see each other's cosmetic
 
 Permission changes show within about ten seconds. On Fabric, LuckPerms is used through the permissions API it ships with.
 
-**Commands:** `/rainiumserver mode own|server`, `list`, `give <player> <id>`, `take <player> <id|all>`, `install <id> <player>`, `remove <id>`, `wearing <player>`, `reload`.
+**Commands:** `/rainiumserver mode own|server`, `list`, `give <player> <id>`, `take <player> <id|all>`, `install <id> <player>`, `remove <id>`, `wearing <player>`, `lock|unlock <player>`, `set <setting> <value>`, `reload`.
 
-**Files** (in `config/rainium-server/` on Fabric, `plugins/Rainium/` on Paper): `config.json` (mode, `uploads_by_default`, `max_outfit_kb` = 2048, `send_kb_per_tick`, `upload_cache_mb`), `grants.json` (who was given what), `cosmetics/` and `uploads/` (players' outfits, by hash; the oldest are removed past the cache size).
+**Files** (in `config/rainium-server/` on Fabric, `plugins/Rainium/` on Paper): `config.json` (mode, `client_cosmetics`, `uploads_by_default`, `max_outfit_kb` = 2048, `send_kb_per_tick`, `upload_cache_mb`), `grants.json` (who was given what, and whose own cosmetics are off), `cosmetics/` and `uploads/` (players' outfits, by hash; the oldest are removed past the cache size).
 
 ## Updates
 

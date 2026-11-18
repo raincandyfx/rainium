@@ -59,6 +59,7 @@ public final class ServerCore {
         public int maxOutfitKb = 2048;
         public int sendKbPerTick = 128;         // per player
         public int uploadCacheMb = 512;
+        public boolean clientCosmetics = true;  // players' own (client-side) cosmetics may show here at all, even to themselves
 
         Map<String, Object> toJson() {
             Map<String, Object> m = new LinkedHashMap<>();
@@ -67,6 +68,7 @@ public final class ServerCore {
             m.put("max_outfit_kb", maxOutfitKb);
             m.put("send_kb_per_tick", sendKbPerTick);
             m.put("upload_cache_mb", uploadCacheMb);
+            m.put("client_cosmetics", clientCosmetics);
             return m;
         }
 
@@ -78,6 +80,7 @@ public final class ServerCore {
             if (m.get("max_outfit_kb") instanceof Number n) c.maxOutfitKb = clamp(n.intValue(), 16, NetProtocol.HARD_MAX_BLOB >> 10);
             if (m.get("send_kb_per_tick") instanceof Number n) c.sendKbPerTick = clamp(n.intValue(), 8, 4096);
             if (m.get("upload_cache_mb") instanceof Number n) c.uploadCacheMb = clamp(n.intValue(), 16, 1 << 16);
+            if (m.get("client_cosmetics") instanceof Boolean b) c.clientCosmetics = b;
             return c;
         }
     }
@@ -106,6 +109,7 @@ public final class ServerCore {
     private final Map<String, Cosmetic> byHash = new HashMap<>();
     private final Map<UUID, Set<String>> grants = new HashMap<>();
     private final Map<UUID, String> grantNames = new HashMap<>();
+    private final Set<UUID> locked = new HashSet<>();   // players whose own cosmetics are turned off here
     private final Map<UUID, Session> sessions = new LinkedHashMap<>();
     private long ticks;
 
@@ -167,6 +171,7 @@ public final class ServerCore {
     private void loadGrants() {
         grants.clear();
         grantNames.clear();
+        locked.clear();
         Path f = dir().resolve("grants.json");
         if (!Files.isRegularFile(f)) return;
         try {
@@ -180,6 +185,7 @@ public final class ServerCore {
                 if (m.get("cosmetics") instanceof List<?> l) for (Object o : l) { String id = idOf(String.valueOf(o)); if (!id.isEmpty()) ids.add(id); }
                 if (!ids.isEmpty()) grants.put(u, ids);
                 if (m.get("name") instanceof String n) grantNames.put(u, n);
+                if (Boolean.TRUE.equals(m.get("locked"))) locked.add(u);
             }
         } catch (Exception e) {
             p.warn("[rainium] could not read grants.json: " + e.getMessage());
@@ -188,13 +194,17 @@ public final class ServerCore {
 
     private void saveGrants() {
         Map<String, Object> players = new TreeMap<>();
-        for (Map.Entry<UUID, Set<String>> e : grants.entrySet()) {
-            if (e.getValue().isEmpty()) continue;
+        Set<UUID> all = new HashSet<>(grants.keySet());
+        all.addAll(locked);
+        for (UUID u : all) {
+            Set<String> g = grants.getOrDefault(u, Set.of());
+            if (g.isEmpty() && !locked.contains(u)) continue;
             Map<String, Object> m = new LinkedHashMap<>();
-            String n = grantNames.get(e.getKey());
+            String n = grantNames.get(u);
             if (n != null) m.put("name", n);
-            m.put("cosmetics", new ArrayList<Object>(e.getValue()));
-            players.put(e.getKey().toString(), m);
+            m.put("cosmetics", new ArrayList<Object>(g));
+            if (locked.contains(u)) m.put("locked", true);
+            players.put(u.toString(), m);
         }
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("players", players);
@@ -249,11 +259,19 @@ public final class ServerCore {
 
     /** Tells the client the mode and whether it may share its own cosmetics (again, when either changed). */
     private void welcome(Session s) {
-        boolean up = config.ownOutfits && canUpload(s.id);
-        s.welcomed = config.ownOutfits + "/" + up;
+        s.welcomed = welcomeKey(s.id);
         queue(s, NetProtocol.welcome(new NetProtocol.Welcome(NetProtocol.VERSION, config.ownOutfits ? NetProtocol.MODE_OWN : NetProtocol.MODE_SERVER_ONLY,
-            up, config.maxOutfitKb << 10, p.serverName())));
+            sharesOwn(s.id), config.maxOutfitKb << 10, p.serverName(), ownAllowed(s.id), isAdmin(s.id))));
     }
+
+    /** What the client was told, to notice when it changes. */
+    private String welcomeKey(UUID u) { return config.ownOutfits + "/" + sharesOwn(u) + "/" + ownAllowed(u) + "/" + isAdmin(u) + "/" + config.maxOutfitKb; }
+
+    /** Whether the player's own cosmetics may show here at all (the server can turn them off, for everyone or one player). */
+    public boolean ownAllowed(UUID u) { return config.clientCosmetics && !locked.contains(u); }
+
+    /** Whether the player's own cosmetics are shared with others. */
+    private boolean sharesOwn(UUID u) { return config.ownOutfits && ownAllowed(u) && canUpload(u); }
 
     public void playerLeft(UUID u) {
         Session s = sessions.remove(u);
@@ -273,6 +291,12 @@ public final class ServerCore {
                 case NetProtocol.C_OUTFIT -> outfit(s, NetProtocol.readOutfit(msg));
                 case NetProtocol.C_PART -> uploadPart(s, NetProtocol.readPart(msg));
                 case NetProtocol.C_FETCH -> fetch(s, NetProtocol.readHash(msg));
+                case NetProtocol.C_ADMIN_OPEN -> { if (isAdmin(u)) queue(s, NetProtocol.admin(adminState(List.of()))); }
+                case NetProtocol.C_ADMIN_RUN -> {
+                    if (!isAdmin(u)) break;
+                    List<String> said = command(u, NetProtocol.readAdminRun(msg).toArray(new String[0]));
+                    queue(s, NetProtocol.admin(adminState(said)));
+                }
                 default -> { }
             }
         } catch (IOException | RuntimeException e) {
@@ -289,6 +313,7 @@ public final class ServerCore {
         s.ownSize = Math.max(0, o.size());
         s.ownReady = false;
         if (hash.isEmpty() || !config.ownOutfits) { refresh(s.id, false); return; }
+        if (!ownAllowed(s.id)) { refresh(s.id, false); return; }
         if (!canUpload(s.id)) {
             if (!s.toldNoUpload) queue(s, NetProtocol.notice("This server doesn't share your own cosmetics with others. Cosmetics the server gives you still show."));
             s.toldNoUpload = true;
@@ -369,7 +394,7 @@ public final class ServerCore {
 
     private List<NetProtocol.Worn> wornBy(Session s) {
         List<NetProtocol.Worn> out = new ArrayList<>();
-        if (config.ownOutfits && s.ownReady && !s.ownHash.isEmpty() && canUpload(s.id))
+        if (s.ownReady && !s.ownHash.isEmpty() && sharesOwn(s.id))
             out.add(new NetProtocol.Worn(NetProtocol.KIND_OWN, s.ownHash, s.ownSize, ""));
         Set<String> given = grants.getOrDefault(s.id, Set.of());
         for (Cosmetic c : cosmetics.values()) {
@@ -395,8 +420,7 @@ public final class ServerCore {
     private void refreshAll() {
         for (Session s : sessions.values()) {
             if (!s.rainium) continue;
-            boolean up = config.ownOutfits && canUpload(s.id);
-            if (!s.welcomed.equals(config.ownOutfits + "/" + up)) welcome(s);   // the mode or their upload permission changed
+            if (!s.welcomed.equals(welcomeKey(s.id))) welcome(s);   // the mode, a lock, or their permissions changed
         }
         for (UUID u : new ArrayList<>(sessions.keySet())) refresh(u, false);
     }
@@ -485,6 +509,35 @@ public final class ServerCore {
                 saveGrants();
                 refresh(who, false);
             }
+            case "set" -> {
+                if (args.length < 3) { out.add("Use /rainiumserver set <setting> <value>. Settings: client_cosmetics, uploads_by_default (true/false), max_outfit_kb, send_kb_per_tick, upload_cache_mb (numbers)."); break; }
+                String key = args[1].toLowerCase(Locale.ROOT), v = args[2].toLowerCase(Locale.ROOT);
+                Boolean b = v.equals("true") || v.equals("on") || v.equals("yes") ? Boolean.TRUE : v.equals("false") || v.equals("off") || v.equals("no") ? Boolean.FALSE : null;
+                Integer n = null;
+                try { n = Integer.parseInt(v); } catch (NumberFormatException ignored) { }
+                switch (key) {
+                    case "client_cosmetics" -> { if (b == null) { out.add("client_cosmetics is true or false."); break; } config.clientCosmetics = b; out.add(b ? "Players' own cosmetics show here again." : "Players' own cosmetics are turned off here (they keep them; they just don't show). Server cosmetics still show."); }
+                    case "uploads_by_default" -> { if (b == null) { out.add("uploads_by_default is true or false."); break; } config.uploadsByDefault = b; out.add("Without a permission set, players " + (b ? "may" : "may not") + " share their own cosmetics."); }
+                    case "max_outfit_kb" -> { if (n == null) { out.add("max_outfit_kb is a number."); break; } config.maxOutfitKb = clamp(n, 16, NetProtocol.HARD_MAX_BLOB >> 10); out.add("Largest outfit: " + config.maxOutfitKb + " KB."); }
+                    case "send_kb_per_tick" -> { if (n == null) { out.add("send_kb_per_tick is a number."); break; } config.sendKbPerTick = clamp(n, 8, 4096); out.add("Sending up to " + config.sendKbPerTick + " KB a tick to each player."); }
+                    case "upload_cache_mb" -> { if (n == null) { out.add("upload_cache_mb is a number."); break; } config.uploadCacheMb = clamp(n, 16, 1 << 16); pruneUploads(); out.add("Upload cache: " + config.uploadCacheMb + " MB."); }
+                    default -> out.add("No setting called " + args[1] + ".");
+                }
+                try { saveConfig(); } catch (IOException e) { out.add("Could not save config.json: " + e.getMessage()); }
+                refreshAll();
+            }
+            case "lock", "unlock" -> {
+                if (args.length < 2) { out.add("Use /rainiumserver " + sub + " <player>: turns " + (sub.equals("lock") ? "off" : "back on") + " that player's own cosmetics here."); break; }
+                UUID who = target(args[1]);
+                if (who == null) { out.add("No player " + args[1] + " is online (a UUID works too)."); break; }
+                String name = p.name(who);
+                if (name != null) grantNames.put(who, name);
+                String shown = name != null ? name : who.toString();
+                if (sub.equals("lock")) out.add(locked.add(who) ? "Turned off " + shown + "'s own cosmetics here. They keep them; they just don't show." : shown + "'s own cosmetics were already off.");
+                else out.add(locked.remove(who) ? shown + "'s own cosmetics show again." : shown + "'s own cosmetics weren't turned off.");
+                saveGrants();
+                refreshAll();
+            }
             case "wearing" -> {
                 if (args.length < 2) { out.add("Use /rainiumserver wearing <player>."); break; }
                 UUID who = target(args[1]);
@@ -493,7 +546,8 @@ public final class ServerCore {
                 out.add(p.name(who) + (s.rainium ? " has Rainium." : " doesn't have Rainium (others with it still see their server cosmetics)."));
                 if (s.worn.isEmpty()) out.add("Wearing nothing that others see.");
                 for (NetProtocol.Worn w : s.worn) out.add(" - " + (w.kind() == NetProtocol.KIND_OWN ? "their own cosmetics" : w.name()) + " (" + kb(w.size()) + ")");
-                if (config.ownOutfits && !s.ownHash.isEmpty() && !s.ownReady) out.add(canUpload(who) ? " (their own cosmetics are still uploading or too big)" : " (not allowed to share their own: " + NODE_UPLOAD + ")");
+                if (!ownAllowed(who)) out.add(" (their own cosmetics are turned off here" + (locked.contains(who) ? ": /rainiumserver unlock " + p.name(who) : ": client_cosmetics is false") + ")");
+                else if (config.ownOutfits && !s.ownHash.isEmpty() && !s.ownReady) out.add(canUpload(who) ? " (their own cosmetics are still uploading or too big)" : " (not allowed to share their own: " + NODE_UPLOAD + ")");
             }
             case "install" -> {
                 if (args.length < 3) { out.add("Use /rainiumserver install <new id> <player>: saves what that player wears of their own as a server cosmetic."); break; }
@@ -535,6 +589,9 @@ public final class ServerCore {
                 out.add(" /rainiumserver install <id> <player>  - save what a player wears as a server cosmetic");
                 out.add(" /rainiumserver remove <cosmetic>  - uninstall one");
                 out.add(" /rainiumserver wearing <player>  - what someone wears");
+                out.add(" /rainiumserver lock|unlock <player>  - turn a player's own cosmetics off or back on here");
+                out.add(" /rainiumserver set <setting> <value>  - client_cosmetics, uploads_by_default, max_outfit_kb, send_kb_per_tick, upload_cache_mb");
+                out.add(" Or use the Server tab in the Rainium editor (K).");
                 out.add(" /rainiumserver reload  - re-read config.json, grants.json and cosmetics/");
             }
         }
@@ -544,13 +601,14 @@ public final class ServerCore {
     /** Suggestions for the word being typed (args has at least one, possibly empty, word). */
     public List<String> complete(String[] args) {
         List<String> opts = new ArrayList<>();
-        if (args.length <= 1) opts.addAll(List.of("mode", "list", "give", "take", "install", "remove", "wearing", "reload", "help"));
+        if (args.length <= 1) opts.addAll(List.of("mode", "list", "give", "take", "install", "remove", "wearing", "lock", "unlock", "set", "reload", "help"));
         else {
             String sub = args[0].toLowerCase(Locale.ROOT);
             if (args.length == 2) {
                 switch (sub) {
                     case "mode" -> opts.addAll(List.of("own", "server"));
-                    case "give", "take", "wearing" -> opts.addAll(p.onlineNames());
+                    case "give", "take", "wearing", "lock", "unlock" -> opts.addAll(p.onlineNames());
+                    case "set" -> opts.addAll(List.of("client_cosmetics", "uploads_by_default", "max_outfit_kb", "send_kb_per_tick", "upload_cache_mb"));
                     case "remove" -> opts.addAll(cosmetics.keySet());
                     default -> { }
                 }
@@ -563,6 +621,7 @@ public final class ServerCore {
                         opts.add("all");
                     }
                     case "install" -> opts.addAll(p.onlineNames());
+                    case "set" -> { if (args[1].equalsIgnoreCase("client_cosmetics") || args[1].equalsIgnoreCase("uploads_by_default")) opts.addAll(List.of("true", "false")); }
                     default -> { }
                 }
             }
@@ -576,6 +635,50 @@ public final class ServerCore {
         UUID u = p.find(s);
         if (u != null) return u;
         try { return UUID.fromString(s); } catch (IllegalArgumentException e) { return null; }
+    }
+
+    /** The admin panel's contents: the settings, the cosmetics and the players online (and what an action just said). */
+    String adminState(List<String> said) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        Map<String, Object> cfg = config.toJson();
+        root.put("config", cfg);
+        List<Object> cs = new ArrayList<>();
+        for (Cosmetic c : cosmetics.values()) {
+            int n = 0;
+            for (Set<String> g : grants.values()) if (g.contains(c.id())) n++;
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", c.id());
+            m.put("kb", Math.max(1, c.size() >> 10));
+            m.put("given", n);
+            cs.add(m);
+        }
+        root.put("cosmetics", cs);
+        List<Object> ps = new ArrayList<>();
+        for (Session s : sessions.values()) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("uuid", s.id.toString());
+            String name = p.name(s.id);
+            m.put("name", name == null ? s.id.toString().substring(0, 8) : name);
+            m.put("rainium", s.rainium);
+            m.put("locked", locked.contains(s.id));
+            String own;
+            if (!ownAllowed(s.id)) own = "off";
+            else if (!config.ownOutfits) own = "private";
+            else if (!canUpload(s.id)) own = "not_allowed";
+            else if (s.ownHash.isEmpty()) own = s.rainium ? "none" : "no_mod";
+            else if (s.ownReady) own = "shared";
+            else if (s.ownSize > config.maxOutfitKb << 10) own = "too_big";
+            else own = "uploading";
+            m.put("own", own);
+            m.put("given", new ArrayList<Object>(grants.getOrDefault(s.id, Set.of())));
+            List<Object> byPerm = new ArrayList<>();
+            for (Cosmetic c : cosmetics.values()) if (allowed(s.id, NODE_COSMETIC + c.id(), false)) byPerm.add(c.id());
+            m.put("by_permission", byPerm);
+            ps.add(m);
+        }
+        root.put("players", ps);
+        root.put("said", new ArrayList<Object>(said));
+        return JsonWriter.write(root);
     }
 
     // ------------------------------------------------------------------ small things
