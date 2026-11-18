@@ -24,6 +24,7 @@ import net.minecraft.resources.Identifier;
 public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
     private static final int FULL_BRIGHT = 0xF000F0;
     private final Sway sway = new Sway();
+    private static final LayerConfig NO_CONFIG = new LayerConfig();
     private final Sway previewSway = new Sway();
 
     public MeshRenderLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
@@ -38,13 +39,25 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
             RainiumClient.ASSETS.clearPreview();   // editor closed while importing
             preview = null;
         }
-        if (st == null || state.isInvisible) return;
+        if (state.isInvisible) return;
         boolean editorPreview = state == RainiumScreen.previewState;   // the player drawn inside the editor
+        boolean self = Self.is(state.id, st != null ? st.config() : NO_CONFIG);   // the local player, a player listed as "also me", or the recorded player in a replay
+        // On a server that runs Rainium, each player wears only what the server says they wear: their own
+        // outfit (the layers they show on themselves) and the server's cosmetics. Your layers set to show on
+        // other people don't draw on them there; on any other server everything is as before.
+        boolean shared = ServerLink.active() && !editorPreview;
+        java.util.List<NetProtocol.Worn> worn = shared ? ServerLink.wornBy(uuidOf(state.id, self)) : java.util.List.of();
+        if (shared && !self) {
+            drawWorn(ps, collector, light, state, worn, true, null);
+            return;
+        }
+        if (st == null) return;
         java.util.List<Assets.Resolved> layers = st.config().enabled ? st.layers() : java.util.List.<Assets.Resolved>of();
         if (preview != null) { layers = new java.util.ArrayList<>(layers); layers.add(preview); }   // the list is only copied when there's something to add
-        if (layers.isEmpty()) return;
-        Minecraft mc = Minecraft.getInstance();
-        boolean self = Self.is(state.id, st.config());   // the local player, a player listed as "also me", or the recorded player in a replay
+        if (layers.isEmpty()) {
+            if (!worn.isEmpty()) drawWorn(ps, collector, light, state, worn, false, null);
+            return;
+        }
         String[] name = {null};   // looked up only if a layer needs it
 
         Sway.Pose sp = Sway.Pose.REST;
@@ -53,18 +66,7 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
                 st.config().physics, System.nanoTime() / 1e9);
         }
         int hurtOverlay = LivingEntityRenderer.getOverlayCoords(state, 0f);
-        PlayerModel model = getParentModel();
-        Bones bones = (p, anchor) -> {
-            switch (anchor) {
-                case BODY -> model.body.translateAndRotate(p);
-                case HEAD -> model.head.translateAndRotate(p);
-                case LEFT_ARM -> model.leftArm.translateAndRotate(p);
-                case RIGHT_ARM -> model.rightArm.translateAndRotate(p);
-                case LEFT_LEG -> model.leftLeg.translateAndRotate(p);
-                case RIGHT_LEG -> model.rightLeg.translateAndRotate(p);
-                case ROOT -> { }
-            }
-        };
+        Bones bones = bones();
 
         for (Assets.Resolved r : layers) {
             LayerConfig.Layer l = r.cfg();
@@ -76,6 +78,57 @@ public final class MeshRenderLayer extends RenderLayer<AvatarRenderState, Player
             }
             submitAll(ps, collector, light, hurtOverlay, bones, sp, st, r, new Where("p" + state.id + (editorPreview ? "e" : ""), state.x, state.y, state.z, editorPreview, state.id));
         }
+        if (!worn.isEmpty()) drawWorn(ps, collector, light, state, worn, false, st.anyPhysics() ? sp : null);   // the server's cosmetics on you
+    }
+
+    /** The parent model's bones, for attaching layers. */
+    private Bones bones() {
+        PlayerModel model = getParentModel();
+        return (p, anchor) -> {
+            switch (anchor) {
+                case BODY -> model.body.translateAndRotate(p);
+                case HEAD -> model.head.translateAndRotate(p);
+                case LEFT_ARM -> model.leftArm.translateAndRotate(p);
+                case RIGHT_ARM -> model.rightArm.translateAndRotate(p);
+                case LEFT_LEG -> model.leftLeg.translateAndRotate(p);
+                case RIGHT_LEG -> model.rightLeg.translateAndRotate(p);
+                case ROOT -> { }
+            }
+        };
+    }
+
+    /**
+     * Draws what the server says a player wears: their own outfit (unless own is false: that's you,
+     * already drawn from your own layers) and the server's cosmetics. Each is drawn whole: everything in
+     * it was chosen to show on its wearer. Outfits still downloading are skipped until they arrive.
+     */
+    private void drawWorn(PoseStack ps, SubmitNodeCollector collector, int light, AvatarRenderState state, java.util.List<NetProtocol.Worn> worn, boolean own, Sway.Pose known) {
+        int hurtOverlay = LivingEntityRenderer.getOverlayCoords(state, 0f);
+        Bones bones = null;
+        Sway.Pose sp = known;
+        for (NetProtocol.Worn w : worn) {
+            if (!own && w.kind() == NetProtocol.KIND_OWN) continue;
+            Assets.State os = RemoteOutfits.state(w.hash());
+            if (os == null) continue;
+            if (bones == null) bones = bones();
+            if (sp == null && os.anyPhysics())
+                sp = sway.sample(state.id, state.ageInTicks / 20.0, state.x, state.y, state.z, state.bodyRot, os.config().physics, System.nanoTime() / 1e9);
+            Sway.Pose use = os.anyPhysics() && sp != null ? sp : Sway.Pose.REST;
+            String key = "p" + state.id + "#" + w.hash().substring(0, 12);
+            for (Assets.Resolved r : os.layers()) {
+                if (r.cfg().hideWhenFlying && state.isFallFlying) continue;
+                submitAll(ps, collector, light, hurtOverlay, bones, use, os, r, new Where(key, state.x, state.y, state.z, false, state.id));
+            }
+        }
+    }
+
+    /** The UUID of the player drawn (yours when it's you). */
+    private static java.util.UUID uuidOf(int entityId, boolean self) {
+        Minecraft mc = Minecraft.getInstance();
+        if (self && mc.player != null && mc.player.getId() == entityId) return mc.player.getUUID();
+        if (mc.level == null) return null;
+        net.minecraft.world.entity.Entity e = mc.level.getEntity(entityId);
+        return e == null ? null : e.getUUID();
     }
 
     /** Moves the pose to an attachment point of the model being drawn. */

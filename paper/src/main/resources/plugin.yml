@@ -1,0 +1,16 @@
+name: Rainium
+version: '${version}'
+main: io.github.raincandyfx.rainium.RainiumPaper
+api-version: '1.21'
+author: raincandyfx
+website: https://github.com/raincandyfx/rainium
+description: Lets players with the Rainium mod see each other's cosmetics, and lets the server give cosmetics to players.
+softdepend: [LuckPerms]
+commands:
+  rainiumserver:
+    description: Manage Rainium cosmetics (mode, give, take, install, list).
+    usage: /rainiumserver help
+# Permission nodes (set them in LuckPerms or another permissions plugin; unset nodes use Rainium's defaults):
+#   rainium.admin             /rainiumserver (default: operators)
+#   rainium.upload            share your own cosmetics in "own" mode (default: config.json uploads_by_default)
+#   rainium.cosmetic.<id>     wear the installed cosmetic <id> (default: no; rainium.cosmetic.* for all)

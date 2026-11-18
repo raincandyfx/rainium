@@ -40,3 +40,8 @@ LyricsScreen.java     ||  \bextractBackground\(                    ||  renderBac
 
 # Lyrics: 1.21.11 shows a client-only chat line with displayClientMessage
 Lyrics.java           ||  mc\.player\.sendSystemMessage\((\w+)\)   ||  mc.player.displayClientMessage($1, false)
+
+# Multiplayer: 1.21.11's Fabric API names the payload registries playC2S/playS2C, and shows a client-only chat line with displayClientMessage
+RainiumMain.java      ||  PayloadTypeRegistry\.serverboundPlay\(\)  ||  PayloadTypeRegistry.playC2S()
+RainiumMain.java      ||  PayloadTypeRegistry\.clientboundPlay\(\)  ||  PayloadTypeRegistry.playS2C()
+ServerLink.java       ||  mc\.player\.sendSystemMessage\((\w+)\)   ||  mc.player.displayClientMessage($1, false)

@@ -309,6 +309,71 @@ final class Assets {
         return zipPath;
     }
 
+    /**
+     * What other players get on a server that runs Rainium: a zip with every switched-on layer that
+     * shows on you (who else a layer shows on stays private), its folders' motion and reactions, the
+     * physics settings, and the meshes and pictures they use. The same layers always give the same
+     * bytes, so an unchanged outfit isn't uploaded again. Null when nothing shows on you.
+     */
+    @SuppressWarnings("unchecked")
+    synchronized byte[] outfitBlob(String myName) throws IOException {
+        State st = state;
+        if (st == null || !st.config().enabled) return null;
+        LayerConfig cfg = st.config();
+        Map<String, String> files = new LinkedHashMap<>();
+        List<Object> layers = new ArrayList<>();
+        java.util.Set<String> usedFolders = new java.util.LinkedHashSet<>();
+        for (Resolved r : st.layers()) {
+            LayerConfig.Layer l = r.cfg();
+            if (!cfg.showsOnPlayer(l, true, myName)) continue;
+            Map<String, Object> m = l.toJson();
+            m.remove("show");
+            if (l.mesh != null) m.put("mesh", zipName(files, l.mesh));
+            if (l.texture != null && !LayerConfig.isResourceId(l.texture)) m.put("texture", zipName(files, l.texture));
+            if (l.folder != null) usedFolders.add(l.folder);
+            layers.add(m);
+        }
+        if (layers.isEmpty()) return null;
+        Map<String, Object> full = cfg.toJson();
+        Map<String, Object> conf = new LinkedHashMap<>();
+        conf.put("enabled", true);
+        if (full.get("physics") != null) conf.put("physics", full.get("physics"));
+        if (full.get("folders") instanceof Map<?, ?> fs) {
+            Map<String, Object> keep = new LinkedHashMap<>();
+            for (String name : usedFolders) {
+                if (!(fs.get(name) instanceof Map<?, ?> fm)) continue;
+                Map<String, Object> c = new LinkedHashMap<>((Map<String, Object>) fm);
+                c.remove("show");
+                c.remove("collapsed");
+                keep.put(name, c);
+            }
+            conf.put("folders", keep);
+        }
+        conf.put("layers", layers);
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("format", "rainium-outfit-1");
+        root.put("config", conf);
+        java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(bo)) {
+            putFixed(zos, "outfit.json", JsonWriter.write(root).getBytes(StandardCharsets.UTF_8));
+            for (Map.Entry<String, String> e : files.entrySet()) {
+                Path src = dir.resolve(e.getKey()).normalize();
+                if (!src.startsWith(dir) || !Files.isRegularFile(src)) continue;
+                putFixed(zos, e.getValue(), Files.readAllBytes(src));
+            }
+        }
+        return bo.toByteArray();
+    }
+
+    /** A zip entry with a fixed date, so equal contents make equal zips. */
+    private static void putFixed(java.util.zip.ZipOutputStream zos, String name, byte[] data) throws IOException {
+        java.util.zip.ZipEntry ze = new java.util.zip.ZipEntry(name);
+        ze.setTime(315_532_800_000L);   // 1980-01-01
+        zos.putNextEntry(ze);
+        zos.write(data);
+        zos.closeEntry();
+    }
+
     private static String zipName(Map<String, String> files, String path) {
         String existing = files.get(path);
         if (existing != null) return existing;
@@ -533,7 +598,7 @@ final class Assets {
     /** Glow textures made for additive blending often have no alpha at all (every pixel ~transparent),
      *  so alpha-blended render styles would discard the whole thing. Give such textures an alpha
      *  equal to their brightness: black stays invisible, bright parts show. Other textures are untouched. */
-    private static void fixGlowMask(NativeImage img) {
+    static void fixGlowMask(NativeImage img) {
         int w = img.getWidth(), h = img.getHeight();
         int[] px = img.getPixelsABGR();
         if (!Hue.alphaFromBrightness(px)) return;
@@ -541,7 +606,7 @@ final class Assets {
             for (int x = 0; x < w; x++) img.setPixelABGR(x, y, px[y * w + x]);
     }
 
-    private static void shiftHue(NativeImage img, float deg) {
+    static void shiftHue(NativeImage img, float deg) {
         int w = img.getWidth(), h = img.getHeight();
         int[] px = img.getPixelsABGR();
         for (int y = 0; y < h; y++) {

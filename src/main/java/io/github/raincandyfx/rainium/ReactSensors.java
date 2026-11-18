@@ -60,6 +60,7 @@ final class ReactSensors {
 
     /** What the switched-on graphs use (worked out again when the config changes). */
     private static React.Usage usage = React.Usage.NONE;
+    private static int usageRemote = -1;
     private static LayerConfig usageFor;
 
     static React.Usage usage() { return usage; }
@@ -183,10 +184,12 @@ final class ReactSensors {
         ClientLevel level = mc.level;
         Assets.State st = RainiumClient.ASSETS.current();
         LayerConfig cfg = st == null ? null : st.config();
-        if (cfg != usageFor) {
+        int remote = RemoteOutfits.version();
+        if (cfg != usageFor || remote != usageRemote) {
             usageFor = cfg;
+            usageRemote = remote;
             React.Usage before = usage;
-            usage = React.usage(cfg);
+            usage = RemoteOutfits.withRemote(React.usage(cfg));   // other players' outfits on a Rainium server react too
             if (before.others() && !usage.others()) tracks.values().removeIf(t -> !t.self);
         }
         if (level == null || usage.isEmpty()) {   // nothing reacts: watch nothing, remember nothing

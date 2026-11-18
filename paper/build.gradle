@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+}
+
+// Rainium for Paper (and Spigot) servers: shares players' cosmetics between Rainium clients, like the
+// Fabric mod does on a Fabric server. The protocol and server logic are the mod's own files, shared
+// below; only the Paper glue lives here. Built by CI with: ./gradlew -p paper build
+def shared = new Properties()
+file('../gradle.properties').withInputStream { shared.load(it) }
+def modVersion = project.findProperty('mod_version_override') ?: shared.getProperty('mod_version')
+version = modVersion
+group = shared.getProperty('maven_group')
+base { archivesName = 'rainium-paper' }
+
+repositories {
+    mavenCentral()
+    maven { name = 'PaperMC'; url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    // An older API on purpose: the plugin only uses long-stable Bukkit API, so one jar runs on 1.21.x and 26.x.
+    compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir '../src/main/java'
+            include 'io/github/raincandyfx/rainium/NetProtocol.java'
+            include 'io/github/raincandyfx/rainium/ServerCore.java'
+            include 'io/github/raincandyfx/rainium/Json.java'
+            include 'io/github/raincandyfx/rainium/JsonWriter.java'
+            include 'io/github/raincandyfx/rainium/RainiumPaper.java'
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('plugin.yml') { expand 'version': project.version }
+}
+
+jar {
+    from('../LICENSE') { rename { "${it}_rainium" } }
+}

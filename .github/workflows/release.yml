@@ -6,10 +6,12 @@ name: Build & release
 # Minecraft version:
 #   x.y.0  -> a normal release: what players get, including through the in-game updater
 #   x.y.1+ -> a pre-release marked "dev build": downloadable for testing, never auto-installed
-# Pushing a tag like v0.3.0 by hand publishes that version too.
+# Pushing a tag like v0.3.0 by hand publishes that version too. The Paper plugin (paper/) is built
+# and attached to every release as rainium-paper-<version>.jar.
 on:
   push:
-    branches: [main]
+    # dev/** branches are built (to check they compile) but never published
+    branches: [main, 'dev/**']
     tags: ['v*']
     # The downloads site lives in docs/; pushes that only touch it don't build the mod.
     paths-ignore: ['docs/**', 'vercel.json']
@@ -33,6 +35,8 @@ jobs:
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             v="${GITHUB_REF_NAME#v}"; publish=true
+          elif [[ "$GITHUB_REF" != refs/heads/main ]]; then
+            v="$(sed -n 's/^mod_version=//p' gradle.properties | tr -d '[:space:]')"; publish=false
           else
             v="$(sed -n 's/^mod_version=//p' gradle.properties | tr -d '[:space:]')"
             if git ls-remote --exit-code --tags origin "refs/tags/v$v" >/dev/null; then publish=false; else publish=true; fi
@@ -75,6 +79,15 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: Build the Paper plugin
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! ./gradlew -p paper build -Pmod_version_override="${{ steps.v.outputs.version }}" 2>&1 | tee build-paper.log; then
+            grep -E -A8 "What went wrong|error:|Could not" build-paper.log | head -60 | while IFS= read -r l; do echo "::error::[paper] $l"; done
+            exit 1
+          fi
+
       - name: Release notes from CHANGELOG.md
         if: steps.v.outputs.publish == 'true'
         shell: bash
@@ -99,4 +112,5 @@ jobs:
           files: |
             build/libs/rainium-*.jar
             versions/*/build/libs/rainium-*.jar
+            paper/build/libs/rainium-paper-*.jar
           fail_on_unmatched_files: true

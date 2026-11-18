@@ -50,10 +50,12 @@ public final class RainiumClient implements ClientModInitializer {
         openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.rainium.open", InputConstants.Type.KEYSYM, KEY_K, category));
 
         try { ReactEvents.register(); } catch (Throwable t) { reactProblem(t); }
+        try { ServerLink.register(); } catch (Throwable t) { Assets.LOG.warn("[rainium] sharing cosmetics on servers is unavailable: " + t); }
 
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             try { ReactSensors.tick(mc); } catch (Throwable t) { reactProblem(t); }   // reactions are optional; never stop the game
             try { Lyrics.tick(mc); } catch (Throwable t) { lyricsProblem(t); }        // lyrics are optional too
+            try { ServerLink.tick(mc); } catch (Throwable t) { linkProblem(t); }     // so is sharing cosmetics on servers
             while (openKey.consumeClick()) {
                 if (mc.screen == null) openNextTick = true;
             }
@@ -90,6 +92,13 @@ public final class RainiumClient implements ClientModInitializer {
         if (lyricsWarned) return;
         lyricsWarned = true;
         Assets.LOG.warn("[rainium] lyrics stopped: " + t);
+    }
+
+    private static boolean linkWarned;
+    private static void linkProblem(Throwable t) {
+        if (linkWarned) return;
+        linkWarned = true;
+        Assets.LOG.warn("[rainium] sharing cosmetics stopped: " + t);
     }
 
     private static boolean reactWarned;
