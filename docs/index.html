@@ -340,6 +340,15 @@
   #pg-download .save .btn { color: var(--paper); }
   .save .btn:hover { background: var(--sea); }
   .save .btn small { color: var(--haze); }
+  .dlrow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2.2vh 26px; margin-top: 3vh; }
+  .dlrow .btn { margin-top: 0; }
+  .dlrow.srv { margin-top: 2.4vh; }
+  .save .btn.alt { background: var(--cyan); color: var(--ink); filter: drop-shadow(5px 5px 0 var(--ink)); font-size: 1.4rem; padding: 9px 36px 9px 20px; }
+  #pg-download .save .btn.alt { color: var(--ink); }
+  .save .btn.alt:hover { background: var(--paper); }
+  .save .btn.alt small { color: var(--ink); opacity: 0.8; }
+  .btn[hidden] { display: none; }
+  .srvnote { margin-top: 1.2vh; max-width: 34rem; font-weight: 500; font-size: 0.85rem; opacity: 0.85; }
   .dlcount { margin-top: 1.6vh; font-weight: 700; font-size: 0.95rem; opacity: 0.9; }
   .dlcount b { font-style: italic; font-weight: 900; font-size: 1.15rem; }
   .vers { display: flex; align-items: center; gap: 12px; margin-top: 2.4vh; }
@@ -683,8 +692,12 @@
         <p class="bigver" id="bigVer" aria-hidden="true">&hellip;</p>
         <p class="cap" id="bigCap">Latest release for Minecraft 26.3</p>
         <p class="betanote" id="betaNote" hidden><b>Beta</b> Rainium is in beta. Settings and features can change between 0.x versions.</p>
-        <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
+        <div class="dlrow">
+          <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
+        </div>
         <div class="vers"><label for="verSel">Minecraft</label><span class="sel"><select id="verSel" disabled><option>Latest</option></select></span></div>
+        <div class="dlrow srv"><a class="btn alt" id="serverDl" href="https://github.com/raincandyfx/rainium/releases" hidden><span>Server version</span><small id="serverDlSub">Plugin for Paper and Spigot</small></a></div>
+        <p class="srvnote" id="srvNote" hidden>Fabric servers use the normal jar above.</p>
         <p class="dlcount" id="dlCount" hidden></p>
         <p class="status" id="status" aria-live="polite"></p>
       </div>
@@ -1033,6 +1046,7 @@ document.querySelectorAll(".ph[data-img]").forEach((fig) => {
 /* ---------- Releases, read live from GitHub. Main releases only. ---------- */
 const REPO = "raincandyfx/rainium", RELEASES = `https://github.com/${REPO}/releases`;
 const JAR = /^rainium-([^+]+)\+([0-9][0-9.]*)\.jar$/;
+const PAPER = /^rainium-paper-([0-9][^+]*)\.jar$/;
 let REL = [];
 
 fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`)
@@ -1044,7 +1058,7 @@ fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`)
   });
 
 function render(releases) {
-  const ALL = releases.filter((r) => !r.draft).flatMap((r) => (r.assets || []).filter((a) => JAR.test(a.name)));
+  const ALL = releases.filter((r) => !r.draft).flatMap((r) => (r.assets || []).filter((a) => JAR.test(a.name) || PAPER.test(a.name)));
   REL = releases.filter((r) => !r.draft && !r.prerelease).map((r) => {
     const jar = (r.assets || []).find((a) => JAR.test(a.name));
     if (!jar) return null;
@@ -1064,6 +1078,16 @@ function render(releases) {
   const DL = [];
   for (const x of builds) if (!DL.some((d) => d.mc === x.mc)) DL.push(x);
   DL.sort((a, b) => mcCmp(a.mc, b.mc));
+
+  // The server version: the newest release that has the Paper and Spigot plugin attached
+  // (main release first, otherwise the newest dev build).
+  const srv = releases.filter((r) => !r.draft).map((r) => ({ r, jar: (r.assets || []).find((a) => PAPER.test(a.name)) }))
+    .filter((x) => x.jar).sort((a, b) => (!!a.r.prerelease - !!b.r.prerelease) || (new Date(b.r.published_at) - new Date(a.r.published_at)))[0];
+  if (srv) {
+    $("serverDl").href = srv.jar.browser_download_url;
+    $("serverDl").hidden = false; $("srvNote").hidden = false;
+    $("serverDlSub").textContent = `Paper and Spigot plugin ${srv.jar.name.match(PAPER)[1]}${srv.r.prerelease ? " (dev build)" : ""}, ${fmtSize(srv.jar.size)}`;
+  }
 
   const latest = REL[0];
   const showVer = (i) => {
