@@ -340,14 +340,6 @@
   #pg-download .save .btn { color: var(--paper); }
   .save .btn:hover { background: var(--sea); }
   .save .btn small { color: var(--haze); }
-  .dlrow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2.2vh 26px; margin-top: 3vh; }
-  .dlrow .btn { margin-top: 0; }
-  .dlrow.srv { margin-top: 2.4vh; }
-  .save .btn.alt { background: var(--cyan); color: var(--ink); filter: drop-shadow(5px 5px 0 var(--ink)); font-size: 1.4rem; padding: 9px 36px 9px 20px; }
-  #pg-download .save .btn.alt { color: var(--ink); }
-  .save .btn.alt:hover { background: var(--paper); }
-  .save .btn.alt small { color: var(--ink); opacity: 0.8; }
-  .btn[hidden] { display: none; }
   .srvnote { margin-top: 1.2vh; max-width: 34rem; font-weight: 500; font-size: 0.85rem; opacity: 0.85; }
   .dlcount { margin-top: 1.6vh; font-weight: 700; font-size: 0.95rem; opacity: 0.9; }
   .dlcount b { font-style: italic; font-weight: 900; font-size: 1.15rem; }
@@ -692,12 +684,9 @@
         <p class="bigver" id="bigVer" aria-hidden="true">&hellip;</p>
         <p class="cap" id="bigCap">Latest release for Minecraft 26.3</p>
         <p class="betanote" id="betaNote" hidden><b>Beta</b> Rainium is in beta. Settings and features can change between 0.x versions.</p>
-        <div class="dlrow">
-          <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
-        </div>
-        <div class="vers"><label for="verSel">Minecraft</label><span class="sel"><select id="verSel" disabled><option>Latest</option></select></span></div>
-        <div class="dlrow srv"><a class="btn alt" id="serverDl" href="https://github.com/raincandyfx/rainium/releases" hidden><span>Server version</span><small id="serverDlSub">Plugin for Paper and Spigot</small></a></div>
-        <p class="srvnote" id="srvNote" hidden>Fabric servers use the normal jar above.</p>
+        <a class="btn" id="mainDl" href="https://github.com/raincandyfx/rainium/releases/latest"><span id="mainDlLabel">Get Rainium</span><small id="mainDlSub">Free and open source</small></a>
+        <div class="vers"><label for="verSel">For</label><span class="sel"><select id="verSel" disabled><option>Latest</option></select></span></div>
+        <p class="srvnote" id="srvNote" hidden>The plugin is for Paper and Spigot. Fabric servers use the normal jar, with Fabric API.</p>
         <p class="dlcount" id="dlCount" hidden></p>
         <p class="status" id="status" aria-live="polite"></p>
       </div>
@@ -1083,17 +1072,15 @@ function render(releases) {
   // (main release first, otherwise the newest dev build).
   const srv = releases.filter((r) => !r.draft).map((r) => ({ r, jar: (r.assets || []).find((a) => PAPER.test(a.name)) }))
     .filter((x) => x.jar).sort((a, b) => (!!a.r.prerelease - !!b.r.prerelease) || (new Date(b.r.published_at) - new Date(a.r.published_at)))[0];
-  if (srv) {
-    $("serverDl").href = srv.jar.browser_download_url;
-    $("serverDl").hidden = false; $("srvNote").hidden = false;
-    $("serverDlSub").textContent = `Paper and Spigot plugin ${srv.jar.name.match(PAPER)[1]}${srv.r.prerelease ? " (dev build)" : ""}, ${fmtSize(srv.jar.size)}`;
-  }
+  if (srv) DL.push({ r: srv.r, jar: srv.jar, version: srv.jar.name.match(PAPER)[1], server: true, date: new Date(srv.r.published_at), dev: !!srv.r.prerelease });
 
   const latest = REL[0];
   const showVer = (i) => {
     const x = DL[i];
     $("bigVer").textContent = x.version;
-    $("bigCap").textContent = `${x.r.id === latest.r.id ? "Latest release for" : x.dev ? "Dev build for" : "For"} Minecraft ${x.mc}, released ${fmtDate(x.date)}`;
+    $("srvNote").hidden = !x.server;
+    if (x.server) $("bigCap").textContent = `${x.dev ? "Dev build of the" : "The"} server plugin, released ${fmtDate(x.date)}`;
+    else $("bigCap").textContent = `${x.r.id === latest.r.id ? "Latest release for" : x.dev ? "Dev build for" : "For"} Minecraft ${x.mc}, released ${fmtDate(x.date)}`;
     $("betaNote").hidden = !isBeta(x);
     $("mainDl").href = x.jar.browser_download_url;
     $("mainDlLabel").textContent = `Download ${x.version}`;
@@ -1105,7 +1092,7 @@ function render(releases) {
   };
   showVer(0);
   const sel = $("verSel");
-  sel.innerHTML = DL.map((x, i) => `<option value="${i}">${esc(x.mc)}</option>`).join("");
+  sel.innerHTML = DL.map((x, i) => `<option value="${i}">${x.server ? "Server (Paper, Spigot)" : esc(x.mc)}</option>`).join("");
   sel.disabled = DL.length < 2;
   sel.addEventListener("change", () => showVer(+sel.value));
 
