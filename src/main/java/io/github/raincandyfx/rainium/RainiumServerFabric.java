@@ -128,6 +128,14 @@ final class RainiumServerFabric implements ServerCore.Platform {
     @Override public void warn(String msg) { LOG.warn(msg); }
     @Override public String serverName() { return "Fabric"; }
 
+    @Override public String world(UUID u) {
+        ServerPlayer p = player(u);
+        if (p == null) return "";
+        String d = p.level().dimension().toString();   // "ResourceKey[minecraft:dimension / minecraft:the_nether]"
+        int i = d.lastIndexOf(" / ");
+        return i >= 0 && d.endsWith("]") ? d.substring(i + 3, d.length() - 1) : d;
+    }
+
     /** Permission checks through whatever permissions mod is installed, found at run time (none is required). */
     static final class Perms {
         private static boolean luckoLooked, fabricLooked;

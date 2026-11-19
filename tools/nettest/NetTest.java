@@ -26,13 +26,17 @@ public class NetTest {
         public Path dataDir() { return dir; }
         public void info(String m) { } public void warn(String m) { System.out.println("warn " + m); }
         public String serverName() { return "test"; }
+        final Map<UUID, String> worlds = new HashMap<>();
+        public String world(UUID p) { return worlds.getOrDefault(p, "minecraft:overworld"); }
         List<byte[]> take(UUID u) { List<byte[]> l = sent.getOrDefault(u, new ArrayList<>()); sent.put(u, new ArrayList<>()); return l; }
     }
 
     static byte[] zip(int size, long seed) throws Exception {
         var bo = new java.io.ByteArrayOutputStream();
         try (var z = new java.util.zip.ZipOutputStream(bo)) {
-            z.putNextEntry(new java.util.zip.ZipEntry("set.json"));
+            z.putNextEntry(new java.util.zip.ZipEntry("outfit.json"));
+            z.write("{\"format\":\"rainium-outfit-1\",\"config\":{\"layers\":[{\"label\":\"x\"}]}}".getBytes()); z.closeEntry();
+            z.putNextEntry(new java.util.zip.ZipEntry("pad.bin"));
             byte[] b = new byte[size]; new Random(seed).nextBytes(b); z.write(b); z.closeEntry();
         }
         return bo.toByteArray();
@@ -183,12 +187,80 @@ public class NetTest {
         check(st != null && st.contains("Gave gold_halo to Alice") && st.contains("\"cosmetics\"") && st.contains("\"Alice\""), "admin action answered with the new state");
         Object parsed = Json.parse(st);
         check(parsed instanceof Map<?, ?> pm && pm.get("players") instanceof List<?> pl && pl.size() == 3, "admin state lists the players");
+        // cosmetics for everyone, with a display name
+        f.take(bob);
+        out = core.command(null, new String[]{"everyone", "gold_halo", "on"});
+        core.command(null, new String[]{"rename", "gold_halo", "Golden", "Halo"});
+        core.tick();
+        boolean bobHalo = false;
+        for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(bob) && x.worn().stream().anyMatch(wn -> wn.name().equals("Golden Halo"))) bobHalo = true; }
+        check(out.get(0).startsWith("Everyone") && bobHalo && Files.readString(dir.resolve("cosmetics.json")).contains("Golden Halo"), "everyone wears it, under its display name");
+        core.command(null, new String[]{"everyone", "gold_halo", "off"});
+        // giveall / takeall
+        out = core.command(null, new String[]{"giveall", "alices_wings"});
+        check(out.get(0).contains("player(s) online") && Files.readString(dir.resolve("grants.json")).contains("alices_wings"), "giveall: " + out);
+        core.command(null, new String[]{"takeall", "alices_wings"});
+        // a world with cosmetics off: nothing shows on players there, and they're told their own are off
+        f.take(alice); f.take(bob);
+        core.command(null, new String[]{"set", "worlds_off", "the_nether,", "arena"});
+        f.worlds.put(alice, "minecraft:the_nether");
+        for (int i = 0; i < 20; i++) core.tick();
+        boolean aliceBare = false, aliceTold = false;
+        for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(alice) && x.worn().isEmpty()) aliceBare = true; }
+        for (byte[] m : f.take(alice)) if (NetProtocol.type(m) == NetProtocol.S_WELCOME && !NetProtocol.readWelcome(m).ownAllowed()) aliceTold = true;
+        check(aliceBare && aliceTold, "cosmetics off in a listed world (namespace optional)");
+        check(ServerCore.sameWorld("minecraft:the_nether", "the_nether") && ServerCore.sameWorld("world_nether", "WORLD_NETHER") && !ServerCore.sameWorld("minecraft:overworld", "the_nether"), "world names match with or without the namespace");
+        f.worlds.put(alice, "minecraft:overworld");
+        for (int i = 0; i < 20; i++) core.tick();
+        core.command(null, new String[]{"set", "worlds_off", "-"});
+        check(core.ownAllowed(alice), "back in a normal world, own cosmetics are allowed again");
+        // upload rules: too many layers, particles
+        Path up = dir.resolve("uploads/" + oh + ".zip");
+        var bo2 = new java.io.ByteArrayOutputStream();
+        try (var z = new java.util.zip.ZipOutputStream(bo2)) {
+            z.putNextEntry(new java.util.zip.ZipEntry("outfit.json"));
+            z.write("{\"format\":\"rainium-outfit-1\",\"config\":{\"layers\":[{\"label\":\"a\"},{\"label\":\"b\",\"particles\":{}},{\"label\":\"c\"}]}}".getBytes());
+            z.closeEntry();
+        }
+        byte[] three = bo2.toByteArray();
+        String th = NetProtocol.hash(three);
+        core.received(alice, NetProtocol.outfit(new NetProtocol.Outfit(th, three.length)));
+        for (byte[] p2 : NetProtocol.split(NetProtocol.C_PART, th, three)) core.received(alice, p2);
+        core.tick();
+        check(core.shape(th) != null && core.shape(th).layers() == 3 && core.shape(th).particles(), "an outfit's layers and particles are read");
+        f.take(alice); f.take(bob);
+        core.command(null, new String[]{"set", "own_particles", "false"});
+        core.tick();
+        boolean noOwn = false, ruleTold = false;
+        for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(alice) && x.worn().stream().noneMatch(wn -> wn.kind() == NetProtocol.KIND_OWN)) noOwn = true; }
+        for (byte[] m : f.take(alice)) if (NetProtocol.type(m) == NetProtocol.S_NOTICE && NetProtocol.readNotice(m).text().contains("particle")) ruleTold = true;
+        check(noOwn && ruleTold, "own outfit with particles isn't shared when particles are off, and the player is told");
+        core.command(null, new String[]{"set", "own_particles", "true"});
+        core.command(null, new String[]{"set", "max_layers", "2"});
+        core.tick();
+        boolean noOwn2 = false;
+        for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(alice) && x.worn().stream().noneMatch(wn -> wn.kind() == NetProtocol.KIND_OWN)) noOwn2 = true; }
+        check(noOwn2, "more layers than max_layers isn't shared");
+        core.command(null, new String[]{"set", "max_layers", "64"});
+        core.tick();
+        boolean back = false;
+        for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(alice) && x.worn().stream().anyMatch(wn -> wn.kind() == NetProtocol.KIND_OWN)) back = true; }
+        check(back, "within the rules it's shared again");
+        // join message, log
+        core.command(null, new String[]{"set", "join_message", "Welcome", "to", "the", "server!"});
+        UUID dana = UUID.randomUUID(); f.names.put(dana, "Dana");
+        core.playerJoined(dana); core.rainiumJoined(dana); core.tick();
+        check(f.take(dana).stream().anyMatch(m -> { try { return NetProtocol.type(m) == NetProtocol.S_NOTICE && NetProtocol.readNotice(m).text().equals("Welcome to the server!"); } catch (Exception e) { return false; } }), "join message");
+        List<String> log = core.command(null, new String[]{"log"});
+        check(log.size() > 3 && log.get(log.size() - 1).contains("join_message") && Files.readString(dir.resolve("actions.log")).contains("everyone gold_halo on"), "actions are logged");
+        String st2 = core.adminState(List.of());
+        check(st2.contains("\"world\"") && st2.contains("\"everyone\"") && st2.contains("\"log\"") && st2.contains("\"layers\": 3"), "admin state has the new facts");
         // leaving clears
         core.playerLeft(alice); core.tick();
         boolean cleared = false;
         for (byte[] m : f.take(bob)) if (NetProtocol.type(m) == NetProtocol.S_WEARING) { var x = NetProtocol.readWearing(m); if (x.player().equals(alice) && x.worn().isEmpty()) cleared = true; }
         check(cleared, "a player leaving is cleared for others");
-        check(core.complete(new String[]{"gi"}).equals(List.of("give")) && core.complete(new String[]{"give", "Carl", "go"}).equals(List.of("gold_halo")), "completion");
+        check(core.complete(new String[]{"gi"}).equals(List.of("give", "giveall")) && core.complete(new String[]{"give", "Carl", "go"}).equals(List.of("gold_halo")), "completion");
         // garbage doesn't throw
         core.received(bob, new byte[]{3, 1, 2}); core.received(bob, new byte[0]); core.received(bob, new byte[]{99});
         System.out.println(fails == 0 ? "ALL PASSED" : fails + " FAILED");

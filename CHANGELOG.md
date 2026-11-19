@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.5
+
+More options for server admins, in the Server tab and as commands:
+- **Worlds with no cosmetics** (minigames, arenas...): nobody wears anything there, not even on their own screen. Cosmetics come back when they leave.
+- **Upload rules** for players' own outfits: the most layers, and whether particle layers are allowed. An outfit that breaks them isn't shared, and its owner is told why.
+- **Join message** for players with Rainium.
+- **Per cosmetic:** everyone wears it (players who join later too), the name players see in their red list, and give it to or take it from everyone online (`giveall`, `takeall`, `everyone`, `rename`).
+- **Per player:** the world they're in and how many layers their own outfit has.
+- **Recent actions:** who changed what, shown in the panel and with `/rainiumserver log`, and kept in `actions.log`.
+- Clients and servers need to be on 1.0.5 together, since a server now also reads the `world` for each player (the Paper plugin is updated too).
+
 ## 1.0.4
 
 - **Server tab (admin panel)** in the editor for server admins (`rainium.admin` or operators): the mode, players' own cosmetics on or off, sharing by default, the largest outfit, send rate and upload cache, reloading, removing installed cosmetics, and per player: their own cosmetics on or off, give or take each cosmetic (ones from a permission are marked), and save their look as a new server cosmetic.

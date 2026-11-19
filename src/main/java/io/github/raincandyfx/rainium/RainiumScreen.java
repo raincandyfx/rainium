@@ -589,6 +589,7 @@ public final class RainiumScreen extends Screen {
     private boolean lockedOut;   // this frame: the server turned your own cosmetics off
     private String confirmRemove;   // the server cosmetic whose Remove was clicked once
     private String adminPlayer;     // the player picked in the Server tab (UUID)
+    private String adminCosmetic;   // the cosmetic picked in the Server tab
 
     private static final int RED_RIBBON = 0xD8A3122E, RED_RIBBON_HOVER = 0xE8D21E40, RED_LIGHT = 0xFFFF9AAE;
 
@@ -688,23 +689,47 @@ public final class RainiumScreen extends Screen {
         y = stepper(g, mx, my, x, y, w, "server_send_rate", rate + " KB", d -> ServerLink.runAdmin("set", "send_kb_per_tick", String.valueOf(Math.max(8, rate + d * 16))));
         exact(v -> ServerLink.runAdmin("set", "upload_cache_mb", String.valueOf((int) Math.round(v))));
         y = stepper(g, mx, my, x, y, w, "server_upload_cache", cache + " MB", d -> ServerLink.runAdmin("set", "upload_cache_mb", String.valueOf(Math.max(16, cache + d * 64))));
+        int layersMax = num(cfg, "max_layers");
+        exact(v -> ServerLink.runAdmin("set", "max_layers", String.valueOf((int) Math.round(v))));
+        y = stepper(g, mx, my, x, y, w, "server_max_layers", String.valueOf(layersMax), d -> ServerLink.runAdmin("set", "max_layers", String.valueOf(Math.max(1, layersMax + d * 4))));
+        boolean particles = flag(cfg, "own_particles");
+        y = toggle(g, mx, my, x, y, w, "server_own_particles", particles, () -> ServerLink.runAdmin("set", "own_particles", String.valueOf(!particles)));
+        List<String> off = new ArrayList<>();
+        for (Object o : list(cfg, "cosmetics_off_in_worlds")) off.add(String.valueOf(o));
+        y = textRow(g, mx, my, x, y, w, "server_worlds_off", String.join(", ", off), Lang.t("value.none"), v -> ServerLink.runAdmin("set", "worlds_off", v.isBlank() ? "-" : v));
+        List<String> known = new ArrayList<>();
+        for (Object o : list(st, "worlds")) known.add(String.valueOf(o));
+        if (!known.isEmpty()) y = wrapped(g, x, y, w, Lang.t("server.worlds_known", String.join(", ", known)), FAINT) + 3;
+        y = textRow(g, mx, my, x, y, w, "server_join_message", str(cfg, "join_message"), Lang.t("value.none"), v -> ServerLink.runAdmin("set", "join_message", v.isBlank() ? "-" : v));
         y = secondaryButton(g, mx, my, x, y, w, Lang.t("button.server_reload"), () -> ServerLink.runAdmin("reload"));
 
-        // the installed cosmetics
+        // the installed cosmetics: pick one, then what's done with it
         y = section(g, x, y + 4, w, "server_cosmetics");
         List<?> cosmetics = list(st, "cosmetics");
         if (cosmetics.isEmpty()) y = wrapped(g, x, y, w, Lang.t("server.no_cosmetics"), FAINT) + 4;
-        for (Object c : cosmetics) {
+        else {
+            int ci = 0;
+            for (int i = 0; i < cosmetics.size(); i++) if (str(cosmetics.get(i), "id").equals(adminCosmetic)) ci = i;
+            Object c = cosmetics.get(ci);
             String id = str(c, "id");
+            adminCosmetic = id;
+            List<String> cnames = new ArrayList<>();
+            for (Object o : cosmetics) cnames.add(str(o, "name") + (flag(o, "renamed") ? " (" + str(o, "id") + ")" : ""));
+            final int ciF = ci;
+            y = cycle(g, mx, my, x, y, w, "server_cosmetic", cnames.get(ci), cnames, ci, d -> { adminCosmetic = str(cosmetics.get(Math.floorMod(ciF + d, cosmetics.size())), "id"); confirmRemove = null; });
+            boolean all = flag(c, "everyone");
+            y = wrapped(g, x, y, w, Lang.t(all ? "server.cosmetic_everyone" : "server.cosmetic_line", num(c, "kb"), num(c, "given")), MUTED) + 3;
+            y = toggle(g, mx, my, x, y, w, "server_everyone", all, () -> ServerLink.runAdmin("everyone", id, all ? "off" : "on"));
+            y = textRow(g, mx, my, x, y, w, "server_shown_as", flag(c, "renamed") ? str(c, "name") : "", id, v -> ServerLink.runAdmin("rename", id, v.isBlank() ? "-" : v.trim()));
+            int half = (w - GAP) / 2;
+            iconButton(g, mx, my, x, y, half, Lang.t("button.server_give_all"), true, () -> ServerLink.runAdmin("giveall", id));
+            iconButton(g, mx, my, x + half + GAP, y, w - half - GAP, Lang.t("button.server_take_all"), true, () -> ServerLink.runAdmin("takeall", id));
+            y += ROW + GAP;
             boolean armed = id.equals(confirmRemove);
-            int bw = 54;
-            g.text(font, styled(fitStrong(id, w - bw - 8), true, true), x, y + 1, RED_LIGHT, false);
-            g.text(font, body(fit(Lang.t("server.cosmetic_line", num(c, "kb"), num(c, "given")), w - bw - 8)), x, y + 11, FAINT, false);
-            iconButton(g, mx, my, x + w - bw, y + 2, bw, Lang.t(armed ? "button.server_remove_sure" : "button.server_remove"), true, () -> {
+            y = secondaryButton(g, mx, my, x, y, w, Lang.t(armed ? "button.server_remove_sure" : "button.server_remove", str(c, "name")), () -> {
                 if (armed) { confirmRemove = null; ServerLink.runAdmin("remove", id); }
                 else confirmRemove = id;
             });
-            y += 24;
         }
 
         // the players online
@@ -720,7 +745,8 @@ public final class RainiumScreen extends Screen {
         final int curF = cur;
         y = cycle(g, mx, my, x, y, w, "server_player", names.get(cur), names, cur, d -> adminPlayer = str(players.get(Math.floorMod(curF + d, players.size())), "uuid"));
         String name = str(pl, "name");
-        y = wrapped(g, x, y, w, Lang.t("server.own." + str(pl, "own")), MUTED) + 3;
+        y = wrapped(g, x, y, w, Lang.t("server.own." + str(pl, "own")), MUTED) + 1;
+        y = wrapped(g, x, y, w, Lang.t("server.player_facts", str(pl, "world"), at(pl, "layers") == null ? "—" : String.valueOf(num(pl, "layers"))), FAINT) + 3;
         boolean locked = flag(pl, "locked");
         y = toggle(g, mx, my, x, y, w, "server_player_own", !locked, () -> ServerLink.runAdmin(locked ? "unlock" : "lock", name));
         List<?> given = list(pl, "given"), byPerm = list(pl, "by_permission");
@@ -745,6 +771,13 @@ public final class RainiumScreen extends Screen {
         if (!said.isEmpty()) {
             y += 4;
             for (Object line : said) y = wrapped(g, x, y, w, String.valueOf(line), MUTED) + 1;
+        }
+
+        // recent admin actions, by anyone
+        List<?> log = list(st, "log");
+        if (!log.isEmpty()) {
+            y = section(g, x, y + 6, w, "server_log");
+            for (int i = log.size() - 1; i >= 0; i--) y = wrapped(g, x, y, w, String.valueOf(log.get(i)), FAINT) + 1;
         }
         return y;
     }

@@ -134,4 +134,9 @@ public final class RainiumPaper extends JavaPlugin implements Listener, PluginMe
     @Override public void info(String msg) { getLogger().info(msg.replace("[rainium] ", "")); }
     @Override public void warn(String msg) { getLogger().warning(msg.replace("[rainium] ", "")); }
     @Override public String serverName() { return "Paper"; }
+
+    @Override public String world(UUID u) {
+        Player p = getServer().getPlayer(u);
+        return p == null ? "" : p.getWorld().getName();
+    }
 }
