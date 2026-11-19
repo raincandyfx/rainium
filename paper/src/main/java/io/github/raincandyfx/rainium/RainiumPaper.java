@@ -109,11 +109,6 @@ public final class RainiumPaper extends JavaPlugin implements Listener, PluginMe
         return p != null && p.isOp();
     }
 
-    @Override public void tell(UUID u, String text) {
-        Player p = getServer().getPlayer(u);
-        if (p != null) p.sendMessage(text);
-    }
-
     @Override public String name(UUID u) {
         Player p = getServer().getPlayer(u);
         return p == null ? null : p.getName();

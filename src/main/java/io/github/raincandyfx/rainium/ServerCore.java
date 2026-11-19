@@ -38,7 +38,6 @@ public final class ServerCore {
         /** TRUE or FALSE when a permissions system decided this node for the player, null when none did. */
         Boolean permission(UUID player, String node);
         boolean isOp(UUID player);
-        void tell(UUID player, String text);
         String name(UUID player);
         /** An online player by name (or UUID text), or null. */
         UUID find(String nameOrUuid);
@@ -137,7 +136,6 @@ public final class ServerCore {
 
     public ServerCore(Platform platform) { this.p = platform; }
 
-    public Config config() { return config; }
     public Collection<Cosmetic> cosmetics() { return cosmetics.values(); }
 
     // ------------------------------------------------------------------ files

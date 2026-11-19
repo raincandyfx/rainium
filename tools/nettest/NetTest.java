@@ -14,12 +14,11 @@ public class NetTest {
 
     static final class Fake implements ServerCore.Platform {
         final Path dir; final Map<UUID, List<byte[]>> sent = new HashMap<>(); final Map<String, Boolean> perms = new HashMap<>();
-        final Map<UUID, String> names = new HashMap<>(); final Set<UUID> ops = new HashSet<>(); final List<String> told = new ArrayList<>();
+        final Map<UUID, String> names = new HashMap<>(); final Set<UUID> ops = new HashSet<>();
         Fake(Path d) { dir = d; }
         public void send(UUID p, byte[] m) { sent.computeIfAbsent(p, k -> new ArrayList<>()).add(m); }
         public Boolean permission(UUID p, String node) { return perms.get(p + " " + node); }
         public boolean isOp(UUID p) { return ops.contains(p); }
-        public void tell(UUID p, String t) { told.add(t); }
         public String name(UUID p) { return names.get(p); }
         public UUID find(String n) { for (var e : names.entrySet()) if (e.getValue().equalsIgnoreCase(n)) return e.getKey(); return null; }
         public Collection<String> onlineNames() { return names.values(); }

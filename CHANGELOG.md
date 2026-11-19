@@ -1,6 +1,33 @@
 # Changelog
 
-## 1.0.5
+## 1.1.0
+
+Rainium works in multiplayer now, through a server install, and lyrics can scatter around your crosshair. This release collects everything added since 1.0.0 (the 1.0.1 to 1.0.5 dev builds).
+
+### Multiplayer: Rainium on the server
+
+Put Rainium on the server too and players with Rainium see each other's cosmetics. Players without it see nothing different, and servers without it work as before.
+
+- **Fabric servers** use the same jar as players. **Paper and Spigot servers** use the new `rainium-paper` plugin, attached to every release.
+- **Each player wears only what's attached to them:** the layers they show on themselves, plus cosmetics the server gives them. Layers you set to show on other people don't draw on them on these servers.
+- **Two modes:** players' own cosmetics and the server's (`own`), or only the server's (`server`).
+- **Server cosmetics:** Rainium zips (a folder's **Export as zip**) in the server's `cosmetics/` folder, or a look saved from what a player wears. They're given to players, to everyone, or by permission, with a display name of your choice.
+- **In the editor**, cosmetics the server gives you appear under your own layers in their own red **From this server** part of the list. They're the server's, so they can't be edited there.
+- **Servers can turn players' own cosmetics off** while they're on it: for everyone, for one player, or in chosen worlds (minigames, arenas...). They then don't show at all, even on the player's own screen, and the editor shows them locked with a red padlock. The server can't see, change or delete them, and they show again on other servers.
+- **Rules for players' own outfits:** the largest size, the most layers, and whether particle layers are allowed. An outfit that breaks them isn't shared, and its owner is told why.
+- **LuckPerms** (or any permissions plugin): `rainium.admin` manages Rainium, `rainium.upload` shares your own cosmetics, `rainium.cosmetic.<id>` wears a server cosmetic (for a rank, say). It works on Fabric through LuckPerms' permissions API, and on Paper through Bukkit permissions. Changes show within about ten seconds.
+- **The Server tab (admin panel)** in the editor, for admins: the mode, players' own cosmetics on or off, sharing by default, the largest outfit, the most layers, particles, worlds with no cosmetics, a join message, send rate and upload cache, reloading; per cosmetic: everyone wears it, the name players see, give it to or take it from everyone online, remove it; per player: their world and outfit, their own cosmetics on or off, give or take each cosmetic (ones from a permission are marked), save their look as a new cosmetic; and recent admin actions.
+- **Commands:** `/rainiumserver mode`, `list`, `give`, `take`, `giveall`, `takeall`, `everyone`, `rename`, `install`, `remove`, `wearing`, `lock`, `unlock`, `set`, `log`, `reload`. Every admin action is also kept in `actions.log`.
+- **Light on the network:** outfits are sent once, by hash, in small parts with size limits on both sides, and kept in a cache so an unchanged look isn't sent again. Zips from other players are size-checked and only Rainium's own formats are read.
+- **Privacy:** on a server that runs Rainium in `own` mode, the layers you show on yourself are sent to that server and the players there. Who else your layers show on is never sent, and nothing is sent on servers without Rainium.
+
+### Lyrics
+
+- **Scatter placement:** a third mode next to Fixed and Follow opponent. Each word appears on its own as it's sung, near your crosshair and facing you with a slight random tilt, then fades a second or two later. Each takes the roomiest of 28 tries in one of four columns across the view, so words don't pile up. There's no video in this mode, so it costs little. **Move with me** works in it.
+- **Whole lines:** a switch in Scatter that scatters a line at a time instead, with the video: each line is the usual panel in a new spot near your crosshair, clear of the last one.
+- **Keep out of walls** (on by default, all modes): a spot behind a wall is pulled in front of it and shrunk to look the same size, and one buried in the ground is lifted out. In Follow opponent mode it stays on the same line of sight to the opponent.
+
+## 1.0.5 (dev build)
 
 More options for server admins, in the Server tab and as commands:
 - **Worlds with no cosmetics** (minigames, arenas...): nobody wears anything there, not even on their own screen. Cosmetics come back when they leave.
@@ -11,7 +38,7 @@ More options for server admins, in the Server tab and as commands:
 - **Recent actions:** who changed what, shown in the panel and with `/rainiumserver log`, and kept in `actions.log`.
 - Works with 1.0.4 clients and servers (the protocol is unchanged); the new panel rows need 1.0.5 on the admin's side.
 
-## 1.0.4
+## 1.0.4 (dev build)
 
 - **Server tab (admin panel)** in the editor for server admins (`rainium.admin` or operators): the mode, players' own cosmetics on or off, sharing by default, the largest outfit, send rate and upload cache, reloading, removing installed cosmetics, and per player: their own cosmetics on or off, give or take each cosmetic (ones from a permission are marked), and save their look as a new server cosmetic.
 - **Server cosmetics in their own red part of the layer list** ("From this server"), under your own layers. They can't be edited there.
@@ -19,7 +46,7 @@ More options for server admins, in the Server tab and as commands:
 - New commands: `/rainiumserver lock|unlock <player>` and `/rainiumserver set <setting> <value>`.
 - The protocol changed: 1.0.4 clients and servers (and the Paper plugin) need to match.
 
-## 1.0.3
+## 1.0.3 (dev build)
 
 - **Multiplayer through a server install.** Put Rainium on the server too (the same jar on a Fabric server, or the new `rainium-paper` plugin on Paper and Spigot), and players with Rainium see each other's cosmetics. Servers without it are unchanged.
   - Each player wears only what's attached to them: the layers they show on themselves, plus cosmetics the server gave them. Layers set to show on other people don't draw on them on these servers.
@@ -28,11 +55,11 @@ More options for server admins, in the Server tab and as commands:
   - **LuckPerms:** `rainium.admin`, `rainium.upload` and `rainium.cosmetic.<id>` (works on Fabric through LuckPerms' permissions API, and on Paper through Bukkit permissions). Changes show within about ten seconds.
   - Outfits are sent once, by hash, in small parts with size limits on both sides, and kept in a cache so an unchanged look isn't sent again.
 
-## 1.0.2
+## 1.0.2 (dev build)
 
 - **Scatter by whole line:** a switch in Scatter (**Whole lines**) that scatters a line at a time instead of a word at a time. Each line is the usual panel, with the video if it's on, put in a new spot near your crosshair (the roomiest of 28 tries, clear of the last line, up to 1.5 times **Distance** away), facing you with a slight tilt.
 
-## 1.0.1
+## 1.0.1 (dev build)
 
 - **Scatter placement for lyrics:** a third mode next to Fixed and Follow opponent. Each word of the song appears on its own, at the moment it is sung, near your crosshair and facing you with a slight random tilt, then fades a second or two later. Words go to four columns across the view (alternately a little above and below the middle), each at the best of 28 tries for the most clear space from the other words up at the same time, at a distance between **Distance** and twice that. There's no video in this mode, so it costs little. **Move with me** works in it.
 - **Keep out of walls** (on by default, all modes): a lyric spot behind a wall is pulled in front of it and made smaller so it looks the same size, one buried in the ground is lifted out, and in Follow opponent mode it stays on the same line of sight to the opponent.

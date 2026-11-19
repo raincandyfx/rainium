@@ -56,7 +56,7 @@ final class Lyrics {
     private static Vec3 lastEye;
     private static final Vector3f planeRight = new Vector3f(1, 0, 0), planeNormal = new Vector3f(0, 0, 1), planeUp = new Vector3f(0, 1, 0);
     private static double planeW, planeH;                  // blocks
-    private static double shiftShown, scaleShown = 1, alphaShown;
+    private static double shiftShown, alphaShown;
     private static long offViewNanos, lastFrameNanos;
     // the one you're fighting
     private static int opponentId = -1;

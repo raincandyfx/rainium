@@ -101,11 +101,6 @@ final class RainiumServerFabric implements ServerCore.Platform {
         return p != null && p.createCommandSourceStack().permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
     }
 
-    @Override public void tell(UUID u, String text) {
-        ServerPlayer p = player(u);
-        if (p != null) p.sendSystemMessage(Component.literal(text));
-    }
-
     @Override public String name(UUID u) {
         ServerPlayer p = player(u);
         return p == null ? null : p.getName().getString();
