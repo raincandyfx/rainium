@@ -9,7 +9,7 @@ More options for server admins, in the Server tab and as commands:
 - **Per cosmetic:** everyone wears it (players who join later too), the name players see in their red list, and give it to or take it from everyone online (`giveall`, `takeall`, `everyone`, `rename`).
 - **Per player:** the world they're in and how many layers their own outfit has.
 - **Recent actions:** who changed what, shown in the panel and with `/rainiumserver log`, and kept in `actions.log`.
-- Clients and servers need to be on 1.0.5 together, since a server now also reads the `world` for each player (the Paper plugin is updated too).
+- Works with 1.0.4 clients and servers (the protocol is unchanged); the new panel rows need 1.0.5 on the admin's side.
 
 ## 1.0.4
 
