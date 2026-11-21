@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
@@ -111,10 +112,8 @@ final class LyricsScatter {
             if (cx * fwd.x + cy * fwd.y + cz * fwd.z < 0.1) continue;   // behind you
             double k = p.scale * (1 - 0.35 * LyricsWords.easeOutCubic(out));   // shrinks as it goes
             List<String> shown = LyricsWords.typedRows(p.rows, LyricsWords.typed(p.line, pos));
-            PoseStack ps = new PoseStack();
-            ps.translate(cx, cy, cz);
-            ps.mulPose(p.facing);
-            ps.scale((float) k, (float) -k, (float) k);
+            PoseStack ps = new PoseStack();   // where it hangs, turned to face you, in font pixels (y down)
+            ps.mulPose(new Matrix4f().translation((float) cx, (float) cy, (float) cz).rotate(p.facing).scale((float) k, (float) -k, (float) k));
             int color = (a << 24) | rgb;
             float top = -p.rows.size() * 10 / 2f;
             for (int i = 0; i < p.rows.size(); i++) {
