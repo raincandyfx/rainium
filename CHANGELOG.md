@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+
+- **Scatter lyrics are typed lines now.** Each line appears on its own near your crosshair in Minecraft's font with a soft shadow, wrapped into short rows and typed out letter by letter in step with the singing. It stays where it appeared, faces you upright, and shrinks and fades when the next line starts, while the new one types in somewhere else. The default colour is a warm off-white; your text colour, size, opacity, float, **Through blocks**, **Keep out of walls** and **Move with me** still apply. The old word-by-word look is replaced.
+- **Whole lines (video)** is unchanged: it still scatters the lyric panel, with the video.
+
 ## 1.1.0
 
 Rainium works in multiplayer now, through a server install, and lyrics can scatter around your crosshair. This release collects everything added since 1.0.0 (the 1.0.1 to 1.0.5 dev builds).
