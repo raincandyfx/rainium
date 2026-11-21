@@ -249,7 +249,10 @@ final class LayerConfig {
     /** Settings > Music and lyrics. Lyrics are off until switched on; looking lyrics up online is off until allowed. */
     static final class LyricsSettings {
         /** Scatter by word: each word on its own, no video. (Scatter by line is the ordinary panel, put in a scattered spot.) */
-        boolean words() { return placement == 2 && !scatterLines; }
+        boolean words() { return placement == 2 && scatterStyle != SCATTER_VIDEO; }
+
+        static final int SCATTER_TYPED = 0, SCATTER_WORDS = 1, SCATTER_VIDEO = 2;
+        static final String[] SCATTER_STYLES = {"typed", "words", "video"};
 
         boolean enabled = false;
         boolean video = true;            // Music video (a lyric video, drawn in Java) or Simple
@@ -265,7 +268,15 @@ final class LayerConfig {
         double opacityPct = 100;
         double floatPct = 100;           // how much it bobs; 0 holds still
         boolean keepOnScreen = true;     // shrink to fit the screen
-        boolean scatterLines = false;    // Scatter by whole lines (the picture or plain text) instead of by word
+        int scatterStyle = SCATTER_TYPED;   // Scatter: typed lines (Lyrics+ style), single words (as in 1.1.0), or the panel with the video
+        int scatterColor = LyricsWords.COLOR_PEACH;   // Scatter's text colour (LyricsWords.COLOR_*)
+        boolean scatterTyping = true;    // typed lines appear a letter at a time (off: the whole line at once)
+        boolean scatterShrink = true;    // lines and words shrink as they go
+        boolean scatterShadow = true;    // typed lines have a drop shadow
+        boolean scatterFaceMe = false;   // typed lines keep turning to face you (off: they face where you were)
+        int scatterRowChars = 18;        // the most characters in a row of a typed line
+        double scatterSpreadPct = 100;   // how far from the crosshair lines and words land
+        double scatterFadeSecs = 0.8;    // how long a line or word takes to go
         boolean wallSafe = true;         // pulled in front of walls and lifted out of the ground, never inside the scenery
         int sideMode = 0;                // Fixed: 0 alternate left and right, 1 always left, 2 always right
         double gapPct = 0;               // Follow: extra space between the opponent and the panel, % of half the screen width
@@ -433,7 +444,16 @@ final class LayerConfig {
             if (lm.get("float_percent") instanceof Number n) ly.floatPct = n.doubleValue();
             if (lm.get("fit_to_screen") instanceof Boolean b) ly.keepOnScreen = b;
             if (lm.get("keep_out_of_walls") instanceof Boolean b) ly.wallSafe = b;
-            if (lm.get("scatter_lines") instanceof Boolean b) ly.scatterLines = b;
+            if (Boolean.TRUE.equals(lm.get("scatter_lines"))) ly.scatterStyle = LyricsSettings.SCATTER_VIDEO;   // before 1.1.2
+            if (lm.get("scatter_style") instanceof String st) for (int i = 0; i < LyricsSettings.SCATTER_STYLES.length; i++) if (LyricsSettings.SCATTER_STYLES[i].equalsIgnoreCase(st)) ly.scatterStyle = i;
+            if (lm.get("scatter_color") instanceof String sc) for (int i = 0; i < LyricsWords.COLOR_KEYS.length; i++) if (LyricsWords.COLOR_KEYS[i].equalsIgnoreCase(sc)) ly.scatterColor = i;
+            if (lm.get("scatter_typing") instanceof Boolean b) ly.scatterTyping = b;
+            if (lm.get("scatter_shrink") instanceof Boolean b) ly.scatterShrink = b;
+            if (lm.get("scatter_shadow") instanceof Boolean b) ly.scatterShadow = b;
+            if (lm.get("scatter_face_me") instanceof Boolean b) ly.scatterFaceMe = b;
+            if (lm.get("scatter_row_chars") instanceof Number n) ly.scatterRowChars = Math.max(6, Math.min(60, n.intValue()));
+            if (lm.get("scatter_spread_percent") instanceof Number n) ly.scatterSpreadPct = Math.max(0, n.doubleValue());
+            if (lm.get("scatter_fade_seconds") instanceof Number n) ly.scatterFadeSecs = Math.max(0.05, n.doubleValue());
             if (lm.get("side_mode") instanceof String sm) ly.sideMode = sm.equalsIgnoreCase("left") ? 1 : sm.equalsIgnoreCase("right") ? 2 : 0;
             if (lm.get("gap_percent") instanceof Number n) ly.gapPct = n.doubleValue();
             if (lm.get("roll_degrees") instanceof Number n) ly.rollDeg = n.doubleValue();
@@ -667,7 +687,15 @@ final class LayerConfig {
         ly.put("float_percent", lyrics.floatPct);
         ly.put("fit_to_screen", lyrics.keepOnScreen);
         ly.put("keep_out_of_walls", lyrics.wallSafe);
-        ly.put("scatter_lines", lyrics.scatterLines);
+        ly.put("scatter_style", LyricsSettings.SCATTER_STYLES[Math.floorMod(lyrics.scatterStyle, 3)]);
+        ly.put("scatter_color", LyricsWords.COLOR_KEYS[Math.floorMod(lyrics.scatterColor, LyricsWords.COLOR_KEYS.length)]);
+        ly.put("scatter_typing", lyrics.scatterTyping);
+        ly.put("scatter_shrink", lyrics.scatterShrink);
+        ly.put("scatter_shadow", lyrics.scatterShadow);
+        ly.put("scatter_face_me", lyrics.scatterFaceMe);
+        ly.put("scatter_row_chars", lyrics.scatterRowChars);
+        ly.put("scatter_spread_percent", lyrics.scatterSpreadPct);
+        ly.put("scatter_fade_seconds", lyrics.scatterFadeSecs);
         ly.put("side_mode", lyrics.sideMode == 1 ? "left" : lyrics.sideMode == 2 ? "right" : "alternate");
         ly.put("gap_percent", lyrics.gapPct);
         ly.put("roll_degrees", lyrics.rollDeg);

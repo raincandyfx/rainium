@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+- **Scatter styles:** pick **Typed lines** (the Lyrics+-style look from 1.1.1), **Words** (Scatter as it was in 1.1.0, back again) or **Video** (the lyric panel, what Whole lines was). Your old Whole lines setting carries over.
+- **Scatter options:** colour (peach, white, your custom text colour, a slow rainbow, or a soft colour per line), spread, fade time and shrink as it goes; for typed lines also type out (or show the whole line at once), shadow, keep facing me and characters per row.
+- **Typed lines are closer to Lyrics+:** a little smaller, landing more freely around the crosshair, and an old line now shrinks to about half as it fades.
+
 ## 1.1.1
 
 - **Scatter lyrics are typed lines now.** Each line appears on its own near your crosshair in Minecraft's font with a soft shadow, wrapped into short rows and typed out letter by letter in step with the singing. It stays where it appeared, faces you upright, and shrinks and fades when the next line starts, while the new one types in somewhere else. The default colour is a warm off-white; your text colour, size, opacity, float, **Through blocks**, **Keep out of walls** and **Move with me** still apply. The old word-by-word look is replaced.

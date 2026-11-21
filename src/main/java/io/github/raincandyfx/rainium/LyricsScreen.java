@@ -162,7 +162,27 @@ public final class LyricsScreen extends Screen {
         if (ly.placement != 2) y = number(g, mx, my, x, y, w, "lyrics_roll", ly.rollDeg, " °", v -> { ly.rollDeg = v; save(); });
         if (ly.placement != 2) y = cycle(g, mx, my, x, y, w, "lyrics_side_mode", Lang.t("value.lyrics_side_mode." + ly.sideMode), d -> { ly.sideMode = Math.floorMod(ly.sideMode + d, 3); save(); });
         if (ly.placement == 2) {
-            y = toggle(g, mx, my, x, y, w, "lyrics_scatter_lines", ly.scatterLines, () -> { ly.scatterLines = !ly.scatterLines; save(); });
+            String[] styles = LayerConfig.LyricsSettings.SCATTER_STYLES;
+            int st = Math.floorMod(ly.scatterStyle, styles.length);
+            y = cycle(g, mx, my, x, y, w, "lyrics_scatter_style", Lang.t("value.lyrics_scatter_style." + styles[st]),
+                d -> { ly.scatterStyle = Math.floorMod(ly.scatterStyle + d, styles.length); save(); });
+            y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_style_note." + styles[st]), FAINT) + 2;
+            if (st != LayerConfig.LyricsSettings.SCATTER_VIDEO) {
+                String[] colors = LyricsWords.COLOR_KEYS;
+                int ci = Math.floorMod(ly.scatterColor, colors.length);
+                y = cycle(g, mx, my, x, y, w, "lyrics_scatter_color", Lang.t("value.lyrics_scatter_color." + colors[ci]),
+                    d -> { ly.scatterColor = Math.floorMod(ly.scatterColor + d, colors.length); save(); });
+                if (ci == LyricsWords.COLOR_CUSTOM) y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_custom_note"), FAINT) + 2;
+                if (st == LayerConfig.LyricsSettings.SCATTER_TYPED) {
+                    y = toggle(g, mx, my, x, y, w, "lyrics_scatter_typing", ly.scatterTyping, () -> { ly.scatterTyping = !ly.scatterTyping; save(); });
+                    y = toggle(g, mx, my, x, y, w, "lyrics_scatter_shadow", ly.scatterShadow, () -> { ly.scatterShadow = !ly.scatterShadow; save(); });
+                    y = toggle(g, mx, my, x, y, w, "lyrics_scatter_face", ly.scatterFaceMe, () -> { ly.scatterFaceMe = !ly.scatterFaceMe; save(); });
+                    y = number(g, mx, my, x, y, w, "lyrics_scatter_row", ly.scatterRowChars, "", v -> { ly.scatterRowChars = (int) Math.max(6, Math.min(60, Math.round(v))); save(); });
+                }
+                y = toggle(g, mx, my, x, y, w, "lyrics_scatter_shrink", ly.scatterShrink, () -> { ly.scatterShrink = !ly.scatterShrink; save(); });
+                y = number(g, mx, my, x, y, w, "lyrics_scatter_spread", ly.scatterSpreadPct, " %", v -> { ly.scatterSpreadPct = Math.max(0, v); save(); });
+                y = number(g, mx, my, x, y, w, "lyrics_scatter_fade", ly.scatterFadeSecs, " s", v -> { ly.scatterFadeSecs = Math.max(0.05, v); save(); });
+            }
             y = number(g, mx, my, x, y, w, "lyrics_distance", ly.distance, " m", v -> { ly.distance = Math.max(0.1, v); save(); });
             y = toggle(g, mx, my, x, y, w, "lyrics_follow_me", ly.followPlayer, () -> { ly.followPlayer = !ly.followPlayer; save(); });
         } else if (ly.placement == 0) {

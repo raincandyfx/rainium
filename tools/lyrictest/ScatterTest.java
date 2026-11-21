@@ -45,8 +45,21 @@ public class ScatterTest {
         check(LyricsWords.typedRows(r2, 17).equals(List.of("Look me in my", "per")), "typed rows 17: " + LyricsWords.typedRows(r2, 17));
         check(LyricsWords.typedRows(r2, 99).equals(r2), "all typed");
 
-        // colours and placement maths still behave
+        // colours
         check(LyricsWords.colorOf("#ff8800", 1) == 0xFF8800 && LyricsWords.colorOf("", 0xFFF2D8) == 0xFFF2D8, "colour");
+        check(LyricsWords.tint(LyricsWords.COLOR_PEACH, "", 0, 0) == LyricsWords.PEACH && LyricsWords.tint(LyricsWords.COLOR_WHITE, "#123456", 3, 9) == 0xFFFFFF, "peach and white");
+        check(LyricsWords.tint(LyricsWords.COLOR_CUSTOM, "#ff0000", 0, 0) == 0xFF0000 && LyricsWords.tint(LyricsWords.COLOR_CUSTOM, "", 0, 0) == LyricsWords.PEACH, "custom, peach when unset");
+        check(LyricsWords.tint(LyricsWords.COLOR_RAINBOW, "", 0, 0) != LyricsWords.tint(LyricsWords.COLOR_RAINBOW, "", 0, 4), "rainbow moves with time");
+        check(LyricsWords.tint(LyricsWords.COLOR_PER_LINE, "", 1, 0) != LyricsWords.tint(LyricsWords.COLOR_PER_LINE, "", 2, 0) && LyricsWords.tint(LyricsWords.COLOR_PER_LINE, "", 2, 0) == LyricsWords.tint(LyricsWords.COLOR_PER_LINE, "", 2, 50), "per line: differs by line, steady in time");
+        for (int m = 0; m < LyricsWords.COLOR_KEYS.length; m++) { int c = LyricsWords.tint(m, "", 5, 3.3); check((c & 0xFF000000) == 0 && Math.max(c >> 16 & 255, Math.max(c >> 8 & 255, c & 255)) > 200, "colour " + m + " is light and has no alpha bits"); }
+        check(LyricsWords.typedRows(r2, Integer.MAX_VALUE).equals(r2), "typing off shows the whole line");
+        // the Words style's helpers are back
+        var w = new LyricsLrc.Word("hey", 10, 10.1);
+        check(Math.abs(LyricsWords.fadeAt(w) - 11.2) < 1e-9, "word life");
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(LyricsWords.ROW_W, LyricsWords.ROW_H, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        var gw = img.createGraphics(); float[] ink = LyricsWords.drawWord(gw, "Hi", 0, 0xFFFFFF); gw.dispose();
+        check(ink[1] > ink[0], "word picture");
+        // placement maths
         double[] c0 = LyricsWords.column(0, 14, 8), c1 = LyricsWords.column(1, 14, 8);
         check(c0[0] == -14 && c1[1] < 0 && c0[1] > 0, "columns");
         var spots = List.of(new LyricsWords.Spot(1, 3, 0, 0, 5, 3));

@@ -86,7 +86,7 @@ final class Lyrics {
         track = t;
         if (t == null) {
             status = NowPlaying.problem != null ? Status.FAILED : Status.NOTHING_PLAYING;
-            if (trackKey != null) { trackKey = null; lrc = null; LyricsVideo.clear(); LyricsText.reset(); LyricsScatter.reset(); lastScatter = null; }
+            if (trackKey != null) { trackKey = null; lrc = null; LyricsVideo.clear(); LyricsText.reset(); LyricsScatter.reset(); LyricsScatterWords.reset(); lastScatter = null; }
             return;
         }
         String key = t.key();
@@ -96,7 +96,7 @@ final class Lyrics {
             anchorLine = -2;
             LyricsVideo.clear();
             LyricsText.reset();
-            LyricsScatter.reset(); lastScatter = null;
+            LyricsScatter.reset(); LyricsScatterWords.reset(); lastScatter = null;
             if (s.chat && !t.player().equals("demo")) say(mc, Component.translatable("rainium.lyrics.now_playing", t.title(), t.artist()));
             if (t.player().equals("demo")) {
                 lrc = LyricsLrc.parse(LyricsLrc.DEMO, LyricsLrc.DEMO_LENGTH);
@@ -126,7 +126,7 @@ final class Lyrics {
         if (lrc == null) return;
         double now = t.positionNow() - s.offset;
         if (s.words()) {   // Scatter by word: words, not a picture
-            LyricsScatter.update(lrc, now, s);
+            if (s.scatterStyle == LayerConfig.LyricsSettings.SCATTER_WORDS) LyricsScatterWords.update(lrc, now, s);
         } else if (s.video) {
             String look = s.style + "|" + s.seed + "|" + s.motifs + "|" + s.newEffects + "|" + s.look().key();
             long seed = (s.seed * 1_000_003L + key.hashCode()) & 0x3FFFFFFFL;
@@ -144,7 +144,7 @@ final class Lyrics {
         NowPlaying.stopDemo();
         LyricsVideo.close();
         LyricsText.reset();
-        LyricsScatter.reset(); lastScatter = null;
+        LyricsScatter.reset(); LyricsScatterWords.reset(); lastScatter = null;
         trackKey = null; lrc = null; track = null; pending = null;
     }
 
@@ -181,7 +181,9 @@ final class Lyrics {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         if (s.words()) {   // Scatter by word: each word on its own
-            LyricsScatter.submit(collector, s, lrc, track == null ? 0 : track.positionNow() - s.offset);
+            double at = track == null ? 0 : track.positionNow() - s.offset;
+            if (s.scatterStyle == LayerConfig.LyricsSettings.SCATTER_WORDS) LyricsScatterWords.submit(collector, s, lrc, at);
+            else LyricsScatter.submit(collector, s, lrc, at);
             return;
         }
         if (s.video && !LyricsVideo.has()) LyricsVideo.prepare();   // the first picture is wanted whatever the view
