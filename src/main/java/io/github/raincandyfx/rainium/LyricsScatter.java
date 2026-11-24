@@ -99,7 +99,7 @@ final class LyricsScatter {
         pieces.removeIf(p -> pos > p.goneAt() + fadeSecs || pos < p.line.t() - 1.5
             || sq(p.x - eye[0]) + sq(p.y - eye[1]) + sq(p.z - eye[2]) > 4096);
 
-        double opacity = Math.max(0, Math.min(1, s.opacityPct / 100.0));
+        double opacity = Math.max(0, Math.min(1, s.opacityPct / 100.0)) * Lyrics.shown();
         double bob = Math.max(0, Math.min(2, s.floatPct / 100.0));
         double seconds = System.nanoTime() / 1.0e9;
         Font.DisplayMode mode = s.throughBlocks ? Font.DisplayMode.SEE_THROUGH : Font.DisplayMode.NORMAL;

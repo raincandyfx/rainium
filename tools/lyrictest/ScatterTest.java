@@ -92,6 +92,21 @@ public class ScatterTest {
         double[] pulled = LyricsWorld.inFront((x, y, z) -> x > 5 && x < 6, eye, new double[]{9, 10, 0});
         check(pulled[0] < 5, "walls still pull lines in front");
 
+        // unsynced lyrics, paced over the song
+        String unsynced = "[Verse 1]\nfirst line here\nsecond line is a bit longer than that\n\nthird after a pause\n\n";
+        LyricsLrc pc = LyricsLrc.paced(unsynced, 180);
+        check(pc != null && pc.estimated && pc.lines.size() == 3, "paced: three sung lines");
+        check(pc.lines.get(0).t() > 5 && pc.lines.get(0).t() <= 14.01, "paced: a quiet start");
+        check(pc.lines.get(2).end() <= 180 && pc.lines.get(2).end() > 150, "paced: ends before the song does");
+        check(pc.lines.get(1).end() - pc.lines.get(1).t() > pc.lines.get(0).end() - pc.lines.get(0).t(), "paced: longer lines get longer");
+        check(pc.lines.get(2).t() > pc.lines.get(1).end(), "paced: a blank row is a pause");
+        LyricsLrc pu = LyricsLrc.paced("a\nb\nc", 0);
+        check(pu != null && pu.lines.size() == 3 && pu.lines.get(2).t() > pu.lines.get(1).t(), "paced: no length still works");
+        check(LyricsLrc.paced("\n\n[Chorus]\n", 100) == null && LyricsLrc.paced(null, 100) == null, "paced: nothing to sing");
+        check(!LyricsLrc.parse(LyricsLrc.DEMO, 15).estimated, "synced lyrics are not estimated");
+        LyricsLrc pc2 = LyricsLrc.paced("[00:12.00]already timed?", 60);
+        check(pc2 != null && pc2.lines.get(0).text().equals("already timed?"), "paced: stray time tags dropped");
+
         System.out.println(fails == 0 ? "ALL PASSED" : fails + " FAILED");
         System.exit(fails == 0 ? 0 : 1);
     }

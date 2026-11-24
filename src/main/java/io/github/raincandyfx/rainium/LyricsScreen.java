@@ -96,6 +96,7 @@ public final class LyricsScreen extends Screen {
         String problem = NowPlaying.problem;
         String line = !ly.enabled ? Lang.t("lyrics.off_note")
             : st == Lyrics.Status.FAILED && problem != null ? Lang.t("lyrics.problem." + problem)
+            : st == Lyrics.Status.SHOWING && Lyrics.estimated() ? Lang.t("lyrics.status.estimated", song)
             : Lang.t("lyrics.status." + st.name().toLowerCase(Locale.ROOT), song);
         y = wrapped(g, x, y, w, line, !ly.enabled ? FAINT : st == Lyrics.Status.SHOWING ? CYAN : st == Lyrics.Status.FAILED ? WARN : MUTED) + 3;
         y = toggle(g, mx, my, x, y, w, "lyrics_demo", ly.demo, () -> { ly.demo = !ly.demo; save(); });
@@ -106,7 +107,15 @@ public final class LyricsScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "lyrics_online", ly.online, () -> { ly.online = !ly.online; save(); });
         y = wrapped(g, x, y, w, Lang.t(ly.online ? "lyrics.online_on" : "lyrics.online_off"), FAINT) + 2;
         y = number(g, mx, my, x, y, w, "lyrics_offset", ly.offset, " s", v -> { ly.offset = (float) v; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_plain", ly.plainLyrics, () -> { ly.plainLyrics = !ly.plainLyrics; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_chat", ly.chat, () -> { ly.chat = !ly.chat; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_pause_fade", ly.pauseFade, () -> { ly.pauseFade = !ly.pauseFade; save(); });
+        String[] fights = LayerConfig.LyricsSettings.FIGHT_KEYS;
+        y = cycle(g, mx, my, x, y, w, "lyrics_fight", Lang.t("value.lyrics_fight." + fights[Math.floorMod(ly.fightMode, 3)]),
+            d -> { ly.fightMode = Math.floorMod(ly.fightMode + d, 3); save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_hide_hud", ly.hideWithGui, () -> { ly.hideWithGui = !ly.hideWithGui; save(); });
+        y = button(g, mx, my, x, y, w, Lang.t("button.lyrics_again"), () -> { Lyrics.retry(); say(Lang.t("msg.lyrics_again"), MUTED); });
+        y = wrapped(g, x, y, w, Lang.t("lyrics.keys_note"), FAINT) + 2;
         y = button(g, mx, my, x, y, w, Lang.t("button.lyrics_folder"), () -> {
             java.nio.file.Path d = assets.dir().resolve("lyrics");
             try { java.nio.file.Files.createDirectories(d); } catch (Exception ignored) {}
@@ -119,6 +128,7 @@ public final class LyricsScreen extends Screen {
 
     private int look(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {
         y = section(g, x, y, w, "section.lyrics_look");
+        if (ly.onScreen()) return wrapped(g, x, y, w, Lang.t("lyrics.look_screen_note"), FAINT) + 6;
         y = cycle(g, mx, my, x, y, w, "lyrics_mode", Lang.t("value.lyrics_mode." + (ly.video ? "video" : "simple")), d -> { ly.video = !ly.video; save(); });
         if (!ly.video) return y + 6;
         String[] ids = Lyrics.STYLES;
@@ -149,15 +159,17 @@ public final class LyricsScreen extends Screen {
         return y + 6;
     }
 
-    private static final String[] PLACEMENTS = {"fixed", "follow", "scatter"};
+    private static final String[] PLACEMENTS = LayerConfig.LyricsSettings.PLACEMENT_KEYS;
 
     private int placement(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {
         y = section(g, x, y, w, "section.lyrics_place");
-        y = cycle(g, mx, my, x, y, w, "lyrics_placement", Lang.t("value.lyrics_placement." + PLACEMENTS[Math.floorMod(ly.placement, 3)]),
-            d -> { ly.placement = Math.floorMod(ly.placement + d, 3); save(); });
-        y = wrapped(g, x, y, w, Lang.t("lyrics.placement_note." + PLACEMENTS[Math.floorMod(ly.placement, 3)]), FAINT) + 2;
+        int np = PLACEMENTS.length;
+        y = cycle(g, mx, my, x, y, w, "lyrics_placement", Lang.t("value.lyrics_placement." + PLACEMENTS[Math.floorMod(ly.placement, np)]),
+            d -> { ly.placement = Math.floorMod(ly.placement + d, np); save(); });
+        y = wrapped(g, x, y, w, Lang.t("lyrics.placement_note." + PLACEMENTS[Math.floorMod(ly.placement, np)]), FAINT) + 2;
         y = number(g, mx, my, x, y, w, "lyrics_size", ly.sizePct, " %", v -> { ly.sizePct = Math.max(0.1, v); save(); });
         y = number(g, mx, my, x, y, w, "lyrics_opacity", ly.opacityPct, " %", v -> { ly.opacityPct = v; save(); });
+        if (ly.onScreen()) return screen(g, mx, my, x, y, w, ly) + 6;
         y = number(g, mx, my, x, y, w, "lyrics_float", ly.floatPct, " %", v -> { ly.floatPct = v; save(); });
         if (ly.placement != 2) y = number(g, mx, my, x, y, w, "lyrics_roll", ly.rollDeg, " °", v -> { ly.rollDeg = v; save(); });
         if (ly.placement != 2) y = cycle(g, mx, my, x, y, w, "lyrics_side_mode", Lang.t("value.lyrics_side_mode." + ly.sideMode), d -> { ly.sideMode = Math.floorMod(ly.sideMode + d, 3); save(); });
@@ -168,30 +180,8 @@ public final class LyricsScreen extends Screen {
                 d -> { ly.scatterStyle = Math.floorMod(ly.scatterStyle + d, styles.length); save(); });
             y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_style_note." + styles[st]), FAINT) + 2;
             if (st != LayerConfig.LyricsSettings.SCATTER_VIDEO) {
-                String[] colors = LyricsWords.COLOR_KEYS;
-                int ci = Math.floorMod(ly.scatterColor, colors.length);
-                y = cycle(g, mx, my, x, y, w, "lyrics_scatter_color", Lang.t("value.lyrics_scatter_color." + colors[ci]),
-                    d -> { ly.scatterColor = Math.floorMod(ly.scatterColor + d, colors.length); save(); });
-                if (ci == LyricsWords.COLOR_CUSTOM) y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_custom_note"), FAINT) + 2;
-                if (ci == LyricsWords.COLOR_GRADIENT) {
-                    String[] grads = LyricsWords.GRADIENT_KEYS;
-                    int gi = Math.floorMod(ly.scatterGradient, grads.length);
-                    y = cycle(g, mx, my, x, y, w, "lyrics_scatter_gradient", Lang.t("value.lyrics_scatter_gradient." + grads[gi]),
-                        d -> { ly.scatterGradient = Math.floorMod(ly.scatterGradient + d, grads.length); save(); });
-                    if (gi == grads.length - 1) {   // custom: your two colours
-                        y = hex(g, mx, my, x, y, w, "lyrics_scatter_grad_from", ly.scatterGradA, v -> { ly.scatterGradA = v; save(); });
-                        y = hex(g, mx, my, x, y, w, "lyrics_scatter_grad_to", ly.scatterGradB, v -> { ly.scatterGradB = v; save(); });
-                    }
-                    String[] dirs = LyricsWords.DIR_KEYS;
-                    int di = Math.floorMod(ly.scatterGradDir, dirs.length);
-                    y = cycle(g, mx, my, x, y, w, "lyrics_scatter_grad_dir", Lang.t("value.lyrics_scatter_grad_dir." + dirs[di]),
-                        d -> { ly.scatterGradDir = Math.floorMod(ly.scatterGradDir + d, dirs.length); save(); });
-                }
-                String[] fonts = LyricsWords.FONT_KEYS;
-                int fi = Math.floorMod(ly.scatterFont, fonts.length);
-                y = cycle(g, mx, my, x, y, w, "lyrics_scatter_font", Lang.t("value.lyrics_scatter_font." + fonts[fi]),
-                    d -> { ly.scatterFont = Math.floorMod(ly.scatterFont + d, fonts.length); save(); });
-                if (st == LayerConfig.LyricsSettings.SCATTER_WORDS && fi < 2) y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_font_words_note"), FAINT) + 2;
+                y = textLook(g, mx, my, x, y, w, ly);
+                if (st == LayerConfig.LyricsSettings.SCATTER_WORDS && Math.floorMod(ly.scatterFont, LyricsWords.FONT_KEYS.length) < 2) y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_font_words_note"), FAINT) + 2;
                 if (st == LayerConfig.LyricsSettings.SCATTER_TYPED) {
                     y = toggle(g, mx, my, x, y, w, "lyrics_scatter_typing", ly.scatterTyping, () -> { ly.scatterTyping = !ly.scatterTyping; save(); });
                     y = toggle(g, mx, my, x, y, w, "lyrics_scatter_shadow", ly.scatterShadow, () -> { ly.scatterShadow = !ly.scatterShadow; save(); });
@@ -226,6 +216,49 @@ public final class LyricsScreen extends Screen {
         y = toggle(g, mx, my, x, y, w, "lyrics_walls", ly.wallSafe, () -> { ly.wallSafe = !ly.wallSafe; save(); });
         y = toggle(g, mx, my, x, y, w, "lyrics_through_blocks", ly.throughBlocks, () -> { ly.throughBlocks = !ly.throughBlocks; save(); });
         return y + 6;
+    }
+
+    /** The text's colour, gradient and font: Scatter's, shared with On screen. */
+    private int textLook(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {
+        String[] colors = LyricsWords.COLOR_KEYS;
+        int ci = Math.floorMod(ly.scatterColor, colors.length);
+        y = cycle(g, mx, my, x, y, w, "lyrics_scatter_color", Lang.t("value.lyrics_scatter_color." + colors[ci]),
+            d -> { ly.scatterColor = Math.floorMod(ly.scatterColor + d, colors.length); save(); });
+        if (ci == LyricsWords.COLOR_CUSTOM) y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_custom_note"), FAINT) + 2;
+        if (ci == LyricsWords.COLOR_GRADIENT) {
+            String[] grads = LyricsWords.GRADIENT_KEYS;
+            int gi = Math.floorMod(ly.scatterGradient, grads.length);
+            y = cycle(g, mx, my, x, y, w, "lyrics_scatter_gradient", Lang.t("value.lyrics_scatter_gradient." + grads[gi]),
+                d -> { ly.scatterGradient = Math.floorMod(ly.scatterGradient + d, grads.length); save(); });
+            if (gi == grads.length - 1) {   // custom: your two colours
+                y = hex(g, mx, my, x, y, w, "lyrics_scatter_grad_from", ly.scatterGradA, v -> { ly.scatterGradA = v; save(); });
+                y = hex(g, mx, my, x, y, w, "lyrics_scatter_grad_to", ly.scatterGradB, v -> { ly.scatterGradB = v; save(); });
+            }
+            String[] dirs = LyricsWords.DIR_KEYS;
+            int di = Math.floorMod(ly.scatterGradDir, dirs.length);
+            y = cycle(g, mx, my, x, y, w, "lyrics_scatter_grad_dir", Lang.t("value.lyrics_scatter_grad_dir." + dirs[di]),
+                d -> { ly.scatterGradDir = Math.floorMod(ly.scatterGradDir + d, dirs.length); save(); });
+        }
+        String[] fonts = LyricsWords.FONT_KEYS;
+        int fi = Math.floorMod(ly.scatterFont, fonts.length);
+        y = cycle(g, mx, my, x, y, w, "lyrics_scatter_font", Lang.t("value.lyrics_scatter_font." + fonts[fi]),
+            d -> { ly.scatterFont = Math.floorMod(ly.scatterFont + d, fonts.length); save(); });
+        return y;
+    }
+
+    /** On screen: subtitles over the game. */
+    private int screen(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {
+        y = number(g, mx, my, x, y, w, "lyrics_screen_y", ly.screenYPct, " %", v -> { ly.screenYPct = v; save(); });
+        y = number(g, mx, my, x, y, w, "lyrics_screen_x", ly.screenXPct, " %", v -> { ly.screenXPct = v; save(); });
+        String[] aligns = LayerConfig.LyricsSettings.ALIGN_KEYS;
+        y = cycle(g, mx, my, x, y, w, "lyrics_screen_align", Lang.t("value.lyrics_screen_align." + aligns[Math.floorMod(ly.screenAlign, 3)]),
+            d -> { ly.screenAlign = Math.floorMod(ly.screenAlign + d, 3); save(); });
+        y = number(g, mx, my, x, y, w, "lyrics_screen_context", ly.screenContext, "", v -> { ly.screenContext = (int) Math.max(0, Math.min(3, Math.round(v))); save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_screen_karaoke", ly.screenKaraoke, () -> { ly.screenKaraoke = !ly.screenKaraoke; save(); });
+        y = number(g, mx, my, x, y, w, "lyrics_screen_backdrop", ly.screenBackdropPct, " %", v -> { ly.screenBackdropPct = Math.max(0, v); save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_screen_shadow", ly.screenShadow, () -> { ly.screenShadow = !ly.screenShadow; save(); });
+        y = toggle(g, mx, my, x, y, w, "lyrics_screen_slide", ly.screenSlide, () -> { ly.screenSlide = !ly.screenSlide; save(); });
+        return textLook(g, mx, my, x, y, w, ly);
     }
 
     private int effects(GuiGraphicsExtractor g, int mx, int my, int x, int y, int w, LayerConfig.LyricsSettings ly) {

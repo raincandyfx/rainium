@@ -48,6 +48,7 @@ public final class RainiumClient implements ClientModInitializer {
 
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("rainium", "main"));
         openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.rainium.open", InputConstants.Type.KEYBOARD, KEY_K, category));
+        try { LyricsControls.register(category); } catch (Throwable t) { lyricsProblem(t); }
 
         try { ReactEvents.register(); } catch (Throwable t) { reactProblem(t); }
         try { ServerLink.register(); } catch (Throwable t) { Assets.LOG.warn("[rainium] sharing cosmetics on servers is unavailable: " + t); }
@@ -55,6 +56,7 @@ public final class RainiumClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             try { ReactSensors.tick(mc); } catch (Throwable t) { reactProblem(t); }   // reactions are optional; never stop the game
             try { Lyrics.tick(mc); } catch (Throwable t) { lyricsProblem(t); }        // lyrics are optional too
+            try { LyricsControls.tick(mc); } catch (Throwable t) { lyricsProblem(t); }
             try { ServerLink.tick(mc); } catch (Throwable t) { linkProblem(t); }     // so is sharing cosmetics on servers
             while (openKey.consumeClick()) {
                 if (mc.gui.screen() == null) openNextTick = true;
@@ -74,6 +76,7 @@ public final class RainiumClient implements ClientModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) -> {
             dispatcher.register(ClientCommands.literal("rainium")
                 .executes(c -> { openNextTick = true; return 1; })   // open after the chat screen closes
+                .then(LyricsControls.command())
                 .then(ClientCommands.literal("reload").executes(c -> {
                     ASSETS.reload();
                     String err = ASSETS.lastError();

@@ -66,6 +66,38 @@ final class Lyrics {
 
     static Status status() { return status; }
     static NowPlaying.Track track() { return track; }
+    /** The lyrics being shown (null when none). */
+    static LyricsLrc lyrics() { return status == Status.SHOWING ? lrc : null; }
+    /** Whether the lyrics shown were unsynced, paced over the song by guesswork. */
+    static boolean estimated() { return lrc != null && lrc.estimated; }
+    /** Where the song is, in the lyrics' time (offset applied). */
+    static double at() {
+        LayerConfig.LyricsSettings s = RainiumClient.ASSETS.editable().lyrics;
+        return track == null ? 0 : track.positionNow() - s.offset;
+    }
+    /** Looks this song's lyrics up again (after you added a file to the lyrics folder, say). */
+    static void retry() { trackKey = null; }
+
+    private static String plainText;   // the song's unsynced lyrics, when that's all there is
+    private static double shown = 1;   // paused / in a fight: everything's alpha is multiplied by this (smoothed)
+    private static long pausedNanos;
+
+    /** How much of the lyrics to show right now, 0..1 (fades while paused or fighting, as set). */
+    static double shown() { return shown; }
+
+    private static void updateShown(Minecraft mc, LayerConfig.LyricsSettings s) {
+        long now = System.nanoTime();
+        boolean paused = track != null && !track.playing();
+        if (!paused) pausedNanos = 0; else if (pausedNanos == 0) pausedNanos = now;
+        double want = 1;
+        if (s.pauseFade && paused && now - pausedNanos > 1_200_000_000L) want = 0;
+        boolean fighting = foughtNanos != 0 && now - foughtNanos < 6_000_000_000L;
+        if (fighting && s.fightMode == LayerConfig.LyricsSettings.FIGHT_DIM) want = Math.min(want, 0.3);
+        if (fighting && s.fightMode == LayerConfig.LyricsSettings.FIGHT_HIDE) want = 0;
+        if (s.hideWithGui && mc.options.hideGui) want = 0;
+        shown += (want - shown) * (want < shown ? 0.25 : 0.12);   // per tick: quick to go, a little slower back
+        if (Math.abs(want - shown) < 0.01) shown = want;
+    }
 
     // ------------------------------------------------------------------ every tick
     static void tick(Minecraft mc) {
@@ -80,7 +112,8 @@ final class Lyrics {
         NowPlaying.want(true);
         if (s.demo && !NowPlaying.demo) NowPlaying.startDemo();
         if (!s.demo && NowPlaying.demo) NowPlaying.stopDemo();
-        if (!s.video || s.words()) LyricsVideo.clear();
+        if (!s.video || s.words() || s.onScreen()) LyricsVideo.clear();
+        updateShown(mc, s);
 
         NowPlaying.Track t = NowPlaying.now();
         track = t;
@@ -93,6 +126,7 @@ final class Lyrics {
         if (!key.equals(trackKey)) {   // a new song
             trackKey = key;
             lrc = null;
+            plainText = null;
             anchorLine = -2;
             LyricsVideo.clear();
             LyricsText.reset();
@@ -116,16 +150,26 @@ final class Lyrics {
                     lrc = LyricsLrc.parse(f.synced(), t.length());
                     status = lrc == null ? Status.NO_LYRICS : Status.SHOWING;
                 }
-                case PLAIN_ONLY -> status = Status.PLAIN_ONLY;
+                case PLAIN_ONLY -> { status = Status.PLAIN_ONLY; plainText = f.plain(); }
                 case INSTRUMENTAL -> status = Status.INSTRUMENTAL;
                 case OFFLINE -> status = Status.OFFLINE;
                 case FAILED -> status = Status.FAILED;
                 default -> status = Status.NO_LYRICS;
             }
         }
+        // unsynced lyrics: paced over the song, when that's allowed (and taken away again when it's not)
+        if (status == Status.PLAIN_ONLY && s.plainLyrics && plainText != null && pending == null) {
+            lrc = LyricsLrc.paced(plainText, t.length());
+            if (lrc != null) status = Status.SHOWING;
+        } else if (status == Status.SHOWING && lrc != null && lrc.estimated && !s.plainLyrics) {
+            lrc = null;
+            status = Status.PLAIN_ONLY;
+            LyricsText.reset(); LyricsScatter.reset(); LyricsScatterWords.reset(); LyricsVideo.clear(); lastScatter = null;
+        }
         if (lrc == null) return;
         double now = t.positionNow() - s.offset;
-        if (s.words()) {   // Scatter by word: words, not a picture
+        if (s.onScreen()) {   // drawn by LyricsHud, straight from the lyrics
+        } else if (s.words()) {   // Scatter by word: words, not a picture
             if (s.scatterStyle == LayerConfig.LyricsSettings.SCATTER_WORDS) LyricsScatterWords.update(lrc, now, s);
         } else if (s.video) {
             String look = s.style + "|" + s.seed + "|" + s.motifs + "|" + s.newEffects + "|" + s.look().key();
@@ -177,7 +221,7 @@ final class Lyrics {
 
     static void submit(SubmitNodeCollector collector) {
         LayerConfig.LyricsSettings s = RainiumClient.ASSETS.editable().lyrics;
-        if (!s.enabled || lrc == null || status != Status.SHOWING) return;
+        if (!s.enabled || lrc == null || status != Status.SHOWING || s.onScreen() || shown < 0.02) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         if (s.words()) {   // Scatter by word: each word on its own
@@ -392,7 +436,7 @@ final class Lyrics {
         if (follow) placedFollow = true;
         alphaShown += ((follow ? 1 : spotAlpha) - alphaShown) * k;
         alphaShown = Math.min(alphaShown, 1);
-        double opacity = Math.max(0, Math.min(1, s.opacityPct / 100.0));
+        double opacity = Math.max(0, Math.min(1, s.opacityPct / 100.0)) * shown;
         if (alphaShown * opacity < 0.02) return;
         if (follow) cyw += Math.sin(nowN / 1.0e9 * 1.1) * 0.04 * s.floatPct / 100.0;
         double depthZ = cxw * fwd.x + cyw * fwd.y + czw * fwd.z;

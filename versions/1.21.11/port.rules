@@ -45,3 +45,9 @@ Lyrics.java           ||  mc\.player\.sendSystemMessage\((\w+)\)   ||  mc.player
 RainiumMain.java      ||  PayloadTypeRegistry\.serverboundPlay\(\)  ||  PayloadTypeRegistry.playC2S()
 RainiumMain.java      ||  PayloadTypeRegistry\.clientboundPlay\(\)  ||  PayloadTypeRegistry.playS2C()
 ServerLink.java       ||  mc\.player\.sendSystemMessage\((\w+)\)   ||  mc.player.displayClientMessage($1, false)
+
+LyricsHud.java        ||  \bg\.text\(                              ||  g.drawString(
+LyricsControls.java   ||  api\.client\.keymapping\.v1\.KeyMappingHelper  ||  api.client.keybinding.v1.KeyBindingHelper
+LyricsControls.java   ||  \bKeyMappingHelper\.registerKeyMapping\(  ||  KeyBindingHelper.registerKeyBinding(
+LyricsControls.java   ||  InputConstants\.Type\.KEYBOARD            ||  InputConstants.Type.KEYSYM
+LyricsControls.java   ||  \bClientCommands\b                        ||  ClientCommandManager

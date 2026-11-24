@@ -18,6 +18,7 @@ final class LyricsLrc {
 
     final List<Line> lines;
     final boolean wordTimed;   // the file had its own word times
+    boolean estimated;         // made from unsynced lyrics: the times are a guess (see paced)
 
     private LyricsLrc(List<Line> lines, boolean wordTimed) { this.lines = lines; this.wordTimed = wordTimed; }
 
@@ -71,6 +72,51 @@ final class LyricsLrc {
             out.add(new Line(plain, r.t, end, words));
         }
         return out.isEmpty() ? null : new LyricsLrc(List.copyOf(out), anyWordTimes);
+    }
+
+    /**
+     * Unsynced lyrics paced over the song: a quiet start and end, then each line gets time by its length
+     * (a blank row is a pause between verses). With no known length, about a line every 3.5 seconds.
+     * Returns null when there are no words.
+     */
+    static LyricsLrc paced(String plain, double songLength) {
+        if (plain == null) return null;
+        List<String> rows = new ArrayList<>();
+        for (String row : plain.replace("\r", "").split("\n")) {
+            String t = TIME.matcher(row).replaceAll("").replaceAll("\\s+", " ").strip();   // stray time tags are dropped
+            if (t.startsWith("[") && t.endsWith("]")) t = "";                               // [Chorus] and the like are pauses
+            rows.add(t);
+        }
+        while (!rows.isEmpty() && rows.get(0).isEmpty()) rows.remove(0);
+        while (!rows.isEmpty() && rows.get(rows.size() - 1).isEmpty()) rows.remove(rows.size() - 1);
+        double[] weight = new double[rows.size()];
+        double total = 0;
+        int sung = 0;
+        for (int i = 0; i < rows.size(); i++) {
+            String r = rows.get(i);
+            weight[i] = r.isEmpty() ? 1.6 : 1.4 + r.length() * 0.07;
+            if (!r.isEmpty()) sung++;
+            total += weight[i];
+        }
+        if (sung == 0) return null;
+        double start, span;
+        if (songLength > 20) {
+            start = Math.min(14, songLength * 0.08);
+            span = Math.max(sung * 0.8, songLength - start - Math.min(12, songLength * 0.07));
+        } else {
+            start = 1;
+            span = total * 1.45;
+        }
+        StringBuilder b = new StringBuilder();
+        double t = start;
+        for (int i = 0; i < rows.size(); i++) {
+            b.append(stamp(t)).append(rows.get(i)).append('\n');
+            t += span * weight[i] / total;
+        }
+        b.append(stamp(t)).append('\n');   // the last line ends here
+        LyricsLrc out = parse(b.toString(), songLength);
+        if (out != null) out.estimated = true;
+        return out;
     }
 
     /** "<00:01.20>we <00:01.50>built" → words with their own times; null when the line has none. */

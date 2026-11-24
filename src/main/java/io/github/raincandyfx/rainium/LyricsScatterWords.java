@@ -145,7 +145,7 @@ final class LyricsScatterWords {
         double fadeSecs = Math.max(0.05, s.scatterFadeSecs);
         pieces.removeIf(p -> pos > p.fadeAt + fadeSecs || pos < p.t - 1.5 || sq(p.x - eye[0]) + sq(p.y - eye[1]) + sq(p.z - eye[2]) > 4096);
 
-        double opacity = Math.max(0, Math.min(1, s.opacityPct / 100.0));
+        double opacity = Math.max(0, Math.min(1, s.opacityPct / 100.0)) * Lyrics.shown();
         double bounce = Math.max(0, Math.min(1, s.floatPct / 100.0));
         long nanos = System.nanoTime();
         // furthest first, so a near word is drawn over a far one

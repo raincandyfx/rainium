@@ -250,6 +250,13 @@ final class LayerConfig {
     static final class LyricsSettings {
         /** Scatter by word: each word on its own, no video. (Scatter by line is the ordinary panel, put in a scattered spot.) */
         boolean words() { return placement == 2 && scatterStyle != SCATTER_VIDEO; }
+        /** On screen: the lyrics are drawn over the game like subtitles, not in the world. */
+        boolean onScreen() { return placement == 3; }
+
+        static final String[] PLACEMENT_KEYS = {"fixed", "follow", "scatter", "screen"};
+        static final int FIGHT_SHOW = 0, FIGHT_DIM = 1, FIGHT_HIDE = 2;
+        static final String[] FIGHT_KEYS = {"show", "dim", "hide"};
+        static final String[] ALIGN_KEYS = {"center", "left", "right"};
 
         static final int SCATTER_TYPED = 0, SCATTER_WORDS = 1, SCATTER_VIDEO = 2;
         static final String[] SCATTER_STYLES = {"typed", "words", "video"};
@@ -307,6 +314,19 @@ final class LayerConfig {
         double fps = 12;                 // pictures per second
         boolean throughBlocks = true;    // never hidden behind blocks
         boolean chat = false;            // "Now playing" in your chat when the song changes
+        boolean plainLyrics = true;      // songs with only unsynced lyrics: show them, paced over the song
+        boolean pauseFade = true;        // fade out while the music is paused
+        int fightMode = FIGHT_SHOW;      // while you're in a fight: show, dim or hide the lyrics
+        boolean hideWithGui = false;     // hidden with the rest of the HUD (F1)
+        // On screen
+        double screenYPct = 80;          // where the sung line sits, % down the screen
+        double screenXPct = 50;          // and across it (the line is aligned to this point)
+        int screenAlign = 0;             // ALIGN_KEYS
+        int screenContext = 1;           // lines shown before and after the sung one (0..3)
+        boolean screenKaraoke = true;    // the sung part of the line is lit, the rest dimmed
+        double screenBackdropPct = 35;   // dark band behind the lines
+        boolean screenShadow = true;
+        boolean screenSlide = true;      // lines slide up as the song moves on
         String style = "noir";           // style
         int seed = 1;                    // variation (each song mixes in its own)
         boolean motifs = true;           // Japanese motifs
@@ -440,7 +460,7 @@ final class LayerConfig {
             if (lm.get("offset") instanceof Number n) ly.offset = Math.max(-5f, Math.min(5f, n.floatValue()));
             if (lm.get("size") instanceof Number n && !(lm.get("size_percent") instanceof Number)) ly.sizePct = n.intValue() <= 0 ? 75 : n.intValue() == 1 ? 100 : 139;   // the old Small, Medium, Large
             if (lm.get("size_percent") instanceof Number n && n.doubleValue() > 0) ly.sizePct = n.doubleValue();
-            if (lm.get("placement") instanceof String s) ly.placement = s.equalsIgnoreCase("follow") ? 1 : s.equalsIgnoreCase("scatter") ? 2 : 0;
+            if (lm.get("placement") instanceof String s) { ly.placement = 0; for (int i = 0; i < LyricsSettings.PLACEMENT_KEYS.length; i++) if (LyricsSettings.PLACEMENT_KEYS[i].equalsIgnoreCase(s)) ly.placement = i; }
             if (lm.get("distance") instanceof Number n && n.doubleValue() > 0) ly.distance = n.doubleValue();
             if (lm.get("height_percent") instanceof Number n) ly.heightPct = n.doubleValue();
             if (lm.get("side_percent") instanceof Number n) ly.sidePct = n.doubleValue();
@@ -448,6 +468,18 @@ final class LayerConfig {
             if (lm.get("float_percent") instanceof Number n) ly.floatPct = n.doubleValue();
             if (lm.get("fit_to_screen") instanceof Boolean b) ly.keepOnScreen = b;
             if (lm.get("keep_out_of_walls") instanceof Boolean b) ly.wallSafe = b;
+            if (lm.get("plain_lyrics") instanceof Boolean b) ly.plainLyrics = b;
+            if (lm.get("fade_when_paused") instanceof Boolean b) ly.pauseFade = b;
+            if (lm.get("in_a_fight") instanceof String f) for (int i = 0; i < LyricsSettings.FIGHT_KEYS.length; i++) if (LyricsSettings.FIGHT_KEYS[i].equalsIgnoreCase(f)) ly.fightMode = i;
+            if (lm.get("hide_with_hud") instanceof Boolean b) ly.hideWithGui = b;
+            if (lm.get("screen_y_percent") instanceof Number n) ly.screenYPct = n.doubleValue();
+            if (lm.get("screen_x_percent") instanceof Number n) ly.screenXPct = n.doubleValue();
+            if (lm.get("screen_align") instanceof String a) for (int i = 0; i < LyricsSettings.ALIGN_KEYS.length; i++) if (LyricsSettings.ALIGN_KEYS[i].equalsIgnoreCase(a)) ly.screenAlign = i;
+            if (lm.get("screen_context_lines") instanceof Number n) ly.screenContext = Math.max(0, Math.min(3, n.intValue()));
+            if (lm.get("screen_karaoke") instanceof Boolean b) ly.screenKaraoke = b;
+            if (lm.get("screen_backdrop_percent") instanceof Number n) ly.screenBackdropPct = n.doubleValue();
+            if (lm.get("screen_shadow") instanceof Boolean b) ly.screenShadow = b;
+            if (lm.get("screen_slide") instanceof Boolean b) ly.screenSlide = b;
             if (Boolean.TRUE.equals(lm.get("scatter_lines"))) ly.scatterStyle = LyricsSettings.SCATTER_VIDEO;   // before 1.1.2
             if (lm.get("scatter_style") instanceof String st) for (int i = 0; i < LyricsSettings.SCATTER_STYLES.length; i++) if (LyricsSettings.SCATTER_STYLES[i].equalsIgnoreCase(st)) ly.scatterStyle = i;
             if (lm.get("scatter_color") instanceof String sc) for (int i = 0; i < LyricsWords.COLOR_KEYS.length; i++) if (LyricsWords.COLOR_KEYS[i].equalsIgnoreCase(sc)) ly.scatterColor = i;
@@ -688,7 +720,7 @@ final class LayerConfig {
         ly.put("online", lyrics.online);
         ly.put("offset", lyrics.offset);
         ly.put("size_percent", lyrics.sizePct);
-        ly.put("placement", lyrics.placement == 1 ? "follow" : lyrics.placement == 2 ? "scatter" : "fixed");
+        ly.put("placement", LyricsSettings.PLACEMENT_KEYS[Math.floorMod(lyrics.placement, LyricsSettings.PLACEMENT_KEYS.length)]);
         ly.put("distance", lyrics.distance);
         ly.put("height_percent", lyrics.heightPct);
         ly.put("side_percent", lyrics.sidePct);
@@ -696,6 +728,18 @@ final class LayerConfig {
         ly.put("float_percent", lyrics.floatPct);
         ly.put("fit_to_screen", lyrics.keepOnScreen);
         ly.put("keep_out_of_walls", lyrics.wallSafe);
+        ly.put("plain_lyrics", lyrics.plainLyrics);
+        ly.put("fade_when_paused", lyrics.pauseFade);
+        ly.put("in_a_fight", LyricsSettings.FIGHT_KEYS[Math.floorMod(lyrics.fightMode, 3)]);
+        ly.put("hide_with_hud", lyrics.hideWithGui);
+        ly.put("screen_y_percent", lyrics.screenYPct);
+        ly.put("screen_x_percent", lyrics.screenXPct);
+        ly.put("screen_align", LyricsSettings.ALIGN_KEYS[Math.floorMod(lyrics.screenAlign, 3)]);
+        ly.put("screen_context_lines", lyrics.screenContext);
+        ly.put("screen_karaoke", lyrics.screenKaraoke);
+        ly.put("screen_backdrop_percent", lyrics.screenBackdropPct);
+        ly.put("screen_shadow", lyrics.screenShadow);
+        ly.put("screen_slide", lyrics.screenSlide);
         ly.put("scatter_style", LyricsSettings.SCATTER_STYLES[Math.floorMod(lyrics.scatterStyle, 3)]);
         ly.put("scatter_color", LyricsWords.COLOR_KEYS[Math.floorMod(lyrics.scatterColor, LyricsWords.COLOR_KEYS.length)]);
         ly.put("scatter_typing", lyrics.scatterTyping);

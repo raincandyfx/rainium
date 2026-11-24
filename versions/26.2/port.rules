@@ -22,3 +22,4 @@ RainiumClient.java    ||  InputConstants\.Type\.KEYBOARD                     || 
 # Rendering (26.3 added these shortcuts)
 *                     ||  (\w+)\.rotateDegrees\((Axis\.[XYZ]P), (.*)\);  ||  $1.mulPose($2.rotationDegrees($3));
 MeshRenderLayer.java  ||  RenderTypes\.entityTranslucentCull\(     ||  RenderTypes.entityTranslucentCullItemTarget(
+LyricsControls.java   ||  InputConstants\.Type\.KEYBOARD            ||  InputConstants.Type.KEYSYM
