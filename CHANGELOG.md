@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.3
+
+- **Gradient colours for Scatter:** letters blend between two colours: Sunset, Ocean, Aurora, Candy, Fire, Gold, or your own two. The gradient runs across each row, down the rows, along the whole line, or as a shimmer that sweeps back and forth. In the Words style it runs word by word through the line.
+- **Fonts for Scatter:** Minecraft (the default), Unifont, and six that come with Rainium: Clean (Poppins), Serif (DM Serif Display), Mono (Space Mono), Script (Pacifico), Tall (Bebas Neue) and Retro (VT323). All are under the SIL Open Font License.
+
 ## 1.1.2
 
 - **Scatter styles:** pick **Typed lines** (the Lyrics+-style look from 1.1.1), **Words** (Scatter as it was in 1.1.0, back again) or **Video** (the lyric panel, what Whole lines was). Your old Whole lines setting carries over.

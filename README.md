@@ -170,7 +170,7 @@ Each line is a plane in the world. It stays where it is as you move and look aro
   - **Words** (Scatter as it was in 1.1.0): each word on its own as it's sung, facing you with a slight tilt, fading a moment later.
   - **Video:** the usual lyric panel, with the video, in a new spot near your crosshair for each line.
 
-  Typed lines and Words have a **colour** (peach, white, your custom text colour, a slow rainbow, or a soft colour per line), **spread** (how far from the crosshair), **fade time** and **shrink as it goes**; typed lines also have **type out**, **shadow**, **keep facing me** and **characters per row**. Distance, size, opacity, float, Through blocks and Move with me apply too.
+  Typed lines and Words have a **colour** (peach, white, your custom text colour, a slow rainbow, a soft colour per line, or a **gradient**: sunset, ocean, aurora, candy, fire, gold or your own two colours, running across each row, down the rows, along the line, or as a moving shimmer), a **font** (Minecraft, Unifont, or one that comes with Rainium: Clean, Serif, Mono, Script, Tall, Retro), **spread** (how far from the crosshair), **fade time** and **shrink as it goes**; typed lines also have **type out**, **shadow**, **keep facing me** and **characters per row**. Distance, size, opacity, float, Through blocks and Move with me apply too.
 - **Keep out of walls** (all modes, on by default): a spot behind a wall is pulled in front of it and shrunk to look the same size, and one buried in the ground is lifted out.
 
 Other settings, all typed numbers: **size** as a percentage (100 is the default; no upper or lower limit), opacity, float, distance, height, sideways position, gap and roll. Also font, text and accent colour, speed, backdrop (backgrounds only show when it's above zero), halo, colour fringe, grain, frame rate, frame and HUD.
@@ -302,6 +302,7 @@ The characters in the recordings are animated with emotes by Milyan-SPEmotes, pl
 Rainium also uses:
 
 - **Fonts:** [Archivo](https://github.com/Omnibus-Type/Archivo) (© The Archivo Project Authors) and [Inter](https://github.com/rsms/inter) (© The Inter Project Authors), both under the [SIL Open Font License 1.1](https://openfontlicense.org); the licence texts are included with the fonts.
+- **Scatter fonts:** [Poppins](https://github.com/itfoundry/Poppins) SemiBold, [DM Serif Display](https://github.com/googlefonts/dm-fonts), [Space Mono](https://github.com/googlefonts/spacemono) Bold, [Pacifico](https://github.com/googlefonts/Pacifico), [Bebas Neue](https://github.com/dharmatype/Bebas-Neue) and [VT323](https://github.com/phoikoi/VT323), all under the [SIL Open Font License 1.1](https://openfontlicense.org), taken from [Google Fonts](https://github.com/google/fonts); their licence texts are in `assets/rainium/font/FONT_LICENSES.txt`.
 - **Icons:** [Lucide](https://lucide.dev) (ISC License, © Lucide Icons and Contributors).
 - **Lyrics lookup:** [lrclib.net](https://lrclib.net), only if you switch on **Find lyrics online**.
 
