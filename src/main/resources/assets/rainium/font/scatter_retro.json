@@ -1,0 +1,19 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "rainium:scatter_retro.ttf",
+      "size": 12.5,
+      "oversample": 8.0,
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "skip": ""
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:default"
+    }
+  ]
+}

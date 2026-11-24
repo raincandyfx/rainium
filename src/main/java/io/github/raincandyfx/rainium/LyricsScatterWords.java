@@ -96,7 +96,7 @@ final class LyricsScatterWords {
         ink0 = new float[n]; ink1 = new float[n];
         int rgb = 0xFFFFFF;   // drawn white, and coloured as it's drawn (Scatter colour)
         for (int i = 0; i < n; i++) {
-            float[] ink = LyricsWords.drawWord(g, ln.words().get(i).text(), i, rgb);
+            float[] ink = LyricsWords.drawWord(g, ln.words().get(i).text(), i, rgb, LyricsWords.awtFont(s.scatterFont));
             ink0[i] = ink[0]; ink1[i] = ink[1];
         }
         g.dispose();
@@ -171,7 +171,7 @@ final class LyricsScatterWords {
                 float v0 = (float) p.row / rows(mine), v1 = (float) (p.row + 1) / rows(mine);
                 quads.add(new float[]{(float) cx, (float) cy, (float) cz, p.right.x, p.right.y, p.right.z, p.up.x, p.up.y, p.up.z,
                     (float) (p.halfW * pop), (float) (p.halfH * pop), p.u0, p.u1, v0, v1, (float) alpha,
-                    LyricsWords.tint(s.scatterColor, s.textColor, p.lineNo, nanos / 1.0e9)});
+                    colour(s, p, rows(mine), nanos / 1.0e9)});
             }
             if (quads.isEmpty()) continue;
             Identifier tex = Identifier.fromNamespaceAndPath("rainium", NAMES[mine]);
@@ -180,6 +180,14 @@ final class LyricsScatterWords {
                 for (float[] q : quads) quad(pose, vc, q);
             });
         }
+    }
+
+    /** A word's colour: the chosen Scatter colour, or its place along the gradient (word by word through the line). */
+    private static float colour(LayerConfig.LyricsSettings s, Piece p, int words, double seconds) {
+        if (s.scatterColor != LyricsWords.COLOR_GRADIENT) return LyricsWords.tint(s.scatterColor, s.textColor, p.lineNo, seconds);
+        int[] ends = LyricsWords.gradientEnds(s.scatterGradient, s.scatterGradA, s.scatterGradB);
+        int dir = s.scatterGradDir == LyricsWords.DIR_DOWN ? LyricsWords.DIR_LINE : s.scatterGradDir;   // one word to a row, so down runs along the line
+        return LyricsWords.mix(ends[0], ends[1], LyricsWords.gradientAt(dir, p.row, words, 0, 1, p.row, words, seconds));
     }
 
     private static int rows(int sl) { return Math.max(1, rowsOf[sl]); }

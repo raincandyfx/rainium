@@ -19,10 +19,72 @@ final class LyricsWords {
     static final int ROW_W = 768, ROW_H = 96;
     static final double MIN_LIFE = 1.2, MAX_LIFE = 3.5, TAIL = 0.7;
 
-    /** Scatter's colours: a warm peach-cream (as in Lyrics+), white, your text colour, a slow rainbow, or a soft colour per line. */
-    static final int COLOR_PEACH = 0, COLOR_WHITE = 1, COLOR_CUSTOM = 2, COLOR_RAINBOW = 3, COLOR_PER_LINE = 4;
-    static final String[] COLOR_KEYS = {"peach", "white", "custom", "rainbow", "per_line"};
+    /** Scatter's colours: a warm peach-cream (as in Lyrics+), white, your text colour, a slow rainbow, a soft colour per line, or a gradient. */
+    static final int COLOR_PEACH = 0, COLOR_WHITE = 1, COLOR_CUSTOM = 2, COLOR_RAINBOW = 3, COLOR_PER_LINE = 4, COLOR_GRADIENT = 5;
+    static final String[] COLOR_KEYS = {"peach", "white", "custom", "rainbow", "per_line", "gradient"};
     static final int PEACH = 0xFFE4C4;
+
+    /** Gradients: ready-made pairs of colours, or your own two (the last). */
+    static final String[] GRADIENT_KEYS = {"sunset", "ocean", "aurora", "candy", "fire", "gold", "custom"};
+    static final int[][] GRADIENTS = {
+        {0xFFC371, 0xFF5F8D},   // sunset: apricot to pink
+        {0x8FE3FF, 0x4A7BFF},   // ocean: sky to deep blue
+        {0x7DF5B5, 0xB98CFF},   // aurora: green to violet
+        {0xFFB8DE, 0xA9E4FF},   // candy: pink to baby blue
+        {0xFFE45C, 0xFF5340},   // fire: yellow to red
+        {0xFFF3C4, 0xE0A43A},   // gold: cream to gold
+    };
+    /** Which way a gradient runs: across each row, down the rows, along the whole line, or a shimmer that sweeps along. */
+    static final int DIR_ACROSS = 0, DIR_DOWN = 1, DIR_LINE = 2, DIR_SHIMMER = 3;
+    static final String[] DIR_KEYS = {"across", "down", "line", "shimmer"};
+
+    /** Scatter's fonts: Minecraft's own, its smooth Unifont, or one bundled with Rainium (assets/rainium/font/scatter_*.json). */
+    static final String[] FONT_KEYS = {"minecraft", "unifont", "clean", "serif", "mono", "script", "tall", "retro"};
+
+    /** The font id for a Scatter font (null for Minecraft's default). */
+    static String fontId(int font) {
+        int f = Math.floorMod(font, FONT_KEYS.length);
+        return f == 0 ? null : f == 1 ? "minecraft:uniform" : "rainium:scatter_" + FONT_KEYS[f];
+    }
+
+    /** The bundled font file for a Scatter font, for the Words style's pictures (null for the two built into the game). */
+    static String fontFile(int font) {
+        int f = Math.floorMod(font, FONT_KEYS.length);
+        return f < 2 ? null : "/assets/rainium/font/scatter_" + FONT_KEYS[f] + ".ttf";
+    }
+
+    /** The two ends of the chosen gradient (custom: your two colours, with pleasant ones when unset). */
+    static int[] gradientEnds(int preset, String a, String b) {
+        int p = Math.floorMod(preset, GRADIENT_KEYS.length);
+        if (p < GRADIENTS.length) return GRADIENTS[p];
+        return new int[]{colorOf(a, GRADIENTS[0][0]), colorOf(b, GRADIENTS[0][1])};
+    }
+
+    /** A colour [t] (0..1) of the way from a to b. */
+    static int mix(int a, int b, double t) {
+        double k = Math.max(0, Math.min(1, t));
+        int r = (int) Math.round(((a >> 16) & 255) + (((b >> 16) & 255) - ((a >> 16) & 255)) * k);
+        int g = (int) Math.round(((a >> 8) & 255) + (((b >> 8) & 255) - ((a >> 8) & 255)) * k);
+        int bl = (int) Math.round((a & 255) + ((b & 255) - (a & 255)) * k);
+        return (r << 16) | (g << 8) | bl;
+    }
+
+    /**
+     * Where along the gradient a character sits (0..1): character [col] of [rowLen] in row [row] of [rows],
+     * or character [inLine] of [lineLen] counting the whole line; the shimmer moves with time.
+     */
+    static double gradientAt(int dir, int col, int rowLen, int row, int rows, int inLine, int lineLen, double seconds) {
+        return switch (dir) {
+            case DIR_DOWN -> rows <= 1 ? 0 : (double) row / (rows - 1);
+            case DIR_LINE -> lineLen <= 1 ? 0 : (double) inLine / (lineLen - 1);
+            case DIR_SHIMMER -> {
+                double x = (lineLen <= 1 ? 0 : (double) inLine / lineLen) * 0.6 - seconds * 0.45;
+                double f = x - Math.floor(x);
+                yield f < 0.5 ? f * 2 : 2 - f * 2;   // there and back
+            }
+            default -> rowLen <= 1 ? 0 : (double) col / (rowLen - 1);
+        };
+    }
 
     /** Where a line is up and how much of the view it covers (angles in degrees, times in song seconds). */
     record Spot(double t, double fadeAt, double yawDeg, double pitchDeg, double halfWDeg, double halfHDeg) {}
@@ -76,12 +138,31 @@ final class LyricsWords {
     }
 
     /** One row of the Words style's picture: the word with a dark edge, centred. Returns the ink's left and right edge as 0..1 across the row. */
-    static float[] drawWord(Graphics2D g, String word, int row, int rgb) {
+    static float[] drawWord(Graphics2D g, String word, int row, int rgb) { return drawWord(g, word, row, rgb, null); }
+
+    private static final Font[] AWT_FONTS = new Font[FONT_KEYS.length];
+
+    /** The Scatter font as a Java font at 64 px for the Words style's pictures (bold sans for the game's own two). */
+    static Font awtFont(int font) {
+        int f = Math.floorMod(font, FONT_KEYS.length);
+        if (AWT_FONTS[f] != null) return AWT_FONTS[f];
+        Font out = new Font(Font.SANS_SERIF, Font.BOLD, 64);
+        String file = fontFile(f);
+        if (file != null) {
+            try (java.io.InputStream in = LyricsWords.class.getResourceAsStream(file)) {
+                if (in != null) out = Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(64f);
+            } catch (Exception ignored) { }
+        }
+        AWT_FONTS[f] = out;
+        return out;
+    }
+
+    static float[] drawWord(Graphics2D g, String word, int row, int rgb, Font base) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
         FontRenderContext frc = g.getFontRenderContext();
-        Font f = new Font(Font.SANS_SERIF, Font.BOLD, 64);
+        Font f = base != null ? base : new Font(Font.SANS_SERIF, Font.BOLD, 64);
         double w = f.getStringBounds(word, frc).getWidth();
         double room = ROW_W - 28;
         if (w > room) f = f.deriveFont((float) (f.getSize2D() * room / w));

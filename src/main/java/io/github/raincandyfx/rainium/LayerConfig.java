@@ -277,6 +277,10 @@ final class LayerConfig {
         int scatterRowChars = 18;        // the most characters in a row of a typed line
         double scatterSpreadPct = 100;   // how far from the crosshair lines and words land
         double scatterFadeSecs = 0.8;    // how long a line or word takes to go
+        int scatterGradient = 0;         // which gradient (LyricsWords.GRADIENT_KEYS), when the colour is Gradient
+        String scatterGradA = "", scatterGradB = "";   // the custom gradient's two ends, #rrggbb
+        int scatterGradDir = LyricsWords.DIR_ACROSS;   // which way it runs (LyricsWords.DIR_KEYS)
+        int scatterFont = 0;             // Scatter's font (LyricsWords.FONT_KEYS): Minecraft's by default
         boolean wallSafe = true;         // pulled in front of walls and lifted out of the ground, never inside the scenery
         int sideMode = 0;                // Fixed: 0 alternate left and right, 1 always left, 2 always right
         double gapPct = 0;               // Follow: extra space between the opponent and the panel, % of half the screen width
@@ -454,6 +458,11 @@ final class LayerConfig {
             if (lm.get("scatter_row_chars") instanceof Number n) ly.scatterRowChars = Math.max(6, Math.min(60, n.intValue()));
             if (lm.get("scatter_spread_percent") instanceof Number n) ly.scatterSpreadPct = Math.max(0, n.doubleValue());
             if (lm.get("scatter_fade_seconds") instanceof Number n) ly.scatterFadeSecs = Math.max(0.05, n.doubleValue());
+            if (lm.get("scatter_gradient") instanceof String sg) for (int i = 0; i < LyricsWords.GRADIENT_KEYS.length; i++) if (LyricsWords.GRADIENT_KEYS[i].equalsIgnoreCase(sg)) ly.scatterGradient = i;
+            if (lm.get("scatter_gradient_from") instanceof String a) ly.scatterGradA = a;
+            if (lm.get("scatter_gradient_to") instanceof String b) ly.scatterGradB = b;
+            if (lm.get("scatter_gradient_direction") instanceof String sd) for (int i = 0; i < LyricsWords.DIR_KEYS.length; i++) if (LyricsWords.DIR_KEYS[i].equalsIgnoreCase(sd)) ly.scatterGradDir = i;
+            if (lm.get("scatter_font") instanceof String sf) for (int i = 0; i < LyricsWords.FONT_KEYS.length; i++) if (LyricsWords.FONT_KEYS[i].equalsIgnoreCase(sf)) ly.scatterFont = i;
             if (lm.get("side_mode") instanceof String sm) ly.sideMode = sm.equalsIgnoreCase("left") ? 1 : sm.equalsIgnoreCase("right") ? 2 : 0;
             if (lm.get("gap_percent") instanceof Number n) ly.gapPct = n.doubleValue();
             if (lm.get("roll_degrees") instanceof Number n) ly.rollDeg = n.doubleValue();
@@ -696,6 +705,11 @@ final class LayerConfig {
         ly.put("scatter_row_chars", lyrics.scatterRowChars);
         ly.put("scatter_spread_percent", lyrics.scatterSpreadPct);
         ly.put("scatter_fade_seconds", lyrics.scatterFadeSecs);
+        ly.put("scatter_gradient", LyricsWords.GRADIENT_KEYS[Math.floorMod(lyrics.scatterGradient, LyricsWords.GRADIENT_KEYS.length)]);
+        ly.put("scatter_gradient_from", lyrics.scatterGradA);
+        ly.put("scatter_gradient_to", lyrics.scatterGradB);
+        ly.put("scatter_gradient_direction", LyricsWords.DIR_KEYS[Math.floorMod(lyrics.scatterGradDir, LyricsWords.DIR_KEYS.length)]);
+        ly.put("scatter_font", LyricsWords.FONT_KEYS[Math.floorMod(lyrics.scatterFont, LyricsWords.FONT_KEYS.length)]);
         ly.put("side_mode", lyrics.sideMode == 1 ? "left" : lyrics.sideMode == 2 ? "right" : "alternate");
         ly.put("gap_percent", lyrics.gapPct);
         ly.put("roll_degrees", lyrics.rollDeg);

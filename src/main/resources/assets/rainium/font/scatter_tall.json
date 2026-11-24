@@ -1,0 +1,19 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "rainium:scatter_tall.ttf",
+      "size": 10.0,
+      "oversample": 8.0,
+      "shift": [
+        0.0,
+        0.0
+      ],
+      "skip": ""
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:default"
+    }
+  ]
+}

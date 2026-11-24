@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Offline checks for Scatter's typed lines (no game needed). From the repo root:
  *   javac -d /tmp/st src/main/java/io/github/raincandyfx/rainium/{LyricsWords,LyricsLrc,LyricsWorld}.java tools/lyrictest/ScatterTest.java
- *   java -cp /tmp/st io.github.raincandyfx.rainium.ScatterTest
+ *   java -cp /tmp/st:src/main/resources io.github.raincandyfx.rainium.ScatterTest
  */
 public class ScatterTest {
     static int fails = 0;
@@ -53,6 +53,30 @@ public class ScatterTest {
         check(LyricsWords.tint(LyricsWords.COLOR_PER_LINE, "", 1, 0) != LyricsWords.tint(LyricsWords.COLOR_PER_LINE, "", 2, 0) && LyricsWords.tint(LyricsWords.COLOR_PER_LINE, "", 2, 0) == LyricsWords.tint(LyricsWords.COLOR_PER_LINE, "", 2, 50), "per line: differs by line, steady in time");
         for (int m = 0; m < LyricsWords.COLOR_KEYS.length; m++) { int c = LyricsWords.tint(m, "", 5, 3.3); check((c & 0xFF000000) == 0 && Math.max(c >> 16 & 255, Math.max(c >> 8 & 255, c & 255)) > 200, "colour " + m + " is light and has no alpha bits"); }
         check(LyricsWords.typedRows(r2, Integer.MAX_VALUE).equals(r2), "typing off shows the whole line");
+        // gradients
+        check(LyricsWords.mix(0x000000, 0xFFFFFF, 0.5) == 0x808080 && LyricsWords.mix(0xFF0000, 0x0000FF, 0) == 0xFF0000 && LyricsWords.mix(0xFF0000, 0x0000FF, 1) == 0x0000FF && LyricsWords.mix(1, 2, 7) == 2, "mix");
+        int[] sunset = LyricsWords.gradientEnds(0, "", "");
+        check(sunset[0] == 0xFFC371 && sunset[1] == 0xFF5F8D, "preset gradient");
+        int custom = LyricsWords.GRADIENT_KEYS.length - 1;
+        check(LyricsWords.gradientEnds(custom, "#112233", "#445566")[1] == 0x445566 && LyricsWords.gradientEnds(custom, "", "")[0] == sunset[0], "custom gradient, sunset when unset");
+        check(LyricsWords.GRADIENTS.length == LyricsWords.GRADIENT_KEYS.length - 1, "every preset has a name");
+        check(LyricsWords.gradientAt(LyricsWords.DIR_ACROSS, 0, 10, 0, 2, 0, 20, 0) == 0 && LyricsWords.gradientAt(LyricsWords.DIR_ACROSS, 9, 10, 0, 2, 9, 20, 0) == 1, "across: row ends");
+        check(LyricsWords.gradientAt(LyricsWords.DIR_DOWN, 3, 10, 1, 2, 14, 20, 0) == 1 && LyricsWords.gradientAt(LyricsWords.DIR_DOWN, 3, 10, 0, 1, 3, 20, 0) == 0, "down: by row");
+        check(Math.abs(LyricsWords.gradientAt(LyricsWords.DIR_LINE, 0, 10, 1, 2, 19, 20, 0) - 1) < 1e-9, "along the line");
+        boolean inRange = true, moves = false;
+        for (int c = 0; c < 20; c++) for (double t = 0; t < 5; t += 0.37) { double v = LyricsWords.gradientAt(LyricsWords.DIR_SHIMMER, c, 20, 0, 1, c, 20, t); if (v < 0 || v > 1) inRange = false; }
+        moves = LyricsWords.gradientAt(LyricsWords.DIR_SHIMMER, 3, 20, 0, 1, 3, 20, 0) != LyricsWords.gradientAt(LyricsWords.DIR_SHIMMER, 3, 20, 0, 1, 3, 20, 0.5);
+        check(inRange && moves, "shimmer stays in range and moves");
+        check(LyricsWords.gradientAt(LyricsWords.DIR_ACROSS, 0, 1, 0, 1, 0, 1, 0) == 0, "one letter: no divide by zero");
+        // fonts
+        check(LyricsWords.fontId(0) == null && "minecraft:uniform".equals(LyricsWords.fontId(1)) && "rainium:scatter_clean".equals(LyricsWords.fontId(2)), "font ids");
+        check(LyricsWords.fontFile(0) == null && LyricsWords.fontFile(1) == null && LyricsWords.fontFile(7).endsWith("scatter_retro.ttf"), "font files");
+        for (int i = 2; i < LyricsWords.FONT_KEYS.length; i++) {
+            check(LyricsWords.class.getResource(LyricsWords.fontFile(i)) != null, "bundled font " + LyricsWords.FONT_KEYS[i] + " is in the jar");
+            check(LyricsWords.class.getResource("/assets/rainium/font/scatter_" + LyricsWords.FONT_KEYS[i] + ".json") != null, "font definition " + LyricsWords.FONT_KEYS[i]);
+            check(!LyricsWords.awtFont(i).getFamily().equalsIgnoreCase("SansSerif") && LyricsWords.awtFont(i).getSize() == 64, "loads " + LyricsWords.FONT_KEYS[i] + ": " + LyricsWords.awtFont(i).getFamily());
+        }
+        check(LyricsWords.awtFont(0).isBold(), "the game's fonts fall back to bold sans for words");
         // the Words style's helpers are back
         var w = new LyricsLrc.Word("hey", 10, 10.1);
         check(Math.abs(LyricsWords.fadeAt(w) - 11.2) < 1e-9, "word life");

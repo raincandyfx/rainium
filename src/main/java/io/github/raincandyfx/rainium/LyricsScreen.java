@@ -173,6 +173,25 @@ public final class LyricsScreen extends Screen {
                 y = cycle(g, mx, my, x, y, w, "lyrics_scatter_color", Lang.t("value.lyrics_scatter_color." + colors[ci]),
                     d -> { ly.scatterColor = Math.floorMod(ly.scatterColor + d, colors.length); save(); });
                 if (ci == LyricsWords.COLOR_CUSTOM) y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_custom_note"), FAINT) + 2;
+                if (ci == LyricsWords.COLOR_GRADIENT) {
+                    String[] grads = LyricsWords.GRADIENT_KEYS;
+                    int gi = Math.floorMod(ly.scatterGradient, grads.length);
+                    y = cycle(g, mx, my, x, y, w, "lyrics_scatter_gradient", Lang.t("value.lyrics_scatter_gradient." + grads[gi]),
+                        d -> { ly.scatterGradient = Math.floorMod(ly.scatterGradient + d, grads.length); save(); });
+                    if (gi == grads.length - 1) {   // custom: your two colours
+                        y = hex(g, mx, my, x, y, w, "lyrics_scatter_grad_from", ly.scatterGradA, v -> { ly.scatterGradA = v; save(); });
+                        y = hex(g, mx, my, x, y, w, "lyrics_scatter_grad_to", ly.scatterGradB, v -> { ly.scatterGradB = v; save(); });
+                    }
+                    String[] dirs = LyricsWords.DIR_KEYS;
+                    int di = Math.floorMod(ly.scatterGradDir, dirs.length);
+                    y = cycle(g, mx, my, x, y, w, "lyrics_scatter_grad_dir", Lang.t("value.lyrics_scatter_grad_dir." + dirs[di]),
+                        d -> { ly.scatterGradDir = Math.floorMod(ly.scatterGradDir + d, dirs.length); save(); });
+                }
+                String[] fonts = LyricsWords.FONT_KEYS;
+                int fi = Math.floorMod(ly.scatterFont, fonts.length);
+                y = cycle(g, mx, my, x, y, w, "lyrics_scatter_font", Lang.t("value.lyrics_scatter_font." + fonts[fi]),
+                    d -> { ly.scatterFont = Math.floorMod(ly.scatterFont + d, fonts.length); save(); });
+                if (st == LayerConfig.LyricsSettings.SCATTER_WORDS && fi < 2) y = wrapped(g, x, y, w, Lang.t("lyrics.scatter_font_words_note"), FAINT) + 2;
                 if (st == LayerConfig.LyricsSettings.SCATTER_TYPED) {
                     y = toggle(g, mx, my, x, y, w, "lyrics_scatter_typing", ly.scatterTyping, () -> { ly.scatterTyping = !ly.scatterTyping; save(); });
                     y = toggle(g, mx, my, x, y, w, "lyrics_scatter_shadow", ly.scatterShadow, () -> { ly.scatterShadow = !ly.scatterShadow; save(); });

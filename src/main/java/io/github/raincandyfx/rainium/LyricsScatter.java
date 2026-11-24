@@ -6,6 +6,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -119,12 +123,17 @@ final class LyricsScatter {
             PoseStack ps = new PoseStack();   // where it hangs, turned to face you, in font pixels (y down)
             ps.mulPose(new Matrix4f().translation((float) cx, (float) cy, (float) cz).rotate(facing).scale((float) k, (float) -k, (float) k));
             int color = (a << 24) | LyricsWords.tint(s.scatterColor, s.textColor, p.lineNo, seconds);
-            float top = -p.rows.size() * 10 / 2f;
+            int pitch = pitch(s.scatterFont);
+            float top = -p.rows.size() * pitch / 2f;
+            int lineLen = String.join(" ", p.rows).length(), before = 0;
             for (int i = 0; i < p.rows.size(); i++) {
-                String part = shown.get(i);
-                if (part.isEmpty()) continue;
-                float left = -mc.font.width(p.rows.get(i)) / 2f;   // where the whole row will sit, so typing doesn't shift it
-                collector.submitText(ps, left, top + i * 10, Component.literal(part).getVisualOrderText(), s.scatterShadow, mode, LIGHT, color, 0, 0);
+                String part = shown.get(i), whole = p.rows.get(i);
+                if (!part.isEmpty()) {
+                    float left = -mc.font.width(text(whole, s, 0, 0, 0, 0, 0, seconds)) / 2f;   // where the whole row will sit, so typing doesn't shift it
+                    Component row = text(part, s, i, p.rows.size(), whole.length(), before, lineLen, seconds);
+                    collector.submitText(ps, left, top + i * pitch, row.getVisualOrderText(), s.scatterShadow, mode, LIGHT, color, 0, 0);
+                }
+                before += whole.length() + 1;
             }
         }
     }
@@ -134,7 +143,8 @@ final class LyricsScatter {
         List<String> rows = LyricsWords.wrap(ln.text(), Math.max(6, s.scatterRowChars));
         if (rows.isEmpty()) return;
         int width = 1;
-        for (String r : rows) width = Math.max(width, mc.font.width(r));
+        for (String r : rows) width = Math.max(width, mc.font.width(text(r, s, 0, 0, 0, 0, 0, 0)));
+        int pitch = pitch(s.scatterFont);
         double hFov = Math.toDegrees(2 * Math.atan(tanH)), vFov = Math.toDegrees(2 * Math.atan(tanV));
         double viewYaw = Math.toDegrees(Math.atan2(-fwd.x, fwd.z)), viewPitch = Math.toDegrees(-Math.asin(Math.max(-1, Math.min(1, fwd.y))));
         double spread = Math.max(0, s.scatterSpreadPct / 100.0);
@@ -145,7 +155,7 @@ final class LyricsScatter {
         // a row is about 3% of the view's height when it appears, whatever the distance
         double rowShare = 0.03 * sizeK * 2 * tanV;
         double halfHDeg = Math.toDegrees(Math.atan(rowShare * rows.size() / 2)) + 1.5;
-        double halfWDeg = Math.toDegrees(Math.atan(rowShare * width / 10.0 / 2)) + 1.5;
+        double halfWDeg = Math.toDegrees(Math.atan(rowShare * width / (double) pitch / 2)) + 1.5;
         List<LyricsWords.Spot> before = new ArrayList<>();
         for (Piece p : pieces) before.add(p.spot);
         double until = Math.max(ln.end(), ln.t() + 1) + LINGER;
@@ -167,7 +177,7 @@ final class LyricsScatter {
             at = LyricsWorld.aboveFloor(solid, LyricsWorld.inFront(solid, eye, wanted));
             kept = LyricsWorld.keptScale(eye, wanted, at);
         }
-        double scale = rowShare * bestDist / 10.0 * kept;   // blocks per font pixel (a row is 10 pixels)
+        double scale = rowShare * bestDist / pitch * kept;   // blocks per font pixel (a row is [pitch] pixels)
         if (s.keepOnScreen) {   // a long row never wider than most of the view
             double limit = 1.5 * tanH * bestDist * kept;
             if (width * scale > limit) scale = limit / width;
@@ -176,6 +186,42 @@ final class LyricsScatter {
         if (facing == null) return;
         pieces.add(new Piece(ln, lineNo, rows, width, at, eye, facing, scale,
             new LyricsWords.Spot(ln.t(), until, bestYaw, bestPitch, halfWDeg, halfHDeg), RNG.nextFloat() * 100f));
+    }
+
+    private static final FontDescription[] FONTS = new FontDescription[LyricsWords.FONT_KEYS.length];
+
+    /** The font a Scatter font setting means (null: Minecraft's default). */
+    private static FontDescription font(int f) {
+        int i = Math.floorMod(f, FONTS.length);
+        String id = LyricsWords.fontId(i);
+        if (id == null) return null;
+        if (FONTS[i] == null) FONTS[i] = new FontDescription.Resource(Identifier.parse(id));
+        return FONTS[i];
+    }
+
+    /** Pixels from one row to the next: Minecraft's 10, a little more for the bundled smooth fonts. */
+    private static int pitch(int f) { return Math.floorMod(f, LyricsWords.FONT_KEYS.length) < 2 ? 10 : 12; }
+
+    /**
+     * Some of a row as text in the Scatter font; with a gradient, each letter gets its own colour by where it
+     * sits (letter [i] of the row is letter [before + i] of the line). Otherwise the colour comes from the draw call.
+     */
+    private static Component text(String part, LayerConfig.LyricsSettings s, int row, int rows, int rowLen, int before, int lineLen, double seconds) {
+        FontDescription fd = font(s.scatterFont);
+        if (s.scatterColor != LyricsWords.COLOR_GRADIENT || rows == 0) {
+            MutableComponent c = Component.literal(part);
+            return fd == null ? c : c.withStyle(st -> st.withFont(fd));
+        }
+        int[] ends = LyricsWords.gradientEnds(s.scatterGradient, s.scatterGradA, s.scatterGradB);
+        MutableComponent out = Component.empty();
+        for (int i = 0; i < part.length(); ) {
+            int cp = part.codePointAt(i), n = Character.charCount(cp);   // whole characters, emoji included
+            double t = LyricsWords.gradientAt(s.scatterGradDir, i, rowLen, row, rows, before + i, lineLen, seconds);
+            TextColor tc = TextColor.fromRgb(LyricsWords.mix(ends[0], ends[1], t));
+            out.append(Component.literal(part.substring(i, i + n)).withStyle(st -> fd == null ? st.withColor(tc) : st.withColor(tc).withFont(fd)));
+            i += n;
+        }
+        return out;
     }
 
     /** Upright, its front towards the eye (null when they're at the same spot). */
