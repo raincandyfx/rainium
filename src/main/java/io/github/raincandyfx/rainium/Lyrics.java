@@ -94,7 +94,7 @@ final class Lyrics {
         boolean fighting = foughtNanos != 0 && now - foughtNanos < 6_000_000_000L;
         if (fighting && s.fightMode == LayerConfig.LyricsSettings.FIGHT_DIM) want = Math.min(want, 0.3);
         if (fighting && s.fightMode == LayerConfig.LyricsSettings.FIGHT_HIDE) want = 0;
-        if (s.hideWithGui && mc.options.hideGui) want = 0;
+        if (s.hideWithGui && mc.gui.hud.isHidden()) want = 0;
         shown += (want - shown) * (want < shown ? 0.25 : 0.12);   // per tick: quick to go, a little slower back
         if (Math.abs(want - shown) < 0.01) shown = want;
     }

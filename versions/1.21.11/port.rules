@@ -51,3 +51,4 @@ LyricsControls.java   ||  api\.client\.keymapping\.v1\.KeyMappingHelper  ||  api
 LyricsControls.java   ||  \bKeyMappingHelper\.registerKeyMapping\(  ||  KeyBindingHelper.registerKeyBinding(
 LyricsControls.java   ||  InputConstants\.Type\.KEYBOARD            ||  InputConstants.Type.KEYSYM
 LyricsControls.java   ||  \bClientCommands\b                        ||  ClientCommandManager
+Lyrics.java           ||  \bmc\.gui\.hud\.isHidden\(\)              ||  mc.options.hideGui

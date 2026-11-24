@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.4
+
+- **On screen lyrics:** a new placement that draws the lyrics over the game like subtitles: the sung line with up to three lines around it, karaoke lighting of the sung words, lines that slide up, and height, across, align, backdrop and shadow settings. It uses Scatter's colours, gradients and fonts.
+- **Unsynced lyrics:** songs that only have lyrics without times now show them, paced over the song (on by default, with a switch). The status says the timing is a guess.
+- **Fade when paused**, **In a fight** (show, dim or hide) and **Hide with F1**.
+- **Lyrics keys** in Controls (unbound by default): on/off, sooner and later by 0.25 s, with a note over the hotbar.
+- **`/rainium lyrics`**: the song and offset, or `on`, `off`, `toggle`, `earlier`, `later`, `offset <seconds>` and `again`.
+- **Look this song up again** on the lyrics page.
+
 ## 1.1.3
 
 - **Gradient colours for Scatter:** letters blend between two colours: Sunset, Ocean, Aurora, Candy, Fire, Gold, or your own two. The gradient runs across each row, down the rows, along the whole line, or as a shimmer that sweeps back and forth. In the Words style it runs word by word through the line.

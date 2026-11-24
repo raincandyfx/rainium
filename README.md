@@ -145,7 +145,10 @@ Rainium can show the lyrics of the song playing on your computer as a plane in t
   - Your own `.lrc` files, named `Artist - Title.lrc`, in `config/rainium/lyrics`.
   - Lyrics saved from an earlier lookup.
   - **lrclib.net**, a free lyrics site, but only if you switch on **Find lyrics online**. Only the song's title, artist, album and length are sent.
+  - **Unsynced lyrics** (on by default): when a song only has lyrics without times, they're shown anyway, paced over the length of the song with a quiet start and end and a pause at each blank line. The timing is a guess, so the status says so; line it up with Sync or the keys below. **Look this song up again** retries after you add a file.
 - **Sync** moves the lyrics earlier or later. **Demo song** plays a short built-in song (lyrics only) so you can try the looks without music. **Song in chat** adds a line to your chat (only you see it) when the song changes. **Open lyrics folder** and **Clear saved lyrics** are on the page too.
+- **Fade when paused** (on by default) fades the lyrics out a moment after you pause the music. **In a fight** shows, dims or hides them for a few seconds after you hit or are hit by something. **Hide with F1** hides lyrics in the world with the rest of the HUD.
+- **Keys and commands:** Controls has three keys, unbound until you bind them: lyrics on/off, and 0.25 s sooner or later (a note over the hotbar shows the new offset). From chat: `/rainium lyrics` shows the song and offset, and `/rainium lyrics on|off|toggle|earlier|later|offset <seconds>|again` does the rest.
 
 ### The two looks
 
@@ -171,7 +174,8 @@ Each line is a plane in the world. It stays where it is as you move and look aro
   - **Video:** the usual lyric panel, with the video, in a new spot near your crosshair for each line.
 
   Typed lines and Words have a **colour** (peach, white, your custom text colour, a slow rainbow, a soft colour per line, or a **gradient**: sunset, ocean, aurora, candy, fire, gold or your own two colours, running across each row, down the rows, along the line, or as a moving shimmer), a **font** (Minecraft, Unifont, or one that comes with Rainium: Clean, Serif, Mono, Script, Tall, Retro), **spread** (how far from the crosshair), **fade time** and **shrink as it goes**; typed lines also have **type out**, **shadow**, **keep facing me** and **characters per row**. Distance, size, opacity, float, Through blocks and Move with me apply too.
-- **Keep out of walls** (all modes, on by default): a spot behind a wall is pulled in front of it and shrunk to look the same size, and one buried in the ground is lifted out.
+- **On screen:** the lyrics over the game like subtitles, not in the world: the sung line with up to three lines before and after it, dimmed. **Karaoke** lights the sung part word by word, and the lines **slide up** as the song moves on. Set the **height**, **across** position and **align** (centre, left, right), the **backdrop** band, **shadow**, size and opacity; colour, gradient and font are the same as Scatter's. F1 hides it with the HUD.
+- **Keep out of walls** (all modes in the world, on by default): a spot behind a wall is pulled in front of it and shrunk to look the same size, and one buried in the ground is lifted out.
 
 Other settings, all typed numbers: **size** as a percentage (100 is the default; no upper or lower limit), opacity, float, distance, height, sideways position, gap and roll. Also font, text and accent colour, speed, backdrop (backgrounds only show when it's above zero), halo, colour fringe, grain, frame rate, frame and HUD.
 
